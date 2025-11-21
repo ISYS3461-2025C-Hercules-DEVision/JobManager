@@ -14,22 +14,22 @@ Stores the core identity, contact, and authentication data for each company user
 
 | Attribute       | Type                                                | Description                                   | Notes |
 |----------------|-----------------------------------------------------|-----------------------------------------------|-------|
-| companyId      | string                                             | Unique company identifier                     | PK, UUID |
-| companyName    | string                                             | Official company name                         | Shown on profile, job posts |
-| email          | string                                             | Login & contact email                         | UNIQUE, case-insensitive |
-| passwordHash   | string                                             | Hashed password for non-SSO accounts          | Null for SSO-only accounts |
-| phoneNumber    | string                                             | Company contact phone                         | Optional; international format |
-| streetAddress  | string                                             | Street and number                             | Optional |
-| city           | string                                             | City                                          | Optional |
-| country        | string                                             | Country of operation                          | Required; selected from dropdown |
-| shardKey       | string                                             | Partition key used for sharding               | Same value as `country` (§1.3.3) |
-| isEmailVerified| boolean                                            | Email activation status                       | Registration flow §1.1.3 |
-| isActive       | boolean                                            | Account active/disabled                       | Used for admin locking, soft-delete |
-| ssoProvider    | enum(`local`,`google`,`microsoft`,`facebook`,`github`) | Auth source                               | Ultimo SSO §1.3.1 |
-| ssoId          | string                                             | External identity ID from SSO provider        | §1.3.2 |
-| isPremium      | boolean                                            | Denormalized flag indicating active premium plan | Derived from CompanySubscription, displayed on profile §6.1.1 |
-| createdAt      | datetime                                           | Creation timestamp                            |  |
-| updatedAt      | datetime                                           | Last update timestamp                         |  |
+| companyId      | string                                              | Unique company identifier                     | PK, UUID |
+| companyName    | string                                              | Official company name                         | Shown on profile, job posts |
+| email          | string                                              | Login & contact email                         | UNIQUE, case-insensitive |
+| passwordHash   | string                                              | Hashed password for non-SSO accounts          | Null for SSO-only accounts |
+| phoneNumber    | string                                              | Company contact phone                         | Optional; international format |
+| streetAddress  | string                                              | Street and number                             | Optional |
+| city           | string                                              | City                                          | Optional |
+| country        | string                                              | Country of operation                          | Required; selected from dropdown |
+| shardKey       | string                                              | Partition key used for sharding               | Same value as `country` (§1.3.3) |
+| isEmailVerified| boolean                                             | Email activation status                       | Registration flow §1.1.3 |
+| isActive       | boolean                                             | Account active/disabled                       | Used for admin locking, soft-delete |
+| ssoProvider    | enum(`local`,`google`,`microsoft`,`facebook`,`github`) | Auth source                                | Ultimo SSO §1.3.1 |
+| ssoId          | string                                              | External identity ID from SSO provider        | §1.3.2 |
+| isPremium      | boolean                                             | Denormalized flag indicating active premium plan | Derived from CompanySubscription, displayed on profile §6.1.1 |
+| createdAt      | datetime                                            | Creation timestamp                            |  |
+| updatedAt      | datetime                                            | Last update timestamp                         |  |
 
 ---
 
@@ -37,16 +37,16 @@ Stores the core identity, contact, and authentication data for each company user
 Session and security token metadata for company accounts.  
 📖 SRS §2 (Login Authentication, JWE, Brute-force Protection, Redis Revocation)
 
-| Attribute     | Type    | Description                             | Notes |
-|--------------|---------|-----------------------------------------|-------|
-| tokenId      | string  | Unique token ID                         | PK |
-| companyId    | FK → Company | Linked company account           |  |
-| accessToken  | string  | Encrypted JWE token                     | §2.2.1 |
-| refreshToken | string  | Long-lived refresh token                | §2.3.3 |
-| issuedAt     | datetime| Time the token was issued               |  |
-| expiresAt    | datetime| Token expiration time                   |  |
-| isRevoked    | boolean| Revocation status                        | Used with Redis cache §2.2.3, §2.3.2 |
-| failedAttempts | int   | Failed login attempts counter           | Supports brute-force blocking §2.2.2 |
+| Attribute       | Type     | Description                             | Notes |
+|----------------|----------|-----------------------------------------|-------|
+| tokenId        | string   | Unique token ID                         | PK |
+| companyId      | string   | Linked company account                  | Reference to Company.companyId |
+| accessToken    | string   | Encrypted JWE token                     | §2.2.1 |
+| refreshToken   | string   | Long-lived refresh token                | §2.3.3 |
+| issuedAt       | datetime | Time the token was issued               |  |
+| expiresAt      | datetime | Token expiration time                   |  |
+| isRevoked      | boolean  | Revocation status                       | Used with Redis cache §2.2.3, §2.3.2 |
+| failedAttempts | int      | Failed login attempts counter           | Supports brute-force blocking §2.2.2 |
 
 ---
 
@@ -56,7 +56,7 @@ Public-facing profile that applicants can view.
 
 | Attribute          | Type           | Description                              | Notes |
 |--------------------|----------------|------------------------------------------|-------|
-| companyId          | FK → Company   | One-to-one with Company                  | PK & FK |
+| companyId          | string         | One-to-one with Company                  | PK; references Company.companyId |
 | displayName        | string         | Public display name / brand name         | Often same as `companyName` |
 | aboutUs            | text           | “About us” description                   | §3.1.x |
 | whoWeAreLookingFor | text           | Description of target applicants         | §3.1.x |
@@ -75,17 +75,17 @@ Public-facing profile that applicants can view.
 Gallery of images/videos shown on the company public profile.  
 📖 SRS §3 (Profile Management – media gallery)
 
-| Attribute   | Type         | Description                     | Notes |
-|------------|--------------|---------------------------------|-------|
-| mediaId    | string       | Unique media asset ID           | PK |
-| companyId  | FK → Company | Owning company                  |  |
-| url        | string       | Media file URL (image or video) | Store URL only; file in object storage |
+| Attribute   | Type   | Description                     | Notes |
+|------------|--------|---------------------------------|-------|
+| mediaId    | string | Unique media asset ID           | PK |
+| companyId  | string | Owning company                  | References Company.companyId |
+| url        | string | Media file URL (image or video) | Store URL only; file in object storage |
 | mediaType  | enum(`image`,`video`) | Type of media asset      |  |
-| title      | string       | Short title or caption          | Optional |
-| description| text         | Longer description              | Optional |
-| orderIndex | int          | Display order within gallery    | Enables custom ordering |
-| isActive   | boolean      | Whether shown on profile        | Soft-delete flag |
-| uploadedAt | datetime     | Upload timestamp                |  |
+| title      | string | Short title or caption          | Optional |
+| description| text   | Longer description              | Optional |
+| orderIndex | int    | Display order within gallery    | Enables custom ordering |
+| isActive   | boolean| Whether shown on profile        | Soft-delete flag |
+| uploadedAt | datetime | Upload timestamp              |  |
 
 ---
 
@@ -96,7 +96,7 @@ Represents a job posting created and managed by a company.
 | Attribute       | Type           | Description                                  | Notes |
 |-----------------|----------------|----------------------------------------------|-------|
 | jobPostId       | string         | Unique job post identifier                   | PK |
-| companyId       | FK → Company   | Owning company                               |  |
+| companyId       | string         | Owning company                               | References Company.companyId |
 | title           | string         | Job title                                    | §4.1.1 |
 | description     | text           | Full job description                         | §4.1.1 |
 | employmentTypes | `array<enum>`  | One or more of `Full-time`,`Part-time`,`Fresher`,`Internship`,`Contract` | §4.1.1; Full-time/Part-time mutually exclusive |
@@ -121,8 +121,8 @@ Normalized link between JobPost ↔ SkillTag (technical skills and competencies)
 
 | Attribute  | Type           | Description              | Notes |
 |-----------|----------------|--------------------------|-------|
-| jobPostId | FK → JobPost   | Job post                 | Part of composite PK |
-| skillId   | FK → SkillTag  | Skill / competency       | Part of composite PK |
+| jobPostId | string         | Job post                 | Part of composite PK; references JobPost.jobPostId |
+| skillId   | string         | Skill / competency       | Part of composite PK; **external ID** → SkillTag.skillId (Applicant side), no DB FK |
 | importance| enum(`MUST_HAVE`,`NICE_TO_HAVE`) | Importance level | Optional; can refine matching logic |
 
 > **Primary key:** (`jobPostId`, `skillId`).  
@@ -134,15 +134,15 @@ Normalized link between JobPost ↔ SkillTag (technical skills and competencies)
 Catalog of all technical skills and competencies used across the platform.  
 📖 SRS §4.2.1 (Job Post Skills) & §5.2.2 & §6.2.2 (Technical Background tags)
 
-> Logically shared between Job Applicant and Job Manager subsystems.  
-> Physically may live in a dedicated catalog service or one of the subsystems.
+> **Owned and persisted by the Job Applicant subsystem’s Profile/Skill Catalog service.**  
+> Job Manager **does not** store this table in its own database; it only references `skillId` in JobPostSkill and search profiles.
 
-| Attribute | Type   | Description                        |
-|----------|--------|------------------------------------|
-| skillId  | string | PK                                 |
-| name     | string | Skill name (e.g., “React”, “Kafka”)|
-| category | string | Optional skill category/domain     |
-| isActive | boolean| Whether the tag is currently usable|
+| Attribute | Type   | Description                        | Notes |
+|----------|--------|------------------------------------|-------|
+| skillId  | string | PK                                 | Global skill identifier shared between JA and JM |
+| name     | string | Skill name (e.g., “React”, “Kafka”)|  |
+| category | string | Optional skill category/domain     |  |
+| isActive | boolean| Whether the tag is currently usable| Managed on Applicant side |
 
 ---
 
@@ -150,91 +150,108 @@ Catalog of all technical skills and competencies used across the platform.
 Saved “Applicant Searching Profile” used for premium real-time matching.  
 📖 SRS §6.2.1 – §6.2.4 (Premium Company – Applicant Searching Profile)
 
-| Attribute           | Type           | Description                                   |
-|---------------------|----------------|-----------------------------------------------|
-| searchProfileId     | string         | Unique search profile identifier              |
-| companyId           | FK → Company   | Owning company                                |
-| profileName         | string         | Human-readable label (e.g., “Senior Backend VN”) |
-| desiredCountry      | string         | Target applicant country                      |
-| desiredMinSalary    | decimal(10,2)  | Minimum desired salary                        |
-| desiredMaxSalary    | decimal(10,2)  | Maximum desired salary                        |
-| highestEducation    | enum(`Bachelor`,`Master`,`Doctorate`) | Highest education degree filter |
-| technicalBackground | `array<string>`| List of desired skill tags                    |
-| employmentStatus    | `array<enum>`  | `Full-time`,`Part-time`,`Fresher`,`Internship`,`Contract` |
-| isActive            | boolean        | Whether this profile participates in matching |
-| createdAt           | datetime       | Creation timestamp                            |
-| updatedAt           | datetime       | Last update timestamp                         |
+| Attribute           | Type           | Description                                   | Notes |
+|---------------------|----------------|-----------------------------------------------|-------|
+| searchProfileId     | string         | Unique search profile identifier              | PK |
+| companyId           | string         | Owning company                                | References Company.companyId |
+| profileName         | string         | Human-readable label (e.g., “Senior Backend VN”) |  |
+| desiredCountry      | string         | Target applicant country                      |  |
+| desiredMinSalary    | decimal(10,2)  | Minimum desired salary                        | Default 0 if unset |
+| desiredMaxSalary    | decimal(10,2)  | Maximum desired salary                        | Null = no upper limit |
+| highestEducation    | enum(`Bachelor`,`Master`,`Doctorate`) | Highest education degree filter |  |
+| technicalBackground | `array<string>`| List of desired skill tags (`skillId` values) |  |
+| employmentStatus    | `array<enum>`  | `Full-time`,`Part-time`,`Fresher`,`Internship`,`Contract` |  |
+| isActive            | boolean        | Whether this profile participates in matching |  |
+| createdAt           | datetime       | Creation timestamp                            |  |
+| updatedAt           | datetime       | Last update timestamp                         |  |
 
 ---
 
-## 9. CompanySubscription
+## 9. ApplicantFlag
+Per-company flags marking an applicant as **Warning** or **Favorite**.  
+📖 SRS §5.3.2 (Mark Applicant as Warning/Favorite and show this state in results)
+
+| Attribute   | Type           | Description                                   | Notes |
+|-------------|----------------|-----------------------------------------------|-------|
+| flagId      | string         | Unique flag identifier                        | PK |
+| companyId   | string         | Company who set this flag                     | References Company.companyId |
+| applicantId | string         | Target applicant                              | **External ID** from Job Applicant subsystem; string reference only, no FK |
+| status      | enum(`WARNING`,`FAVORITE`) | Flag status                         |  |
+| createdAt   | datetime       | When the flag was first created               |  |
+| updatedAt   | datetime       | When the flag was last updated                |  |
+
+---
+
+## 10. CompanySubscription
 Tracks premium subscription plan and validity for each company.  
 📖 SRS §6.1.1 – §6.1.2 (Premium Company Subscription – monthly payment, notifications)
 
-| Attribute      | Type           | Description                               |
-|----------------|----------------|-------------------------------------------|
-| subscriptionId | string         | Unique subscription ID                    |
-| companyId      | FK → Company   | Subscribed company                        |
-| planType       | enum(`Free`,`Premium`) | Subscription type                  |
-| priceAmount    | decimal(10,2)  | Subscription price                        |
-| currency       | string         | Currency code                             |
-| startDate      | datetime       | Subscription start                        |
-| expiryDate     | datetime       | Subscription end                          |
-| status         | enum(`ACTIVE`,`EXPIRED`,`CANCELLED`,`PENDING`) | Current status |
-| lastPaymentId  | FK → PaymentTransaction | Last successful payment           |
-| createdAt      | datetime       | Creation timestamp                        |
-| updatedAt      | datetime       | Last update timestamp                     |
+| Attribute      | Type           | Description                               | Notes |
+|----------------|----------------|-------------------------------------------|-------|
+| subscriptionId | string         | Unique subscription ID                    | PK |
+| companyId      | string         | Subscribed company                        | References Company.companyId |
+| planType       | enum(`Free`,`Premium`) | Subscription type                  |  |
+| priceAmount    | decimal(10,2)  | Subscription price                        |  |
+| currency       | string         | Currency code                             |  |
+| startDate      | datetime       | Subscription start                        |  |
+| expiryDate     | datetime       | Subscription end                          |  |
+| status         | enum(`ACTIVE`,`EXPIRED`,`CANCELLED`,`PENDING`) | Current status |  |
+| lastPaymentId  | string         | Last successful payment transaction ID    | **External reference** to PaymentTransaction.transactionId; no cross-DB FK |
+| createdAt      | datetime       | Creation timestamp                        |  |
+| updatedAt      | datetime       | Last update timestamp                     |  |
 
 ---
 
-## 10. PaymentTransaction
-Records each premium subscription payment handled by the Job Manager payment service.  
+## 11. PaymentTransaction
+Records each premium subscription payment handled by the shared Payment service.  
 📖 SRS §6.1.1 (Monthly fee via third-party payment) & §7 (Payment Service Development)
 
-| Attribute      | Type           | Description                                 |
-|----------------|----------------|---------------------------------------------|
-| transactionId  | string         | Unique payment transaction ID               |
-| companyId      | FK → Company   | Paying company                              |
-| subscriptionId | FK → CompanySubscription | Related subscription record     |
-| email          | string         | Billing email used for payment              |
-| amount         | decimal(10,2)  | Payment amount                              |
-| currency       | string         | Currency code                               |
-| gateway        | enum(`Stripe`,`PayPal`) | Third-party payment provider    |
-| timestamp      | datetime       | Time of transaction                         |
-| status         | enum(`Success`,`Failed`) | Outcome of payment transaction |
-| rawGatewayRef  | string         | Gateway reference / transaction code        |
+| Attribute      | Type           | Description                                 | Notes |
+|----------------|----------------|---------------------------------------------|-------|
+| transactionId  | string         | Unique payment transaction ID               | PK |
+| companyId      | string \| null | Paying company (Job Manager side)           | String reference to Company.companyId; may be null for Applicant payments |
+| applicantId    | string \| null | Paying applicant (Job Applicant side)       | String reference to Applicant.applicantId; may be null for Company payments |
+| subscriptionId | string \| null | Related subscription record (company side)  | String reference to CompanySubscription.subscriptionId; no FK |
+| email          | string         | Billing email used for payment              |  |
+| amount         | decimal(10,2)  | Payment amount                              |  |
+| currency       | string         | Currency code                               |  |
+| gateway        | enum(`Stripe`,`PayPal`) | Third-party payment provider    |  |
+| timestamp      | datetime       | Time of transaction                         |  |
+| status         | enum(`Success`,`Failed`) | Outcome of payment transaction |  |
+| rawGatewayRef  | string         | Gateway reference / transaction code        |  |
 
-> This entity belongs to the Payment microservice implemented by the Job Manager team.  
-> The Job Applicant subsystem consumes the Payment API but does not own this schema.
+> Business rule: For any given row, **either** `companyId` **or** `applicantId` is set (not both).  
+> This entity belongs to the shared Payment microservice used by both Job Manager and Job Applicant subsystems; other services reference it by ID only (no cross-DB FKs).
 
 ---
 
-## 11. CompanyNotification
-Represents notifications sent to companies (in-app and/or email), including real-time applicant matches.  
+## 12. Notification
+Represents notifications sent to companies (and applicants) via the shared Notification service, including real-time applicant matches and subscription reminders.  
 📖 SRS §6.3.1 (Kafka real-time notifications to premium companies) & §6.1.2 (Email reminders)
 
-| Attribute      | Type           | Description                                   |
-|----------------|----------------|-----------------------------------------------|
-| notificationId | string         | Unique notification ID                        |
-| companyId      | FK → Company   | Recipient company                             |
-| type           | enum(`ApplicantMatch`,`SubscriptionReminder`,`System`) | Notification category |
-| message        | text           | Human-readable message                        |
-| channel        | enum(`inApp`,`email`) | Delivery channel                     |
-| isRead         | boolean        | Read/acknowledged flag (for in-app)           |
-| createdAt      | datetime       | Creation / send time                          |
+| Attribute      | Type           | Description                                   | Notes |
+|----------------|----------------|-----------------------------------------------|-------|
+| notificationId | string         | Unique notification ID                        | PK |
+| recipientId    | string         | Recipient identifier                          | String reference only, no FK. On Job Manager side this is `companyId`; on Applicant side it is `applicantId`. |
+| type           | enum(`ApplicationUpdate`,`JobMatch`,`SubscriptionReminder`,`System`) | Notification category | `JobMatch` is used for real-time applicant/job matches |
+| message        | text           | Human-readable message                        |  |
+| channel        | enum(`inApp`,`email`) | Delivery channel                     | Optional; JM-specific extension |
+| isRead         | boolean        | Read/acknowledged flag (for in-app)           |  |
+| timestamp      | datetime       | Creation / send time                          |  |
+
+> This schema is shared between Job Manager and Job Applicant subsystems via the Notification microservice.
 
 ---
 
 ## Traceability Summary
 
-| SRS Section | Title                               | Key Job Manager Entities                                                   |
-|------------|--------------------------------------|----------------------------------------------------------------------------|
-| §1         | Company Registration                 | Company, CompanyAuthToken                                                  |
-| §2         | Company Login & Security             | Company, CompanyAuthToken                                                  |
-| §3         | Profile Management                   | Company, CompanyPublicProfile, CompanyMedia                                |
-| §4         | Job Post Management                  | JobPost, JobPostSkill, SkillTag                                            |
-| §5         | Applicants Search                    | *(No new entities; uses Applicant-side data & FTS)*                        |
-| §6         | Premium Company Subscription & Real-time Notifications | CompanySubscription, CompanySearchProfile, PaymentTransaction, CompanyNotification |
-| §7         | Payment Service Development          | PaymentTransaction, CompanySubscription                                    |
+| SRS Section | Title                               | Key Job Manager Entities                                                                              |
+|------------|--------------------------------------|--------------------------------------------------------------------------------------------------------|
+| §1         | Company Registration                 | Company, CompanyAuthToken                                                                              |
+| §2         | Company Login & Security             | Company, CompanyAuthToken                                                                              |
+| §3         | Profile Management                   | Company, CompanyPublicProfile, CompanyMedia                                                            |
+| §4         | Job Post Management                  | JobPost, JobPostSkill, SkillTag (external catalog)                                                     |
+| §5         | Applicants Search                    | CompanySearchProfile, ApplicantFlag, JobPost, JobPostSkill, SkillTag (external), Applicant data (JA)  |
+| §6         | Premium Company Subscription & Real-time Notifications | CompanySubscription, CompanySearchProfile, PaymentTransaction, Notification                 |
+| §7         | Payment Service Development          | PaymentTransaction, CompanySubscription                                                                |
 
----
