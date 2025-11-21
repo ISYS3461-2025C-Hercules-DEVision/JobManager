@@ -1,307 +1,337 @@
-# Attributes, Types & Validation Rules (DM-02) – Job Manager
-> Source: EEET2582_DevVision-JobManager-v1.1.pdf  
-> Scope: Sections 1 – 7  
-> Milestone 1 Deliverable – Data Model (Level Simplex → Ultimo)
+# DM-02 — Entities, Attributes & Data Types (Job Manager Subsystem)
 
-All attributes are preliminary for ER Model v1.
+> Based on DM-01 – Job Manager  
+> Aligned with: JobApplicant DM-01/ERD + Container Diagram + both SRSs  
+> DB assumption: PostgreSQL for relational data, Redis for token revocation
 
----
+For each entity we specify:
 
-## Conventions
-
-- **Type (FE)**: UI form type (text, email, select, file, etc.).
-- **Type (BE)**: Database/storage type (PostgreSQL unless noted).
-- **Constraint**: `PK`, `FK`, `UNIQUE`, `NOT NULL`, `NULL`, `CHECK`, `INDEX`, `DEFAULT`.
-- **Regex** samples are language-agnostic (PCRE/ECMAScript compatible).
-- **Shared FE/BE validators** are defined once and reused across forms and DTOs.
-
-### Shared Validation Library (reuse everywhere)
-
-- **Email**
-  - Rules: exactly one `@`; at least one `.` after `@`; total length < 255; no spaces; forbid `()[];:`.
-  - Regex (syntax check):  
-    `^(?!.*[()\[\];:])[^\s@]+@[^\s@]+\.[^\s@]+$`
-  - BE: `CHECK (length(email) < 255)` + unique index on `LOWER(email)`.
-
-- **Password strength**
-  - Rules: ≥ 8 chars; ≥ 1 digit; ≥ 1 special; ≥ 1 uppercase.
-  - Regex:  
-    `^(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$`
-
-- **Phone (optional)**
-  - Rules: starts with `+` and valid dial code (e.g., `+84`, `+49`); digits only after `+`; digits *after* dial code ≤ 12.
-  - Regex (format):  
-    `^\+[1-9]\d{0,2}\d{1,12}$`
-  - BE: custom `CHECK` enforcing local-part length ≤ 12 after dial code.
-
-- **Country**
-  - FE: dropdown sourced from ISO-3166-1 alpha-2 list.
-  - BE: `CHAR(2)` with `CHECK (country ~ '^[A-Z]{2}$')`.
-
-- **Currency**
-  - FE: dropdown from ISO-4217 (e.g., `USD`, `VND`).
-  - BE: `CHAR(3)` with `CHECK (currency ~ '^[A-Z]{3}$')`.
-
-- **Image file**
-  - FE: accept `image/*`, max 5MB.
-  - BE: content-type sniff + size cap; auto-resize (e.g., 512×512) on upload; store URL only.
-
-- **Media file (image / video)**
-  - FE: accept `image/*,video/*`, max 50MB.
-  - BE: virus scan; store signed URL; do not store binary in DB.
-
-- **Timestamps**
-  - `TIMESTAMPTZ`; default `NOW()` on create where appropriate.
-  - `updatedAt` maintained by trigger.
+- Attributes with types and constraints (conceptual, not DDL)
+- Important validation rules
+- Notes on how it integrates with other services (especially Applicant side)
 
 ---
 
-## 1. Company
+## 🟦 1. Company
 
-Core identity, contact, authentication and sharding info for companies.
+**OwnedByService:** Profile Management Service  
+**DBType:** Postgres  
+**Sharded:** YES – shardKey = `country`  
 
-| Attribute        | Type (FE)      | Type (BE)                      | Constraint                              | FE rule                                       | BE rule                                                        | Example |
-|-----------------|----------------|--------------------------------|-----------------------------------------|-----------------------------------------------|----------------------------------------------------------------|---------|
-| companyId       | –              | UUID                           | PK                                      | –                                             | `PRIMARY KEY`                                                 | `8c0c…` |
-| companyName     | text           | VARCHAR(150)                   | NOT NULL                                | 1–150 chars; trim; collapse double spaces     | `CHECK (length(companyName) BETWEEN 1 AND 150)`               | `Phuong Hai JSC` |
-| email           | email          | CITEXT                         | UNIQUE, NOT NULL                        | email regex; length < 255                     | unique index on `LOWER(email)`; email `CHECK`                 | `hr@company.com` |
-| passwordHash    | –              | VARCHAR(255)                   | NULL (SSO) / NOT NULL (local)           | –                                             | hash via Argon2id/BCrypt; `NULL` if `ssoProvider!='local'`    | `$argon2id$…` |
-| phoneNumber     | tel            | VARCHAR(20)                    | NULL                                    | optional; phone regex                         | phone regex + custom `CHECK` for local-part length            | `+84901234567` |
-| streetAddress   | text           | VARCHAR(180)                   | NULL                                    | ≤180 chars                                   | `CHECK (length(streetAddress) <= 180)`                        | `12 Nguyen Hue, Dist. 1` |
-| city            | text           | VARCHAR(120)                   | NULL                                    | ≤120 chars                                   | `CHECK (length(city) <= 120)`                                | `Ho Chi Minh City` |
-| country         | select         | CHAR(2)                        | NOT NULL, INDEX, shard key              | must pick from ISO list                       | `CHECK (country ~ '^[A-Z]{2}$')`                             | `VN` |
-| shardKey        | –              | CHAR(2)                        | NOT NULL                                | –                                             | `CHECK (shardKey = country)`; used for routing & migrations   | `VN` |
-| isEmailVerified | –              | BOOLEAN                        | DEFAULT false                           | –                                             | defaults false; set true after email activation               | `false` → `true` |
-| isActive        | toggle         | BOOLEAN                        | DEFAULT true                            | admin/company can deactivate                  | soft delete: block login & writes if `false`                  | `true` |
-| ssoProvider     | select         | ENUM('local','google','microsoft','facebook','github') | DEFAULT 'local'           | single choice (project picks **one** actual provider) | enforce only configured provider(s) allowed                   | `google` |
-| ssoId           | –              | VARCHAR(128)                   | UNIQUE NULLABLE                         | –                                             | unique when not null                                          | `google-oauth2|123…` |
-| isPremium       | –              | BOOLEAN                        | DEFAULT false                           | –                                             | derived from active `CompanySubscription`; keep in sync       | `true` |
-| createdAt       | –              | TIMESTAMPTZ                    | DEFAULT NOW()                           | –                                             | set on insert                                                 | – |
-| updatedAt       | –              | TIMESTAMPTZ                    | –                                       | –                                             | trigger to auto-update                                        | – |
+### Attributes
 
-**Notes**
+- `companyId : String (uuid)` – **PK**, unique company identifier.  
+- `companyName : String` – official company name (max ~200 chars).  
+- `email : String` – login + contact email, **unique**, case-insensitive.  
+- `passwordHash : String | null` – hashed password for local accounts; `null` for SSO-only.  
+- `phoneNumber : String | null` – company phone, E.164 format (e.g. `+84…`).  
+- `streetAddress : String | null` – street + number.  
+- `city : String | null` – city / province.  
+- `country : String` – country of operation, used as shard key.  
+- `shardKey : String` – same value as `country`.  
+- `isEmailVerified : Boolean` – default `false`.  
+- `isActive : Boolean` – default `true`; used for soft-delete / suspension.  
+- `ssoProvider : String (enum: local | google | microsoft | facebook | github) | null`.  
+- `ssoId : String | null` – external identity ID from SSO provider.  
+- `isPremium : Boolean` – cached flag derived from latest `Subscription.status`.  
+- `createdAt : Date`  
+- `updatedAt : Date`
 
-- Shard key is `country`/`shardKey`; moving a company to a new country triggers shard migration as per Ultimo requirement.
-- SSO companies must not have a local password (enforced via `passwordHash` + `ssoProvider` rules).
+### Validation & Notes
 
----
-
-## 2. CompanyAuthToken
-
-Session and security token metadata for companies.
-
-| Attribute     | Type (FE) | Type (BE)   | Constraint                    | FE rule | BE rule                                                                 | Example |
-|--------------|-----------|-------------|-------------------------------|--------|-------------------------------------------------------------------------|---------|
-| tokenId      | –         | UUID        | PK                            | –      | `PRIMARY KEY`                                                          | – |
-| companyId    | –         | UUID        | FK → Company                  | –      | `REFERENCES Company(companyId) ON DELETE CASCADE`                      | – |
-| accessToken  | –         | TEXT        | NOT NULL                      | –      | store JWS/JWE token hash or opaque id; set TTL                         | `eyJhbGciOiJ…` |
-| refreshToken | –         | TEXT        | NULLABLE                      | –      | rotate; store hash; TTL (e.g., 30 days)                                | – |
-| issuedAt     | –         | TIMESTAMPTZ | NOT NULL                      | –      | set on login                                                           | – |
-| expiresAt    | –         | TIMESTAMPTZ | NOT NULL                      | –      | must be > `issuedAt`; DB `CHECK`                                      | – |
-| isRevoked    | –         | BOOLEAN     | DEFAULT false                 | –      | mirror Redis deny-list/cache                                           | `false` |
-| failedAttempts | –       | SMALLINT    | DEFAULT 0                     | –      | throttle: lock token or account after ≥5 within window                 | `0`–`5` |
-
-**Notes**
-
-- Multiple active tokens per company (multi-device support).
-- Logout = revoke in Redis + set `isRevoked=true`.
+- `email` must be unique; only one active account per email.  
+- When `ssoProvider != 'local'` we may allow `passwordHash = null`.  
+- Changing `status` of subscriptions should update `isPremium`.
 
 ---
 
-## 3. CompanyPublicProfile
+## 🟦 2. AuthToken
 
-Public-facing company profile visible to applicants.
+**OwnedByService:** Authentication Service  
+**DBType:** Postgres (metadata) + Redis (revocation)  
+**Sharded:** NO  
 
-| Attribute          | Type (FE)    | Type (BE)     | Constraint      | FE rule                                    | BE rule                                              | Example |
-|--------------------|--------------|---------------|-----------------|--------------------------------------------|------------------------------------------------------|---------|
-| companyId          | –            | UUID          | PK, FK → Company | –                                         | 1:1 with Company; `PRIMARY KEY` + `REFERENCES`      | – |
-| displayName        | text         | VARCHAR(150)  | NOT NULL        | 1–150 chars; trim                          | `CHECK (length(displayName) BETWEEN 1 AND 150)`     | `DevVision Labs` |
-| aboutUs            | textarea     | TEXT          | NULL            | ≤4000 chars                               | length check                                         | company mission |
-| whoWeAreLookingFor | textarea     | TEXT          | NULL            | ≤2000 chars                               | length check                                         | desired candidate traits |
-| websiteUrl         | url          | TEXT          | NULL            | must start with `http://` or `https://`   | `CHECK (websiteUrl ~ '^https?://')` when not null   | `https://devvision.io` |
-| industryDomain     | select/text  | VARCHAR(80)   | NOT NULL        | must choose from allowed list or enter    | optional `CHECK` against controlled vocabulary       | `FinTech` |
-| logoUrl            | file (image) | TEXT          | NULL            | image upload; ≤5MB                        | store URL; resize to standard size (e.g., 256×256)   | `https://cdn/logo.png` |
-| bannerUrl          | file (image) | TEXT          | NULL            | image upload; ≤5MB                        | store URL; optional                                 | `https://cdn/banner.png` |
-| country            | –            | CHAR(2)       | NOT NULL        | –                                         | duplicated from Company for query optimization       | `VN` |
-| city               | –            | VARCHAR(120)  | NULL            | –                                         | copy from Company.city or override                   | `Hanoi` |
-| createdAt          | –            | TIMESTAMPTZ   | DEFAULT NOW()   | –                                         | –                                                    | – |
-| updatedAt          | –            | TIMESTAMPTZ   | –               | –                                         | trigger                                              | – |
+### Attributes
 
-**Notes**
+- `tokenId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – references `Company.companyId`.  
+- `accessToken : String` – encrypted JWE access token.  
+- `refreshToken : String` – opaque refresh token.  
+- `issuedAt : Date` – token issued time.  
+- `expiresAt : Date` – token expiry.  
+- `isRevoked : Boolean` – default `false`.  
+- `failedAttempts : Number` – default `0`.  
+- `createdAt : Date`  
+- `updatedAt : Date`
 
-- Company CRUD UI may combine `Company` + `CompanyPublicProfile` in a single form, but DB keeps them separate.
+### Validation & Notes
 
----
-
-## 4. CompanyMedia
-
-Gallery of media assets (images/videos) associated with a company profile.
-
-| Attribute   | Type (FE)     | Type (BE)     | Constraint      | FE rule                          | BE rule                                      | Example |
-|------------|---------------|---------------|-----------------|----------------------------------|----------------------------------------------|---------|
-| mediaId    | –             | UUID          | PK              | –                                | `PRIMARY KEY`                                 | – |
-| companyId  | –             | UUID          | FK → Company    | –                                | `REFERENCES Company(companyId) ON DELETE CASCADE` | – |
-| fileUrl    | –             | TEXT          | NOT NULL        | –                                | signed URL; virus scan                        | `https://…/event1.jpg` |
-| mediaType  | select        | ENUM('image','video') | NOT NULL | radio/select                    | enum check                                    | `image` |
-| title      | text          | VARCHAR(120)  | NULL            | ≤120 chars                      | length check                                  | `Year-end party` |
-| description| textarea      | TEXT          | NULL            | ≤1,000 chars                    | length check                                  | – |
-| orderIndex | number        | INT           | DEFAULT 0       | non-negative integer            | `CHECK (orderIndex >= 0)`                    | `0`,`1`,`2` |
-| isActive   | toggle        | BOOLEAN       | DEFAULT true    | show/hide media                 | used as soft delete                           | `true` |
-| uploadedAt | –             | TIMESTAMPTZ   | DEFAULT NOW()   | –                                | –                                            | – |
+- Token is valid only if `isRevoked = false` and `now < expiresAt`.  
+- Redis holds a denylist cache keyed by `tokenId` / `jti` for fast revocation checks.
 
 ---
 
-## 5. JobPost
+## 🟦 3. PublicProfile
 
-Job posts created by companies (public or private).
+**OwnedByService:** Profile Management Service  
+**DBType:** Postgres  
+**Sharded:** YES (same shard as Company)  
 
-| Attribute       | Type (FE)      | Type (BE)          | Constraint        | FE rule                                                                 | BE rule                                                                                               | Example |
-|-----------------|----------------|--------------------|-------------------|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|---------|
-| jobPostId       | –              | UUID               | PK                | –                                                                       | `PRIMARY KEY`                                                                                         | – |
-| companyId       | –              | UUID               | FK → Company      | –                                                                       | `REFERENCES Company(companyId) ON DELETE CASCADE`                                                    | – |
-| title           | text           | VARCHAR(150)       | NOT NULL          | 1–150 chars                                                             | `CHECK (length(title) BETWEEN 1 AND 150)`                                                            | `Senior Backend Engineer` |
-| description     | textarea       | TEXT               | NOT NULL          | rich text allowed; min length (e.g., ≥50)                              | minimal length `CHECK`                                                                               | full job description |
-| employmentTypes | multiselect    | JSONB              | NOT NULL          | choose 1+ from {Full-time, Part-time, Internship, Contract, Fresher}   | validate JSON array; enforce: Full-time XOR Part-time; allow Internship/Contract/Fresher combination | `["Full-time","Internship"]` |
-| postedAt        | –              | TIMESTAMPTZ        | NULL              | auto set when first published (not on create draft)                    | when `status` transitions to `PUBLISHED`, set `postedAt` if null                                     | – |
-| expiryDate      | date           | DATE               | NULL              | ≥ posted date                                                          | `CHECK (expiryDate IS NULL OR expiryDate >= postedAt::date)`                                        | `2026-01-31` |
-| salaryType      | select         | ENUM('RANGE','ABOUT','UP_TO','FROM','NEGOTIABLE') | NOT NULL | single choice                                      | enum check                                                                                           | `RANGE` |
-| salaryMin       | number         | NUMERIC(10,2)      | NULL              | ≥0; required when type = RANGE/FROM                                   | `CHECK (salaryMin IS NULL OR salaryMin >= 0)`; additional `CHECK` vs `salaryType`                    | `1000.00` |
-| salaryMax       | number         | NUMERIC(10,2)      | NULL              | ≥0; required when type = RANGE/UP_TO                                  | `CHECK (salaryMax IS NULL OR salaryMax >= 0)`; `CHECK (salaryMax IS NULL OR salaryMax >= salaryMin)` | `1500.00` |
-| salaryCurrency  | select         | CHAR(3)            | NOT NULL          | ISO currency list                                                      | `CHECK (salaryCurrency ~ '^[A-Z]{3}$')`                                                              | `USD` |
-| city            | text           | VARCHAR(120)       | NULL              | ≤120 chars                                                             | length check                                                                                          | `Da Nang` |
-| country         | select         | CHAR(2)            | NOT NULL          | must pick one country                                                 | shard-aligned with Company.country; `CHECK (country ~ '^[A-Z]{2}$')`                                  | `VN` |
-| isPublished     | toggle         | BOOLEAN            | DEFAULT false     | controls visibility                                                    | `CHECK (isPublished = (status = 'PUBLISHED'))` if enforced                                           | `true` |
-| status          | select         | ENUM('DRAFT','PUBLISHED','ARCHIVED') | DEFAULT 'DRAFT' | radio/select                      | enum check; business rules around transitions (Draft → Published → Archived)                         | `PUBLISHED` |
-| createdAt       | –              | TIMESTAMPTZ        | DEFAULT NOW()     | –                                                                       | –                                                                                                     | – |
-| updatedAt       | –              | TIMESTAMPTZ        | –                 | –                                                                       | trigger                                                                                               | – |
+### Attributes
 
-**Notes**
-
-- Any change to `country` or associated `JobPostSkill` entries triggers a Kafka event for real-time applicant notifications.
-- `employmentTypes` is stored as JSONB to support multi-select and simple containment queries.
+- `companyId : String (uuid)` – **PK**, also FK to `Company`.  
+- `displayName : String` – public brand name (often same as `companyName`).  
+- `aboutUs : String` – long description.  
+- `whoWeAreLookingFor : String` – description of target applicants.  
+- `websiteUrl : String | null` – company website.  
+- `industryDomain : String` – e.g. “FinTech”, “AI”.  
+- `logoUrl : String | null` – logo image URL.  
+- `bannerUrl : String | null` – header image URL.  
+- `country : String` – public country (duplicated from Company).  
+- `city : String | null` – public city.  
+- `createdAt : Date`  
+- `updatedAt : Date`
 
 ---
 
-## 6. JobPostSkill (junction)
+## 🟦 4. CompanyMedia
 
-Normalized N:M link between JobPost and SkillTag.
+**OwnedByService:** Profile Management Service  
+**DBType:** Postgres  
+**Sharded:** YES  
 
-| Attribute  | Type (FE) | Type (BE) | Constraint           | FE rule        | BE rule                          | Example |
-|-----------|-----------|-----------|----------------------|----------------|----------------------------------|---------|
-| jobPostId | –         | UUID      | PK part, FK → JobPost | –             | FK; part of composite PK         | – |
-| skillId   | –         | UUID      | PK part, FK → SkillTag | –            | FK; part of composite PK         | – |
-| importance| select    | ENUM('MUST_HAVE','NICE_TO_HAVE') | NULL         | optional single choice           | enum check                       | `MUST_HAVE` |
+### Attributes
 
-**Notes**
-
-- Composite PK `(jobPostId, skillId)`; unique per pair.
-- Insert/update/delete operations on this table are candidates for Kafka publishing.
-
----
-
-## 7. SkillTag
-
-Shared catalog of technical skills and competencies (logically shared with Applicant subsystem).
-
-| Attribute | Type (FE) | Type (BE)   | Constraint            | FE rule                     | BE rule                              | Example |
-|----------|-----------|-------------|-----------------------|-----------------------------|--------------------------------------|---------|
-| skillId  | –         | UUID        | PK                    | –                           | `PRIMARY KEY`                        | – |
-| name     | text      | CITEXT      | UNIQUE, NOT NULL      | 1–50 chars; trim; no emoji  | unique case-insensitive; length `CHECK` | `React` |
-| category | text      | VARCHAR(50) | NULL                  | optional                    | –                                    | `Backend` |
-| isActive | toggle    | BOOLEAN     | DEFAULT true          | allow deactivate            | recommended soft-delete; prevent new links when false | `true` |
-| createdAt| –         | TIMESTAMPTZ | DEFAULT NOW()         | –                           | –                                    | – |
+- `mediaId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – FK to `Company`.  
+- `url : String` – media file URL in object storage.  
+- `mediaType : String (enum: image | video)`  
+- `title : String | null` – short caption.  
+- `description : String | null` – longer description.  
+- `orderIndex : Number` – display order (default 0).  
+- `isActive : Boolean` – default `true`.  
+- `uploadedAt : Date`
 
 ---
 
-## 8. CompanySearchProfile (Premium)
+## 🟩 5. JobPost
 
-Saved “Applicant Searching Profile” for premium companies (real-time matching).
+**OwnedByService:** Job Post Service  
+**DBType:** Postgres  
+**Sharded:** YES (by `companyId` / `country`)  
 
-| Attribute           | Type (FE)   | Type (BE)         | Constraint      | FE rule                                                  | BE rule                                                                 | Example |
-|---------------------|------------|-------------------|-----------------|----------------------------------------------------------|-------------------------------------------------------------------------|---------|
-| searchProfileId     | –          | UUID              | PK              | –                                                        | `PRIMARY KEY`                                                           | – |
-| companyId           | –          | UUID              | FK → Company    | –                                                        | `REFERENCES Company(companyId) ON DELETE CASCADE`                      | – |
-| profileName         | text       | VARCHAR(100)      | NULL            | ≤100 chars                                               | length check                                                            | `VN Senior Backend` |
-| desiredCountry      | select     | CHAR(2)           | NULL            | ISO list; optional                                       | `CHECK (desiredCountry ~ '^[A-Z]{2}$')` when not null                  | `VN` |
-| desiredMinSalary    | number     | NUMERIC(10,2)     | DEFAULT 0       | ≥0                                                      | `CHECK (desiredMinSalary >= 0)`                                        | `0.00` |
-| desiredMaxSalary    | number     | NUMERIC(10,2)     | NULL            | ≥ min; or empty for “no limit”                           | `CHECK (desiredMaxSalary IS NULL OR desiredMaxSalary >= desiredMinSalary)` | – |
-| highestEducation    | select     | ENUM('Bachelor','Master','Doctorate') | NULL | single choice; optional filter            | enum check                                                              | `Bachelor` |
-| technicalBackground | tags       | JSONB             | NULL            | tag list                                                 | validate array of non-empty strings; normalise to SkillTag where needed | `["Kafka","React"]` |
-| employmentStatus    | multiselect| JSONB             | NULL            | values from {Full-time, Part-time, Internship, Contract, Fresher} | validate allowed set; JSONB array                                      | `["Full-time","Contract"]` |
-| isActive            | toggle     | BOOLEAN           | DEFAULT true    | can enable/disable profile                               | only active profiles considered by matching service                     | `true` |
-| createdAt           | –          | TIMESTAMPTZ       | DEFAULT NOW()   | –                                                        | –                                                                       | – |
-| updatedAt           | –          | TIMESTAMPTZ       | –               | –                                                        | trigger                                                                 | – |
+### Attributes
 
-**Notes**
+- `jobPostId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – FK to `Company`.  
+- `title : String` – job title.  
+- `description : String` – full job description.  
+- `employmentTypes : Array<String>` – values from enum `Full-time | Part-time | Fresher | Internship | Contract`.  
+- `postedAt : Date` – publish date/time.  
+- `expiryDate : Date | null` – optional expiration.  
+- `salaryType : String (enum: RANGE | ABOUT | UP_TO | FROM | NEGOTIABLE)`  
+- `salaryMin : Number | null` – required for `RANGE` / `FROM`.  
+- `salaryMax : Number | null` – required for `RANGE` / `UP_TO`.  
+- `salaryCurrency : String` – e.g. “USD”, “VND”.  
+- `city : String | null`  
+- `country : String` – used in Applicant search + sharding.  
+- `isPublished : Boolean` – default `false`.  
+- `status : String (enum: DRAFT | PUBLISHED | ARCHIVED)`  
+- `createdAt : Date`  
+- `updatedAt : Date`
 
-- Premium matching: for each relevant Applicant event, Kafka consumer queries active `CompanySearchProfile` rows and generates `CompanyNotification`.
+### Validation
 
----
-
-## 9. CompanySubscription
-
-Tracks premium subscription state and history per company.
-
-| Attribute      | Type (FE) | Type (BE)                                   | Constraint           | FE rule                           | BE rule                                                                                  | Example |
-|----------------|-----------|---------------------------------------------|----------------------|-----------------------------------|------------------------------------------------------------------------------------------|---------|
-| subscriptionId | –         | UUID                                        | PK                   | –                                 | `PRIMARY KEY`                                                                            | – |
-| companyId      | –         | UUID                                        | FK → Company         | –                                 | `REFERENCES Company(companyId) ON DELETE CASCADE`                                       | – |
-| planType       | select    | ENUM('Free','Premium')                      | NOT NULL             | single choice                     | enum check                                                                               | `Premium` |
-| priceAmount    | number    | NUMERIC(10,2)                               | NOT NULL             | ≥0                                | `CHECK (priceAmount >= 0)`                                                               | `30.00` |
-| currency       | select    | CHAR(3)                                     | NOT NULL             | ISO list                          | `CHECK (currency ~ '^[A-Z]{3}$')`                                                        | `USD` |
-| startDate      | datetime  | TIMESTAMPTZ                                 | NOT NULL             | cannot be in the past when creating future subscription | `CHECK (startDate <= expiryDate)`                                                       | – |
-| expiryDate     | datetime  | TIMESTAMPTZ                                 | NOT NULL             | > startDate                      | `CHECK (expiryDate > startDate)`                                                        | – |
-| status         | select    | ENUM('ACTIVE','EXPIRED','CANCELLED','PENDING') | NOT NULL         | badge/select                      | DB or service logic keeps consistency with dates                                        | `ACTIVE` |
-| createdAt      | –         | TIMESTAMPTZ                                 | DEFAULT NOW()        | –                                 | –                                                                                        | – |
-| updatedAt      | –         | TIMESTAMPTZ                                 | –                    | –                                 | trigger                                                                                  | – |
-
-**Notes**
-
-- At most **one** `CompanySubscription` with `status='ACTIVE'` per `companyId` at any time (enforced in service or via partial unique index).
-- `Company.isPremium` is a denormalised view of current active subscription.
+- `employmentTypes`: must not contain both `Full-time` **and** `Part-time` at the same time (mutually exclusive).  
+- Salary rules:  
+  - `RANGE` → `salaryMin` + `salaryMax` required, `salaryMin ≤ salaryMax`.  
+  - `FROM` → `salaryMin` required, `salaryMax` null.  
+  - `UP_TO` → `salaryMax` required, `salaryMin` may default to `0`.  
+- Only `status = PUBLISHED` and `isPublished = true` should be visible to applicants.
 
 ---
 
-## 10. PaymentTransaction
+## 🟩 6. JobPostSkill (Company-side link to SkillTag)
 
-Records each payment event for company subscriptions (payment microservice).
+> **This is the Company version of ApplicantSkill.**  
+> We mirror the Applicant naming pattern to avoid mistakes in integration.
 
-| Attribute      | Type (FE) | Type (BE)                         | Constraint           | FE rule                                | BE rule                                                                             | Example |
-|----------------|-----------|-----------------------------------|----------------------|----------------------------------------|-------------------------------------------------------------------------------------|---------|
-| transactionId  | –         | UUID                              | PK                   | –                                      | `PRIMARY KEY`                                                                       | – |
-| companyId      | –         | UUID                              | FK → Company         | –                                      | `REFERENCES Company(companyId) ON DELETE CASCADE`                                   | – |
-| subscriptionId | –         | UUID                              | FK → CompanySubscription | NULL (for initial or failed attempts) | `REFERENCES CompanySubscription(subscriptionId)`                                    | – |
-| email          | email     | CITEXT                            | NOT NULL            | email regex                            | billing email; same validator as Company.email                                      | `billing@company.com` |
-| amount         | number    | NUMERIC(10,2)                     | NOT NULL             | ≥0                                     | `CHECK (amount >= 0)`                                                                | `30.00` |
-| currency       | select    | CHAR(3)                           | NOT NULL             | ISO list                               | `CHECK (currency ~ '^[A-Z]{3}$')`                                                   | `USD` |
-| gateway        | select    | ENUM('Stripe','PayPal')           | NOT NULL             | single choice                          | enum check                                                                          | `Stripe` |
-| timestamp      | –         | TIMESTAMPTZ                       | NOT NULL             | –                                      | default `NOW()` at insertion                                                        | – |
-| status         | badge     | ENUM('Success','Failed')          | NOT NULL             | set after gateway response             | enum check                                                                          | `Success` |
-| rawGatewayRef  | text      | VARCHAR(255)                      | NULL                 | optional                               | store gateway transaction id / payload ref                                         | `ch_3Nh…` |
+**OwnedByService:** Job Post Service  
+**DBType:** Postgres  
+**Sharded:** YES (same shard as JobPost)  
 
-**Notes**
+### Attributes
 
-- Payment service is owned by Job Manager team; Job Applicant subsystem only consumes its API.
-- Useful for audit, refunds and debugging payment issues.
+- `id : String (uuid)` – **PK**.  
+- `jobPostId : String (uuid)` – FK to `JobPost.jobPostId`.  
+- `skillId : String (uuid)` – FK-by-ID to `SkillTag.skillId` (same catalog as ApplicantSkill).  
+- `importance : String (enum: MUST_HAVE | NICE_TO_HAVE)` – requirement level for this skill.  
+- `createdAt : Date`  
+- `updatedAt : Date`
+
+### Validation & Notes
+
+- There must be **at most one** row per pair (`jobPostId`, `skillId`) – enforce via unique index.  
+- This structure intentionally mirrors **ApplicantSkill**:  
+  - `id` as primary key.  
+  - `skillId` is the same UUID values as on the Applicant side.  
+- Any create/update/delete of JobPostSkill should emit a `job-post-updated` event so Applicant search & notifications can refresh safely.
+
+---
+
+## 🟦 7. SkillTag (Shared skill catalog)
+
+> Match **exactly** the Applicant-side SkillTag design (your screenshot) so both sides speak the same language.
+
+**OwnedByService:** Job Post / Skill Catalog Service  
+**DBType:** Catalog DB (Mongo/Postgres)  
+**Sharded:** NO  
+
+### Attributes
+
+- `skillId : String (uuid)` – **PK**.  
+- `name : String (unique, lowercase)` – human-readable skill name; stored lowercase.  
+- `category : String | null` – optional grouping (e.g. `frontend`, `database`).  
+- `createdAt : Date`
+
+### Notes
+
+- `skillId` is referenced by:  
+  - `ApplicantSkill.skillId` (Applicant side)  
+  - `JobPostSkill.skillId` (Manager side)  
+  - `SearchProfile.technicalBackground` (arrays of `skillId`)  
+- All consumers treat this as a **read-only catalog**; updates happen via dedicated admin tools.
 
 ---
 
-## 11. CompanyNotification
+## 🟨 8. SearchProfile (Company headhunting profile)
 
-In-system notifications and real-time Kafka messages delivered to companies.
+**OwnedByService:** Premium Subscription Service / Applicant Search Service  
+**DBType:** Postgres  
+**Sharded:** YES (by `companyId`)  
 
-| Attribute      | Type (FE) | Type (BE)                                 | Constraint        | FE rule                               | BE rule                                | Example |
-|----------------|-----------|-------------------------------------------|-------------------|---------------------------------------|----------------------------------------|---------|
-| notificationId | –         | UUID                                      | PK                | –                                     | `PRIMARY KEY`                           | – |
-| companyId      | –         | UUID                                      | FK → Company      | –                                     | `REFERENCES Company(companyId) ON DELETE CASCADE` | – |
-| type           | badge     | ENUM('ApplicantMatch','SubscriptionReminder','System') | NOT NULL | badge styling based on type           | enum check                             | `ApplicantMatch` |
-| message        | text      | TEXT                                      | NOT NULL          | ≤2,000 chars                          | length check                            | human-readable text |
-| channel        | select    | ENUM('inApp','email')                     | NOT NULL          | single choice                         | enum check                             | `inApp` |
-| isRead         | toggle    | BOOLEAN                                   | DEFAULT false     | toggle in UI                          | –                                      | `false` |
-| createdAt      | –         | TIMESTAMPTZ                               | DEFAULT NOW()     | –                                     | –                                      | – |
+### Attributes
 
-**Notes**
+- `searchProfileId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – FK to `Company`.  
+- `profileName : String` – label, e.g. “Senior Backend VN”.  
+- `desiredCountry : String` – target applicant country.  
+- `desiredMinSalary : Number` – min expected salary.  
+- `desiredMaxSalary : Number | null` – null = no upper bound.  
+- `highestEducation : String (enum: Bachelor | Master | Doctorate)`  
+- `technicalBackground : Array<String(uuid)>` – list of `skillId` from `SkillTag`.  
+- `employmentStatus : Array<String>` – enum values as in `employmentTypes`.  
+- `isActive : Boolean` – default `true`.  
+- `createdAt : Date`  
+- `updatedAt : Date`
 
-- For email notifications, the actual send status may be tracked separately (e.g., in logs or extended schema), but this table is the source of truth for what the system intended to notify.
+### Validation
+
+- If `desiredMaxSalary` not null → `desiredMinSalary ≤ desiredMaxSalary`.  
+- `technicalBackground` array should hold valid existing `skillId`s.
 
 ---
+
+## 🟨 9. ApplicantFlag
+
+**OwnedByService:** Applicant Search Service  
+**DBType:** Postgres  
+**Sharded:** YES (by `companyId`)  
+
+### Attributes
+
+- `flagId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – FK to `Company`.  
+- `applicantId : String (uuid)` – external ID from Applicant subsystem.  
+- `status : String (enum: WARNING | FAVORITE)`  
+- `createdAt : Date`  
+- `updatedAt : Date`
+
+### Notes
+
+- At most one row with a given `(companyId, applicantId)`; enforce via unique index.  
+- Used to display colored badges / icons in search result lists and application detail views.
+
+---
+
+## 🟨 10. Subscription
+
+**OwnedByService:** Subscription Service  
+**DBType:** Postgres  
+**Sharded:** YES (by `companyId`)  
+
+### Attributes
+
+- `subscriptionId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – FK to `Company`.  
+- `planType : String (enum: Free | Premium)`  
+- `priceAmount : Number` – subscription fee for current term.  
+- `currency : String` – ISO currency code.  
+- `startDate : Date`  
+- `expiryDate : Date`  
+- `status : String (enum: ACTIVE | EXPIRED | CANCELLED | PENDING)`  
+- `lastPaymentId : String (uuid) | null` – ID of latest related `PaymentTransaction`.  
+- `createdAt : Date`  
+- `updatedAt : Date`
+
+### Notes
+
+- Only one `Subscription` per company should have `status = ACTIVE`.  
+- `status` is used to maintain `Company.isPremium`.
+
+---
+
+## 🟨 11. PaymentTransaction
+
+**OwnedByService:** Payment Service  
+**DBType:** Postgres (global)  
+**Sharded:** NO  
+
+### Attributes
+
+- `transactionId : String (uuid)` – **PK**.  
+- `companyId : String (uuid)` – string reference to `Company.companyId`.  
+- `subscriptionId : String (uuid) | null` – string reference to `Subscription.subscriptionId`.  
+- `email : String` – billing email.  
+- `amount : Number` – payment amount.  
+- `currency : String` – ISO currency code.  
+- `gateway : String (enum: Stripe | PayPal)` – or local provider.  
+- `timestamp : Date` – transaction time.  
+- `status : String (enum: Success | Failed)`  
+- `rawGatewayRef : String | null` – transaction code / reference from gateway.
+
+### Notes
+
+- No card numbers, CVV, or other sensitive details are stored.  
+- Other services query payments by `transactionId` or `subscriptionId`.
+
+---
+
+## 🟪 12. Notification
+
+**OwnedByService:** Notification Service  
+**DBType:** MongoDB or Postgres  
+**Sharded:** NO  
+
+### Attributes
+
+- `notificationId : String (uuid)` – **PK**.  
+- `recipientId : String (uuid)` – on Job Manager side this is `companyId`.  
+- `type : String (enum: JobMatch | SubscriptionReminder | System | ApplicationUpdate)`  
+- `message : String` – human-readable text.  
+- `channel : String (enum: inApp | email)`  
+- `isRead : Boolean` – default `false`.  
+- `timestamp : Date`
+
+### Notes
+
+- Created from Kafka events: `applicant-created`, `applicant-updated`, `application-submitted`, `subscription-*` etc.  
+- Read/unread status is used by the UI to show notification badges.
+
+---
+
+## Quick Cross-Check with Applicant Side
+
+- **SkillTag**: same attributes (`skillId`, `name`, `category`, `createdAt`) and semantics as in Applicant ERD.  
+- **JobPostSkill** vs **ApplicantSkill**: both use `id`, `applicantId`/`jobPostId`, `skillId`, plus extra fields (`proficiency` or `importance`), and timestamps. This symmetry makes it easy to reason about matching and to share `skillId` safely.  
+- **Naming**: all attributes now follow the same `camelCase` + `String (uuid)` + `Date` style as in your Applicant diagrams.
