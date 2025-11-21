@@ -1,452 +1,276 @@
-# DEVision – Job Manager Subsystem  
-## DM-03 — Model Relationships & Cardinalities
+# DM-03 — Relationships & Cardinalities (Job Manager Subsystem)
 
-This document defines all entity-to-entity relationships for the **Job Manager** subsystem, based on:
+This document describes the **conceptual relationships** between entities in the Job Manager subsystem.
 
-- DM-01 (Job Manager `entities-list`)
-- DM-02 (Job Manager `entities-datatypes`)
-- Job Manager Functional Requirements (§1–7):contentReference[oaicite:0]{index=0}  
-- Architecture & sharding requirements (Ultimo, Kafka, API gateway)  
+- It shows how entities connect inside the Job Manager databases.
+- It also shows how Job Manager links to the **Job Applicant** subsystem using IDs/events (no hard FK across subsystems).
 
-It includes:
+Cardinalities are expressed as:
 
-- Relationship type (1:1, 1:N, N:M)  
-- Cardinality & optionality  
-- Cascade rules  
-- Join tables  
-- Sharding + microservice considerations  
-- Explicit distinction between relational vs. embedded structures  
+- `1` — exactly one  
+- `0..1` — zero or one  
+- `0..N` — zero or many  
+- `1..N` — one or many  
 
 ---
 
-# 1. Company-Centric Relationships
+## 1. Company, Auth & Profile
 
-## 1.1 Company ↔ CompanyPublicProfile  
+### 1.1 Company → AuthToken
 
-**Type:** 1 : 1  
-
-**Cardinality:**  
-- Company → exactly **1** CompanyPublicProfile  
-- CompanyPublicProfile → exactly **1** Company  
-
-**FK:** `CompanyPublicProfile.companyId`  
-
-**Cascade:**  
-- Delete Company → delete CompanyPublicProfile  
-
-**Notes:**  
-- Profile stores public-facing info (name, About Us, “Who we are looking for”, etc.) as required by Profile Management.  
-- Private account data (email, password, phone, address) remains in `Company`.  
-
-**SRS:** JM §1 (Registration), §3.1–3.2 (Profile Management)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can have **0..N** `AuthToken` (sessions).  
+  - One `AuthToken` belongs to **exactly 1** `Company`.
+- **Direction:** `Company.companyId` ↔ `AuthToken.companyId`.  
+- **Usage:**
+  - Login creates new `AuthToken` rows.
+  - Logout / revoke sets `AuthToken.isRevoked = true` and adds entry in Redis.
 
 ---
 
-## 1.2 Company ↔ CompanyAuthToken  
+### 1.2 Company → PublicProfile
 
-**Type:** 1 : N  
-
-**Cardinality:**  
-- Company → **0..n** tokens  
-- CompanyAuthToken → exactly **1** Company  
-
-**FK:** `CompanyAuthToken.companyId`  
-
-**Cascade:**  
-- Delete Company → delete tokens  
-
-**Notes:**  
-- Stores metadata for JWS/JWE tokens, refresh token, revocation status, brute-force counters, etc., mirroring Applicant side AuthToken.  
-- Redis stores revocation/blacklist state for JWE tokens.  
-
-**SRS:** JM §2.1–2.3 (Login, token management)  
+- **Relationship type:** 1-to-1  
+- **Cardinality:**
+  - One `Company` has **0..1** `PublicProfile`.  
+  - One `PublicProfile` belongs to **exactly 1** `Company`.
+- **Direction:** `PublicProfile.companyId` = `Company.companyId` (also PK).  
+- **Usage:**
+  - Company onboarding may start without a public profile.
+  - Applicant side uses this profile when showing job details and company pages.
 
 ---
 
-## 1.3 Company ↔ CompanyMedia  
+### 1.3 Company → CompanyMedia
 
-**Type:** 1 : N  
-
-**Cardinality:**  
-- Company → **0..n** media items  
-- CompanyMedia → exactly **1** Company  
-
-**FK:** `CompanyMedia.companyId`  
-
-**Cascade:**  
-- Delete Company → delete CompanyMedia  
-
-**Notes:**  
-- Stores logo + gallery media (events, activities, etc.).  
-- Only URLs/metadata are stored; binary files live in object storage.
-
-**SRS:** JM §3.2.1–3.2.2 (Logo and gallery uploads)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can have **0..N** `CompanyMedia` items.  
+  - One `CompanyMedia` item belongs to **exactly 1** `Company`.
+- **Direction:** `CompanyMedia.companyId` → `Company.companyId`.  
+- **Usage:**
+  - Profile gallery (photos, office shots, etc.).
+  - When a company is deleted/disabled, media records are soft-deleted or marked inactive and their files can be removed from object storage.
 
 ---
 
-## 1.4 Company ↔ JobPost  
+## 2. Job Posts & Skills
 
-**Type:** 1 : N  
+### 2.1 Company → JobPost
 
-**Cardinality:**  
-- Company → **0..n** JobPosts  
-- JobPost → exactly **1** Company  
-
-**FK:** `JobPost.companyId`  
-
-**Cascade:**  
-- **Soft delete Company**, **do not physically delete JobPosts**.  
-- When a company is “removed” from UI, mark `Company.isActive = false` and archive its job posts instead of deleting rows.  
-
-**Reasoning:**  
-- Job Applicant subsystem stores applications referencing JobPosts and Companies via external IDs; those should remain valid for historical queries and analytics.  
-
-**SRS:** JM §3 (Profile Management), §4 (Job Post Management), JA §4 (Applications reference JobPost/Company)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can create **0..N** `JobPost`.  
+  - One `JobPost` belongs to **exactly 1** `Company`.
+- **Direction:** `JobPost.companyId` → `Company.companyId`.  
+- **Usage:**
+  - Job list on the company dashboard.
+  - Applicant side references `JobPost.jobPostId` in `Application.jobPostId`.
 
 ---
 
-## 1.5 Company ↔ CompanySearchProfile  
+### 2.2 JobPost → JobPostSkill → SkillTag
 
-**Type:** 1 : N  
+This mirrors the Applicant side relation `Applicant → ApplicantSkill → SkillTag`.
 
-**Cardinality:**  
-- Company → **0..n** search profiles  
-- CompanySearchProfile → exactly **1** Company  
+- **Core idea:**  
+  - `JobPostSkill` links each `JobPost` to the global `SkillTag` catalog and records how important each skill is.
 
-**FK:** `CompanySearchProfile.companyId`  
+#### 2.2.1 JobPost → JobPostSkill
 
-**Cascade:**  
-- Delete Company → delete all CompanySearchProfiles  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `JobPost` can have **0..N** `JobPostSkill` rows.  
+  - One `JobPostSkill` belongs to **exactly 1** `JobPost`.
+- **Direction:** `JobPostSkill.jobPostId` → `JobPost.jobPostId`.  
 
-**Notes:**  
-- Each profile contains: desired technical background tags, employment status (multi-select), country, salary range, highest education, active flag, etc.  
-- Used by Kafka-based real-time matching service for premium companies.  
+#### 2.2.2 SkillTag → JobPostSkill
 
-**SRS:** JM §6.2.1–6.2.4, §6.3.1 (premium search & real-time notifications)  
+- **Relationship type:** 1-to-many (catalog to usage)  
+- **Cardinality:**
+  - One `SkillTag` can be used in **0..N** `JobPostSkill` rows.  
+  - One `JobPostSkill` references **exactly 1** `SkillTag`.
+- **Direction:** `JobPostSkill.skillId` → `SkillTag.skillId`.  
 
----
+#### 2.2.3 Overall view
 
-## 1.6 Company ↔ CompanySubscription  
+- **JobPost** ↔ **SkillTag** is **many-to-many** via `JobPostSkill`.  
+- The structure is intentionally symmetric with `ApplicantSkill` on the Applicant side:
 
-**Type:** 1 : N  
+  - Applicant side: `Applicant` – `ApplicantSkill(id, applicantId, skillId, proficiency, ...)` – `SkillTag`.  
+  - Manager side: `JobPost` – `JobPostSkill(id, jobPostId, skillId, importance, ...)` – `SkillTag`.
 
-**Cardinality:**  
-- Company → **0..n** subscriptions (history of renewals)  
-- CompanySubscription → exactly **1** Company  
-
-**FK:** `CompanySubscription.companyId`  
-
-**Cascade:**  
-- Delete Company → delete CompanySubscription rows  
-
-**Notes:**  
-- At business level, only **one active subscription** per company at a time.  
-- Stores plan type, start/expiry dates, status, etc.  
-
-**SRS:** JM §6.1.1–6.1.2 (Premium company subscription)  
+- **Business rules:**
+  - Unique (`jobPostId`, `skillId`) pair in `JobPostSkill`.  
+  - Changing the list of skills for a job must trigger a *job-post-updated* event so all search/matching logic stays correct.
 
 ---
 
-## 1.7 Company ↔ PaymentTransaction  
+### 2.3 JobPost → Application (Job Applicant subsystem)
 
-**Type:** 1 : N  
-
-**Cardinality:**  
-- Company → **0..n** payment transactions  
-- PaymentTransaction → exactly **1** Company  
-
-**FK:** `PaymentTransaction.companyId`  
-
-**Cascade:**  
-- Delete Company → **keep or archive PaymentTransactions** (no hard delete recommended).  
-
-**Reasoning:**  
-- Payment records are part of financial/audit trail; in practice they should rarely be removed.  
-- In the conceptual ERD we can allow cascade, but in implementation we’ll probably soft-delete the company and retain payments.  
-
-**Notes:**  
-- PaymentTransaction also links to CompanySubscription (see 4.1).  
-- Same entity/table is reused by both Applicant and Company sides of the payment API.  
-
-**SRS:** JM §6.1.2, §7 (Payment Service Development)  
+- **Relationship type:** 1-to-many (conceptual, cross-subsystem)  
+- **Cardinality:**
+  - One `JobPost` can have **0..N** `Application` records (on Applicant side).  
+  - One `Application` is submitted to **exactly 1** `JobPost`.
+- **Direction:**
+  - Applicant DB stores `Application.jobPostId` as a string ID coming from Job Manager.
+- **Notes:**
+  - No DB-level foreign key between subsystems; integrity is enforced at API and event level.
+  - When a job is archived/expired, Applicant UI stops allowing new applications but keeps old applications for history.
 
 ---
 
-## 1.8 Company ↔ CompanyNotification  
+## 3. Headhunting & Applicant Flags
 
-**Type:** 1 : N  
+### 3.1 Company → SearchProfile
 
-**Cardinality:**  
-- Company → **0..n** notifications  
-- CompanyNotification → exactly **1** Company  
-
-**FK:** `CompanyNotification.companyId`  
-
-**Cascade:**  
-- Delete Company → delete CompanyNotifications  
-
-**Notes:**  
-- Stores in-system + Kafka-driven notifications (e.g., “new applicant matches your profile”, “subscription about to expire”).  
-- Email notifications still use this record for audit / read tracking where needed (e.g., 7 days before expiry).  
-
-**SRS:** JM §6.1.2 (expiry notifications), §6.3.1 (real-time notifications)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can define **0..N** `SearchProfile`.  
+  - One `SearchProfile` belongs to **exactly 1** `Company`.
+- **Direction:** `SearchProfile.companyId` → `Company.companyId`.  
+- **Usage:**
+  - Each SearchProfile encodes desired country, salary range, education and `technicalBackground` (array of `skillId`).
+  - When Applicant subsystem emits `applicant-created` / `applicant-updated` events, the Applicant Search component runs matching logic against active `SearchProfile` rows.
 
 ---
 
-## 1.9 Company ↔ ApplicantFlag  
+### 3.2 Company ↔ Applicant (via ApplicantFlag)
 
-*(This entity is the Job Manager mirror of “Warning / Favorite” requirement.)*  
-
-**Type:** 1 : N  
-
-**Cardinality:**  
-- Company → **0..n** ApplicantFlags  
-- ApplicantFlag → exactly **1** Company  
-
-**FK:** `ApplicantFlag.companyId`  
-
-**Cascade:**  
-- Delete Company → delete ApplicantFlags  
-
-**Notes:**  
-- `ApplicantFlag` holds: `companyId`, external `applicantId` (from Applicant subsystem), and `status` enum (`Warning`,`Favorite`).  
-- Status is shown in Applicant search results and on the applicant’s profile/application view.  
-
-**SRS:** JM §5.3.2 (mark Applicant as Warning/Favorite)  
+- **Relationship type:** many-to-many via `ApplicantFlag`  
+- **Cardinality:**
+  - One `Company` can flag **0..N** different applicants.  
+  - One applicant can be flagged by **0..N** different companies.
+- **Direction:**
+  - `ApplicantFlag.companyId` → `Company.companyId`.  
+  - `ApplicantFlag.applicantId` is an ID referring to the Applicant subsystem.
+- **Notes:**
+  - At most one `ApplicantFlag` per (`companyId`, `applicantId`) pair.  
+  - `status` is `WARNING` or `FAVORITE`, used when:
+    - Showing applicant search results for a company.
+    - Viewing a specific application for that company.
 
 ---
 
-# 2. JobPost & Skill Relationships
+## 4. Subscription & Payments
 
-## 2.1 JobPost ↔ JobPostSkill (junction / true N:M)  
+### 4.1 Company → Subscription
 
-**Type:** 1 : N from JobPost to JobPostSkill  
-Represents **N:M** relationship between JobPost and SkillTag.  
-
-**Cardinality:**  
-- JobPost → **0..n** JobPostSkill rows  
-- SkillTag → **0..n** JobPostSkill rows  
-
-**FKs:**  
-- `JobPostSkill.jobPostId` → JobPost  
-- `JobPostSkill.skillId` → SkillTag  
-
-**Cascade:**  
-- Delete JobPost → delete JobPostSkill  
-- Delete SkillTag → delete JobPostSkill (or soft-delete SkillTag)  
-
-**Notes:**  
-- These tags are used for full-text search & Applicant matching on JobPosts.  
-
-**SRS:** JM §4.2.1 (skills/competencies tags on Job Posts)  
+- **Relationship type:** 1-to-many (historical)  
+- **Cardinality:**
+  - One `Company` can have **0..N** `Subscription` records over time.  
+  - A `Subscription` belongs to **exactly 1** `Company`.
+- **Direction:** `Subscription.companyId` → `Company.companyId`.  
+- **Business rules:**
+  - At most one subscription per company with `status = ACTIVE`.  
+  - Subscription status drives `Company.isPremium`.
 
 ---
 
-## 2.2 SkillTag ↔ JobPostSkill  
+### 4.2 Subscription → PaymentTransaction
 
-**Type:** 1 : N  
-
-**Cardinality:**  
-- SkillTag → **0..n** JobPostSkill rows  
-
-**Cascade:**  
-- Recommended: **soft-delete SkillTag** and keep JobPostSkill rows, so historical job posts still show their tags.  
-
-**Notes:**  
-- `SkillTag` is a shared catalog across subsystems. Applicant side also uses the same concept for resume & profile search.  
-
-**SRS:** JM §4.2.1, JA §3.2.2 & §5.2.2 (shared skill tagging concept)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Subscription` can be associated with **0..N** `PaymentTransaction`.  
+  - One `PaymentTransaction` references **0..1** `Subscription` (it may be null in failure cases or one-off flows).
+- **Direction:** `PaymentTransaction.subscriptionId` → `Subscription.subscriptionId` (string ID).  
+- **Usage:**
+  - Subscription renewal / initial purchase creates a `PaymentTransaction` row and updates `Subscription.lastPaymentId`.
 
 ---
 
-## 2.3 JobPost ↔ Embedded Structures (Non-Relationships)
+### 4.3 Company → PaymentTransaction
 
-These structures are stored inside JobPost as arrays / JSON fields and **do not** form separate ER entities:
-
-- **JobPost → EmploymentTypes (array)**  
-  - E.g., `["Full-time","Part-time","Internship"]`.  
-  - Stored as an array or normalized lookup, but conceptually treated as an embedded enumeration list.  
-
-- **JobPost → SalaryRange (min/max)**  
-  - Two scalar fields on JobPost; not a separate table.  
-
-- **JobPost → Location (City, Country)**  
-  - Scalars used for search and routing; no separate Location entity in conceptual model.  
-
-**SRS:** JM §4.1.x (job post attributes), §5.1.x (search criteria: location, employment type, etc.)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can have **0..N** `PaymentTransaction`.  
+  - One `PaymentTransaction` is linked to **exactly 1** `Company`.
+- **Direction:** `PaymentTransaction.companyId` → `Company.companyId`.  
+- **Usage:**
+  - Billing history screen for a company.
+  - Audit trails and debugging payment issues.
 
 ---
 
-# 3. Cross-Subsystem References (Applicants & Applications)
+## 5. Notifications
 
-These relationships are **conceptual** links to the **Job Applicant** subsystem; physically they are stored as external IDs (strings/UUIDs) with no DB-level foreign keys.
+### 5.1 Company → Notification
 
-## 3.1 JobPost ↔ Application (external, Applicant subsystem)  
-
-**Type:** N : 1 (from Application perspective)  
-
-**Conceptual Cardinality:**  
-- Application (in Applicant DB) → exactly **1** JobPost (in Manager DB)  
-- JobPost → **0..n** Applications  
-
-**Storage:**  
-- Applicant subsystem keeps `Application.jobPostId` as an external ID referencing Job Manager’s `JobPost.jobPostId`.  
-
-**Cascade:**  
-- No cascade across databases.  
-- If a JobPost is archived/soft-deleted, applications remain, but UI hides or marks them as “Job no longer visible”.  
-
-**SRS:** JA §4 (Applications), JM §4.2.2 & §4.3.2 (display applications & CV/CL)  
+- **Relationship type:** 1-to-many  
+- **Cardinality:**
+  - One `Company` can receive **0..N** `Notification`.  
+  - One `Notification` belongs to **exactly 1** recipient (company in this subsystem).
+- **Direction:** `Notification.recipientId` = `Company.companyId`.  
+- **Usage:**
+  - Types:
+    - `JobMatch` – new/updated applicant matches a `SearchProfile`.  
+    - `ApplicationUpdate` – new application or status change for one of the company’s jobs.  
+    - `SubscriptionReminder` – upcoming expiry or billing issues.  
+    - `System` – general system messages.
+  - Channel:
+    - `inApp` – shows in notification dropdown.  
+    - `email` – sent via email provider.
 
 ---
 
-## 3.2 Company ↔ Application (external, Applicant subsystem)  
+## 6. Cross-Subsystem Events (Kafka)
 
-**Type:** N : 1 (from Application perspective)  
+Even though they are not “ERD relationships” in the strict sense, the SRS and architecture require some important **event-based links** between Job Manager and Job Applicant.
 
-**Conceptual Cardinality:**  
-- Application → exactly **1** Company  
-- Company → **0..n** Applications  
+### 6.1 Events produced by Job Manager
 
-**Storage:**  
-- Applicant DB stores `Application.companyId` as external ID corresponding to Job Manager `Company.companyId`.  
+- **JobPostCreated**
+  - Producer: Job Post Service  
+  - Payload (simplified): `jobPostId`, `companyId`, `title`, `employmentTypes`, `skills` (list of `skillId`), `salaryType/salaryMin/salaryMax`, `country`, `postedAt`.  
+  - Consumers: Applicant search/indexing, Applicant notifications.
 
-**Cascade:**  
-- No cross-DB cascade.  
-- When Company is soft-deleted, applications are still valid records in Applicant subsystem.  
+- **JobPostUpdated**
+  - Producer: Job Post Service  
+  - Triggered especially when `JobPostSkill` changes.  
+  - Same consumers as above.
 
-**SRS:** JA §4 (Applications), JM §1–4 (Company & Job Posts)  
-
----
-
-## 3.3 ApplicantFlag ↔ Applicant (external, Applicant subsystem)  
-
-**Type:** N : 1 (from ApplicantFlag perspective)  
-
-**Cardinality:**  
-- ApplicantFlag → exactly **1** Applicant (external)  
-- Applicant → **0..n** flags from different companies  
-
-**Storage:**  
-- Job Manager DB stores `ApplicantFlag.applicantId` as external ID from Applicant DB.  
-- No physical FK constraint; consistency enforced via API.  
-
-**Cascade:**  
-- Applicant deletion/soft deletion is handled on Applicant side; Job Manager flags may be cleaned up via periodic jobs or Kafka signals if needed.  
-
-**SRS:** JM §5.3.2 (Warning/Favorite) + JA §4–5 (Applicant identity and search)  
+- **SubscriptionStatusChanged**
+  - Producer: Subscription Service  
+  - Payload: `companyId`, `subscriptionId`, `status`, `expiryDate`.  
+  - Consumers: 
+    - Profile / Company Service (update `Company.isPremium`).  
+    - Notification Service (`SubscriptionReminder`, `System` messages).
 
 ---
 
-# 4. Subscription ↔ PaymentTransaction
+### 6.2 Events consumed by Job Manager
 
-## 4.1 CompanySubscription ↔ PaymentTransaction  
+- **ApplicantCreated / ApplicantUpdated**
+  - Producer: Applicant Profile Service.  
+  - Consumer: Applicant Search / Premium logic on Job Manager side.  
+  - Effect: run matching against all active `SearchProfile` for premium companies and create `Notification` records of type `JobMatch`.
 
-**Type:** 1 : N  
-
-**Cardinality:**  
-- CompanySubscription → **0..n** PaymentTransactions  
-- PaymentTransaction → exactly **1** CompanySubscription  
-
-**FK:** `PaymentTransaction.subscriptionId`  
-
-**Cascade:**  
-- Delete CompanySubscription → delete PaymentTransactions (conceptual)  
-
-**Notes:**  
-- PaymentTransaction also keeps `companyId` to simplify queries and align with shared Payment API used by both subsystems.  
-- Supports multi-month renewals and repeated charges.  
-
-**SRS:** JM §6.1–6.2 (Subscription), §7 (Payment Service Development)  
+- **ApplicationSubmitted**
+  - Producer: Application Service (Applicant subsystem).  
+  - Consumers:
+    - Job Manager UI / backend to show incoming applications for `JobPost`.  
+    - Notification Service to send `ApplicationUpdate` notifications to the owning company.
 
 ---
 
-# 5. Embedded / Non-Relational Structures
+## 7. Relationship Summary Table
 
-These are modeled as JSON/array fields or scalar attributes and **do not** appear as entities in the ERD.
-
-## 5.1 CompanySearchProfile → TechnicalBackground (array of tags)  
-
-**Type:** Embedded tag list  
-
-**Notes:**  
-- Stored as an array of strings or tag IDs.  
-- Used for matching against Applicants’ skills tags via Kafka.  
-
-**SRS:** JM §6.2.1–6.2.2  
-
----
-
-## 5.2 CompanySearchProfile → EmploymentStatus (array of enums)  
-
-**Type:** Embedded multi-select  
-
-**Notes:**  
-- Values subset: `Full-time`, `Part-time`, `Fresher`, `Internship`, `Contract`.  
-- Stored as array; not a separate table.  
-
-**SRS:** JM §6.2.3  
+| From Entity    | To Entity       | Type         | Cardinality (From → To)         | Notes |
+|----------------|-----------------|-------------|----------------------------------|-------|
+| Company        | AuthToken       | 1 → 0..N    | Login sessions per company       |
+| Company        | PublicProfile   | 1 → 0..1    | Optional public profile          |
+| Company        | CompanyMedia    | 1 → 0..N    | Profile gallery items            |
+| Company        | JobPost         | 1 → 0..N    | Jobs owned by a company          |
+| JobPost        | JobPostSkill    | 1 → 0..N    | Skills attached to a job         |
+| SkillTag       | JobPostSkill    | 1 → 0..N    | Where a skill is required        |
+| Company        | SearchProfile   | 1 → 0..N    | Saved headhunting profiles       |
+| Company        | ApplicantFlag   | 1 → 0..N    | Flags set by a company           |
+| Applicant (JA) | ApplicantFlag   | 1 → 0..N    | Conceptual (cross-subsystem)     |
+| Company        | Subscription    | 1 → 0..N    | Historical subscription records  |
+| Subscription   | PaymentTransaction | 1 → 0..N | Payments for a given subscription|
+| Company        | PaymentTransaction | 1 → 0..N | All payments by a company        |
+| Company        | Notification    | 1 → 0..N    | Notifications received by company|
+| JobPost        | Application (JA)| 1 → 0..N    | Applications (Applicant side)    |
 
 ---
-
-## 5.3 CompanySearchProfile → SalaryRange (min/max)  
-
-**Type:** Scalar pair (min, max)  
-
-**Notes:**  
-- Both are columns on CompanySearchProfile; not a separate SalaryRange entity.  
-
-**SRS:** JM §6.2.4  
-
----
-
-## 5.4 CompanyPublicProfile → “Who we are looking for”  
-
-**Type:** Single text field  
-
-**Notes:**  
-- Describes desired personality & values, not used for structured matching; stays as plain text.  
-
-**SRS:** JM §3.1.2  
-
----
-
-# 6. Sharding & Microservice Considerations
-
-- **Shard Key (Job Manager):** `Company.country` (and/or derived `Company.shardKey`).  
-  - All Company-owned entities (CompanyAuthToken, CompanyPublicProfile, CompanyMedia, JobPost, CompanySearchProfile, CompanySubscription, CompanyNotification, ApplicantFlag) must live in the **same shard** as their Company.  
-- **Cross-Subsystem Relations:**  
-  - Application → JobPost / Company, ApplicantFlag → Applicant are **references only** (string/UUID IDs), **no physical FK** across databases.  
-- **Microservice Ownership:**  
-  - Company Service owns Company & CompanyPublicProfile & AuthToken.  
-  - JobPost Service owns JobPost & JobPostSkill.  
-  - Subscription/Payment Service owns CompanySubscription & PaymentTransaction.  
-  - Notification Service consumes Kafka events and writes CompanyNotification (and potentially publishes them via WebSocket/email).  
-- **Kafka Integration:**  
-  - JobPost and CompanySearchProfile changes publish to Kafka to notify Applicant side or trigger Applicant matching.  
-  - Applicant profile updates (from Applicant subsystem) are consumed here to generate CompanyNotification for premium companies.  
-
----
-
-# 7. Relationship Summary Table
-
-| Relationship                          | Type    | Cardinality         | Optionality (child)             | Cascade / Policy                     |
-|--------------------------------------|---------|---------------------|---------------------------------|--------------------------------------|
-| Company — CompanyPublicProfile       | 1 : 1   | 1 ↔ 1               | Profile not optional in design  | Delete Company → delete Profile      |
-| Company — CompanyAuthToken          | 1 : N   | 1 ↔ 0..n            | Tokens optional                 | Delete Company → delete Tokens       |
-| Company — CompanyMedia               | 1 : N   | 1 ↔ 0..n            | Media optional                  | Delete Company → delete Media        |
-| Company — JobPost                    | 1 : N   | 1 ↔ 0..n            | JobPosts optional               | **Soft-delete Company**, archive JobPosts |
-| Company — CompanySearchProfile       | 1 : N   | 1 ↔ 0..n            | Search profiles optional        | Delete Company → delete Profiles     |
-| Company — CompanySubscription        | 1 : N   | 1 ↔ 0..n            | Subscriptions optional          | Delete Company → delete Subscriptions|
-| Company — PaymentTransaction         | 1 : N   | 1 ↔ 0..n            | Payments optional               | Prefer keep for audit (no hard delete) |
-| Company — CompanyNotification        | 1 : N   | 1 ↔ 0..n            | Notifications optional          | Delete Company → delete Notifications|
-| Company — ApplicantFlag              | 1 : N   | 1 ↔ 0..n            | Flags optional                  | Delete Company → delete Flags        |
-| JobPost — JobPostSkill               | 1 : N   | 1 ↔ 0..n            | Tags optional                   | Delete JobPost → delete JobPostSkill |
-| SkillTag — JobPostSkill              | 1 : N   | 1 ↔ 0..n            | Links optional                  | Soft-delete SkillTag, clean links    |
-| JobPost — Application (external)     | N : 1   | n ↔ 1               | Application must have JobPost   | No cross-DB cascade                  |
-| Company — Application (external)     | N : 1   | n ↔ 1               | Application must have Company   | No cross-DB cascade                  |
-| CompanySubscription — PaymentTransaction | 1 : N | 1 ↔ 0..n          | Payment optional per subscription | Delete Subscription → delete Payments (conceptually) |
-| Company — Shard (logical)            | 1 : 1   | 1 ↔ 1               | –                               | Child entities co-located in shard   |
-
----
-
