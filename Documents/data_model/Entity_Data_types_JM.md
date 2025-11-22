@@ -1,337 +1,258 @@
-# DM-02 — Entities, Attributes & Data Types (Job Manager Subsystem)
+# 📌 DM-02 — Entities & Data Types (Job Manager Subsystem)
+> Based on: DM-01 Entities List — Job Manager  
+> Scope: Sections 1–7 of EEET2582_DevVision-JobManager-v1.1.pdf
 
-> Based on DM-01 – Job Manager  
-> Aligned with: JobApplicant DM-01/ERD + Container Diagram + both SRSs  
-> DB assumption: PostgreSQL for relational data, Redis for token revocation
+This document refines **DM-01** by specifying attribute-level data types and constraints for each entity in the Job Manager subsystem.
 
-For each entity we specify:
+Conventions:
 
-- Attributes with types and constraints (conceptual, not DDL)
-- Important validation rules
-- Notes on how it integrates with other services (especially Applicant side)
+- **String (uuid)** – RFC-4122 UUID stored as string.
+- **Date** – ISO 8601 date-time in UTC.
+- **Number** – Numeric type (`int` / `decimal`) depending on usage.
+- `| null` – attribute may be absent / NULL.
+- **PK** – Primary Key, **FK** – Foreign Key, **UQ** – Unique.
 
 ---
 
 ## 🟦 1. Company
 
-**OwnedByService:** Profile Management Service  
-**DBType:** Postgres  
-**Sharded:** YES – shardKey = `country`  
+Core organisational profile of a hiring company.
 
-### Attributes
-
-- `companyId : String (uuid)` – **PK**, unique company identifier.  
-- `companyName : String` – official company name (max ~200 chars).  
-- `email : String` – login + contact email, **unique**, case-insensitive.  
-- `passwordHash : String | null` – hashed password for local accounts; `null` for SSO-only.  
-- `phoneNumber : String | null` – company phone, E.164 format (e.g. `+84…`).  
-- `streetAddress : String | null` – street + number.  
-- `city : String | null` – city / province.  
-- `country : String` – country of operation, used as shard key.  
-- `shardKey : String` – same value as `country`.  
-- `isEmailVerified : Boolean` – default `false`.  
-- `isActive : Boolean` – default `true`; used for soft-delete / suspension.  
-- `ssoProvider : String (enum: local | google | microsoft | facebook | github) | null`.  
-- `ssoId : String | null` – external identity ID from SSO provider.  
-- `isPremium : Boolean` – cached flag derived from latest `Subscription.status`.  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Validation & Notes
-
-- `email` must be unique; only one active account per email.  
-- When `ssoProvider != 'local'` we may allow `passwordHash = null`.  
-- Changing `status` of subscriptions should update `isPremium`.
+| Attribute    | Type           | Constraints / Default                        | Description |
+|-------------|----------------|----------------------------------------------|-------------|
+| companyId   | String (uuid)  | PK, generated UUID                           | Company identifier used across services. |
+| companyName | String         | required                                     | Official company name. |
+| phoneNumber | String         | optional                                     | Contact phone (international format). |
+| streetAddress | String       | optional                                     | Street + number. |
+| city        | String         | optional                                     | City or region. |
+| country     | String         | required                                     | Country of operation. |
+| shardKey    | String         | required, = `country`                        | Partition key for sharding. |
+| isActive    | Boolean        | default: `true`                              | Whether the company account is enabled. |
+| isPremium   | Boolean        | default: `false`                             | Denormalised flag from Subscription status. |
+| createdAt   | Date           | required                                     | Creation timestamp. |
+| updatedAt   | Date           | required                                     | Last update timestamp. |
 
 ---
 
-## 🟦 2. AuthToken
+## 🟧 2. AuthAccount (Authentication – Login Identity)
 
-**OwnedByService:** Authentication Service  
-**DBType:** Postgres (metadata) + Redis (revocation)  
-**Sharded:** NO  
+Login identity and credentials for a company account.
 
-### Attributes
-
-- `tokenId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – references `Company.companyId`.  
-- `accessToken : String` – encrypted JWE access token.  
-- `refreshToken : String` – opaque refresh token.  
-- `issuedAt : Date` – token issued time.  
-- `expiresAt : Date` – token expiry.  
-- `isRevoked : Boolean` – default `false`.  
-- `failedAttempts : Number` – default `0`.  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Validation & Notes
-
-- Token is valid only if `isRevoked = false` and `now < expiresAt`.  
-- Redis holds a denylist cache keyed by `tokenId` / `jti` for fast revocation checks.
+| Attribute      | Type            | Constraints / Default                         | Description |
+|---------------|-----------------|-----------------------------------------------|-------------|
+| authId        | String (uuid)   | PK, generated UUID                            | Authentication account ID. |
+| companyId     | String (uuid)   | FK → `Company.companyId`, required           | Linked company. |
+| email         | String          | required, UQ, lowercase                       | Login email. |
+| passwordHash  | String          | nullable (for SSO-only accounts)              | Hashed password. |
+| isEmailVerified | Boolean       | default: `false`                              | Email verification status. |
+| ssoProvider   | String          | enum: `local` \| `google` \| `microsoft` \| `facebook` \| `github`; nullable | Source of authentication. |
+| ssoId         | String          | nullable                                      | External SSO subject identifier. |
+| createdAt     | Date            | required                                      | Creation timestamp. |
+| updatedAt     | Date            | required                                      | Last update timestamp. |
 
 ---
 
-## 🟦 3. PublicProfile
+## 🟪 3. AuthToken (Authorization – API Access Token)
 
-**OwnedByService:** Profile Management Service  
-**DBType:** Postgres  
-**Sharded:** YES (same shard as Company)  
+Metadata for access/refresh tokens issued after authentication.
 
-### Attributes
-
-- `companyId : String (uuid)` – **PK**, also FK to `Company`.  
-- `displayName : String` – public brand name (often same as `companyName`).  
-- `aboutUs : String` – long description.  
-- `whoWeAreLookingFor : String` – description of target applicants.  
-- `websiteUrl : String | null` – company website.  
-- `industryDomain : String` – e.g. “FinTech”, “AI”.  
-- `logoUrl : String | null` – logo image URL.  
-- `bannerUrl : String | null` – header image URL.  
-- `country : String` – public country (duplicated from Company).  
-- `city : String | null` – public city.  
-- `createdAt : Date`  
-- `updatedAt : Date`
+| Attribute      | Type           | Constraints / Default                         | Description |
+|----------------|----------------|-----------------------------------------------|-------------|
+| tokenId        | String (uuid)  | PK, generated UUID                            | Token identifier. |
+| authId         | String (uuid)  | FK → `AuthAccount.authId`, required           | Owning auth account. |
+| accessToken    | String         | required                                      | Encrypted JWE / JWT string. |
+| refreshToken   | String         | required                                      | Long-lived refresh token. |
+| issuedAt       | Date           | required                                      | Issued timestamp. |
+| expiresAt      | Date           | required                                      | Expiry timestamp. |
+| isRevoked      | Boolean        | default: `false`                              | Revocation flag (used with Redis denylist). |
+| failedAttempts | Number         | default: `0`                                  | Failed login attempts (for brute-force protection). |
+| createdAt      | Date           | required                                      | Creation timestamp. |
+| updatedAt      | Date           | required                                      | Last update timestamp. |
 
 ---
 
-## 🟦 4. CompanyMedia
+## 🟦 4. PublicProfile
 
-**OwnedByService:** Profile Management Service  
-**DBType:** Postgres  
-**Sharded:** YES  
+Public employer brand information visible to applicants.
 
-### Attributes
-
-- `mediaId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – FK to `Company`.  
-- `url : String` – media file URL in object storage.  
-- `mediaType : String (enum: image | video)`  
-- `title : String | null` – short caption.  
-- `description : String | null` – longer description.  
-- `orderIndex : Number` – display order (default 0).  
-- `isActive : Boolean` – default `true`.  
-- `uploadedAt : Date`
-
----
-
-## 🟩 5. JobPost
-
-**OwnedByService:** Job Post Service  
-**DBType:** Postgres  
-**Sharded:** YES (by `companyId` / `country`)  
-
-### Attributes
-
-- `jobPostId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – FK to `Company`.  
-- `title : String` – job title.  
-- `description : String` – full job description.  
-- `employmentTypes : Array<String>` – values from enum `Full-time | Part-time | Fresher | Internship | Contract`.  
-- `postedAt : Date` – publish date/time.  
-- `expiryDate : Date | null` – optional expiration.  
-- `salaryType : String (enum: RANGE | ABOUT | UP_TO | FROM | NEGOTIABLE)`  
-- `salaryMin : Number | null` – required for `RANGE` / `FROM`.  
-- `salaryMax : Number | null` – required for `RANGE` / `UP_TO`.  
-- `salaryCurrency : String` – e.g. “USD”, “VND”.  
-- `city : String | null`  
-- `country : String` – used in Applicant search + sharding.  
-- `isPublished : Boolean` – default `false`.  
-- `status : String (enum: DRAFT | PUBLISHED | ARCHIVED)`  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Validation
-
-- `employmentTypes`: must not contain both `Full-time` **and** `Part-time` at the same time (mutually exclusive).  
-- Salary rules:  
-  - `RANGE` → `salaryMin` + `salaryMax` required, `salaryMin ≤ salaryMax`.  
-  - `FROM` → `salaryMin` required, `salaryMax` null.  
-  - `UP_TO` → `salaryMax` required, `salaryMin` may default to `0`.  
-- Only `status = PUBLISHED` and `isPublished = true` should be visible to applicants.
+| Attribute          | Type           | Constraints / Default                        | Description |
+|--------------------|----------------|----------------------------------------------|-------------|
+| companyId          | String (uuid)  | PK, FK → `Company.companyId`                 | Same ID as Company (1:1). |
+| displayName        | String         | required                                     | Public display / brand name. |
+| aboutUs            | String         | optional (text)                              | “About us” content. |
+| whoWeAreLookingFor | String         | optional (text)                              | Description of desired candidates. |
+| websiteUrl         | String         | optional                                     | Public website URL. |
+| industryDomain     | String         | required                                     | Industry / CS domain (FinTech, AI, etc.). |
+| logoUrl            | String         | optional                                     | Logo image URL. |
+| bannerUrl          | String         | optional                                     | Header/banner image URL. |
+| country            | String         | required                                     | Publicly displayed country. |
+| city               | String         | optional                                     | Publicly displayed city. |
+| createdAt          | Date           | required                                     | Creation timestamp. |
+| updatedAt          | Date           | required                                     | Last update timestamp. |
 
 ---
 
-## 🟩 6. JobPostSkill (Company-side link to SkillTag)
+## 🟦 5. CompanyMedia
 
-> **This is the Company version of ApplicantSkill.**  
-> We mirror the Applicant naming pattern to avoid mistakes in integration.
+Profile gallery media.
 
-**OwnedByService:** Job Post Service  
-**DBType:** Postgres  
-**Sharded:** YES (same shard as JobPost)  
-
-### Attributes
-
-- `id : String (uuid)` – **PK**.  
-- `jobPostId : String (uuid)` – FK to `JobPost.jobPostId`.  
-- `skillId : String (uuid)` – FK-by-ID to `SkillTag.skillId` (same catalog as ApplicantSkill).  
-- `importance : String (enum: MUST_HAVE | NICE_TO_HAVE)` – requirement level for this skill.  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Validation & Notes
-
-- There must be **at most one** row per pair (`jobPostId`, `skillId`) – enforce via unique index.  
-- This structure intentionally mirrors **ApplicantSkill**:  
-  - `id` as primary key.  
-  - `skillId` is the same UUID values as on the Applicant side.  
-- Any create/update/delete of JobPostSkill should emit a `job-post-updated` event so Applicant search & notifications can refresh safely.
+| Attribute   | Type           | Constraints / Default                         | Description |
+|------------|----------------|-----------------------------------------------|-------------|
+| mediaId    | String (uuid)  | PK                                            | Media identifier. |
+| companyId  | String (uuid)  | FK → `Company.companyId`, required           | Owning company. |
+| url        | String         | required                                      | Object storage URL. |
+| mediaType  | String         | enum: `image` \| `video`, required            | Type of media. |
+| title      | String         | optional                                      | Short caption / title. |
+| description| String         | optional (text)                               | Longer description. |
+| orderIndex | Number         | optional                                      | Ordering index in gallery. |
+| isActive   | Boolean        | default: `true`                               | Soft-delete flag. |
+| uploadedAt | Date           | required                                      | Upload timestamp. |
 
 ---
 
-## 🟦 7. SkillTag (Shared skill catalog)
+## 🟧 6. JobPost
 
-> Match **exactly** the Applicant-side SkillTag design (your screenshot) so both sides speak the same language.
+Company job posting.
 
-**OwnedByService:** Job Post / Skill Catalog Service  
-**DBType:** Catalog DB (Mongo/Postgres)  
-**Sharded:** NO  
-
-### Attributes
-
-- `skillId : String (uuid)` – **PK**.  
-- `name : String (unique, lowercase)` – human-readable skill name; stored lowercase.  
-- `category : String | null` – optional grouping (e.g. `frontend`, `database`).  
-- `createdAt : Date`
-
-### Notes
-
-- `skillId` is referenced by:  
-  - `ApplicantSkill.skillId` (Applicant side)  
-  - `JobPostSkill.skillId` (Manager side)  
-  - `SearchProfile.technicalBackground` (arrays of `skillId`)  
-- All consumers treat this as a **read-only catalog**; updates happen via dedicated admin tools.
-
----
-
-## 🟨 8. SearchProfile (Company headhunting profile)
-
-**OwnedByService:** Premium Subscription Service / Applicant Search Service  
-**DBType:** Postgres  
-**Sharded:** YES (by `companyId`)  
-
-### Attributes
-
-- `searchProfileId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – FK to `Company`.  
-- `profileName : String` – label, e.g. “Senior Backend VN”.  
-- `desiredCountry : String` – target applicant country.  
-- `desiredMinSalary : Number` – min expected salary.  
-- `desiredMaxSalary : Number | null` – null = no upper bound.  
-- `highestEducation : String (enum: Bachelor | Master | Doctorate)`  
-- `technicalBackground : Array<String(uuid)>` – list of `skillId` from `SkillTag`.  
-- `employmentStatus : Array<String>` – enum values as in `employmentTypes`.  
-- `isActive : Boolean` – default `true`.  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Validation
-
-- If `desiredMaxSalary` not null → `desiredMinSalary ≤ desiredMaxSalary`.  
-- `technicalBackground` array should hold valid existing `skillId`s.
+| Attribute       | Type            | Constraints / Default                         | Description |
+|-----------------|-----------------|-----------------------------------------------|-------------|
+| jobPostId       | String (uuid)   | PK                                            | Job post identifier. |
+| companyId       | String (uuid)   | FK → `Company.companyId`, required           | Owning company. |
+| title           | String          | required                                      | Job title. |
+| description     | String          | required (text)                               | Full job description. |
+| employmentTypes | Array\<String>  | required, values from enum: `Full-time`, `Part-time`, `Fresher`, `Internship`, `Contract` | Supported employment types. |
+| postedAt        | Date            | required                                      | Published/created date. |
+| expiryDate      | Date            | optional                                      | Post expiry date. |
+| salaryType      | String          | enum: `RANGE` \| `ABOUT` \| `UP_TO` \| `FROM` \| `NEGOTIABLE`, required | How salary is represented. |
+| salaryMin       | Number          | optional; required when `salaryType` ∈ {`RANGE`,`FROM`} | Minimum salary. |
+| salaryMax       | Number          | optional; required when `salaryType` ∈ {`RANGE`,`UP_TO`} | Maximum salary. |
+| salaryCurrency  | String          | required (e.g. `USD`, `VND`)                  | Currency code. |
+| city            | String          | optional                                      | Job location city. |
+| country         | String          | required                                      | Job location country. |
+| isPublished     | Boolean         | default: `false`                              | Visible to applicants when `true`. |
+| status          | String          | enum: `DRAFT` \| `PUBLISHED` \| `ARCHIVED`, required | Lifecycle state. |
+| createdAt       | Date            | required                                      | Creation timestamp. |
+| updatedAt       | Date            | required                                      | Last update timestamp. |
 
 ---
 
-## 🟨 9. ApplicantFlag
+## 🟧 7. JobPostSkill
 
-**OwnedByService:** Applicant Search Service  
-**DBType:** Postgres  
-**Sharded:** YES (by `companyId`)  
+Mapping between JobPost and SkillTag.
 
-### Attributes
+| Attribute  | Type           | Constraints / Default                         | Description |
+|-----------|----------------|-----------------------------------------------|-------------|
+| id        | String (uuid)  | PK                                            | Link row identifier. |
+| jobPostId | String (uuid)  | FK → `JobPost.jobPostId`, required           | Related job post. |
+| skillId   | String (uuid)  | FK → `SkillTag.skillId`, required            | Required skill. |
+| importance| String         | enum: `MUST_HAVE` \| `NICE_TO_HAVE`, required | Importance level. |
+| createdAt | Date           | required                                      | Creation timestamp. |
+| updatedAt | Date           | required                                      | Last update timestamp. |
 
-- `flagId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – FK to `Company`.  
-- `applicantId : String (uuid)` – external ID from Applicant subsystem.  
-- `status : String (enum: WARNING | FAVORITE)`  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Notes
-
-- At most one row with a given `(companyId, applicantId)`; enforce via unique index.  
-- Used to display colored badges / icons in search result lists and application detail views.
+Business constraint: `(jobPostId, skillId)` must be unique.
 
 ---
 
-## 🟨 10. Subscription
+## 🟦 8. SkillTag
 
-**OwnedByService:** Subscription Service  
-**DBType:** Postgres  
-**Sharded:** YES (by `companyId`)  
+Global skill catalog.
 
-### Attributes
-
-- `subscriptionId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – FK to `Company`.  
-- `planType : String (enum: Free | Premium)`  
-- `priceAmount : Number` – subscription fee for current term.  
-- `currency : String` – ISO currency code.  
-- `startDate : Date`  
-- `expiryDate : Date`  
-- `status : String (enum: ACTIVE | EXPIRED | CANCELLED | PENDING)`  
-- `lastPaymentId : String (uuid) | null` – ID of latest related `PaymentTransaction`.  
-- `createdAt : Date`  
-- `updatedAt : Date`
-
-### Notes
-
-- Only one `Subscription` per company should have `status = ACTIVE`.  
-- `status` is used to maintain `Company.isPremium`.
+| Attribute | Type           | Constraints / Default              | Description |
+|----------|----------------|------------------------------------|-------------|
+| skillId  | String (uuid)  | PK                                 | Skill identifier. |
+| name     | String         | required, lowercase, UQ            | Human-readable name (e.g. `react`, `kafka`). |
+| category | String         | optional                           | Category/group (e.g. `frontend`, `database`). |
+| createdAt| Date           | required                           | Creation timestamp. |
 
 ---
 
-## 🟨 11. PaymentTransaction
+## 🟨 9. SearchProfile
 
-**OwnedByService:** Payment Service  
-**DBType:** Postgres (global)  
-**Sharded:** NO  
+Saved company headhunting profile.
 
-### Attributes
-
-- `transactionId : String (uuid)` – **PK**.  
-- `companyId : String (uuid)` – string reference to `Company.companyId`.  
-- `subscriptionId : String (uuid) | null` – string reference to `Subscription.subscriptionId`.  
-- `email : String` – billing email.  
-- `amount : Number` – payment amount.  
-- `currency : String` – ISO currency code.  
-- `gateway : String (enum: Stripe | PayPal)` – or local provider.  
-- `timestamp : Date` – transaction time.  
-- `status : String (enum: Success | Failed)`  
-- `rawGatewayRef : String | null` – transaction code / reference from gateway.
-
-### Notes
-
-- No card numbers, CVV, or other sensitive details are stored.  
-- Other services query payments by `transactionId` or `subscriptionId`.
+| Attribute           | Type               | Constraints / Default                         | Description |
+|---------------------|--------------------|-----------------------------------------------|-------------|
+| searchProfileId     | String (uuid)      | PK                                            | Search profile identifier. |
+| companyId           | String (uuid)      | FK → `Company.companyId`, required           | Owning company. |
+| profileName         | String             | required                                      | Human-readable label (e.g. “Backend VN Senior”). |
+| desiredCountry      | String             | required                                      | Target applicant country. |
+| desiredMinSalary    | Number             | required                                      | Minimum desired salary. |
+| desiredMaxSalary    | Number             | optional                                      | Maximum desired salary (null = no upper bound). |
+| highestEducation    | String             | enum: `Bachelor` \| `Master` \| `Doctorate`, required | Minimum education level. |
+| technicalBackground | Array\<String>     | required, list of `SkillTag.skillId`         | Desired technical skills. |
+| employmentStatus    | Array\<String>     | values from enum: `Full-time`, `Part-time`, `Fresher`, `Internship`, `Contract` | Accepted employment statuses. |
+| isActive            | Boolean            | default: `false`                              | Included in real-time matching when `true`. |
+| createdAt           | Date               | required                                      | Creation timestamp. |
+| updatedAt           | Date               | required                                      | Last update timestamp. |
 
 ---
 
-## 🟪 12. Notification
+## 🟨 10. ApplicantFlag
 
-**OwnedByService:** Notification Service  
-**DBType:** MongoDB or Postgres  
-**Sharded:** NO  
+Per-company classification of applicants as favorite/warning.
 
-### Attributes
+| Attribute   | Type           | Constraints / Default                         | Description |
+|------------|----------------|-----------------------------------------------|-------------|
+| flagId     | String (uuid)  | PK                                            | Flag row identifier. |
+| companyId  | String (uuid)  | FK → `Company.companyId`, required           | Owning company. |
+| applicantId| String (uuid)  | external ID from Applicant subsystem, required | Target applicant ID (no DB-level FK). |
+| status     | String         | enum: `WARNING` \| `FAVORITE`, required       | Flag value. |
+| createdAt  | Date           | required                                      | Creation timestamp. |
+| updatedAt  | Date           | required                                      | Last update timestamp. |
 
-- `notificationId : String (uuid)` – **PK**.  
-- `recipientId : String (uuid)` – on Job Manager side this is `companyId`.  
-- `type : String (enum: JobMatch | SubscriptionReminder | System | ApplicationUpdate)`  
-- `message : String` – human-readable text.  
-- `channel : String (enum: inApp | email)`  
-- `isRead : Boolean` – default `false`.  
-- `timestamp : Date`
-
-### Notes
-
-- Created from Kafka events: `applicant-created`, `applicant-updated`, `application-submitted`, `subscription-*` etc.  
-- Read/unread status is used by the UI to show notification badges.
+Business constraint: `(companyId, applicantId)` must be unique.
 
 ---
 
-## Quick Cross-Check with Applicant Side
+## 🟨 11. Subscription
 
-- **SkillTag**: same attributes (`skillId`, `name`, `category`, `createdAt`) and semantics as in Applicant ERD.  
-- **JobPostSkill** vs **ApplicantSkill**: both use `id`, `applicantId`/`jobPostId`, `skillId`, plus extra fields (`proficiency` or `importance`), and timestamps. This symmetry makes it easy to reason about matching and to share `skillId` safely.  
-- **Naming**: all attributes now follow the same `camelCase` + `String (uuid)` + `Date` style as in your Applicant diagrams.
+Premium company subscription.
+
+| Attribute      | Type           | Constraints / Default                         | Description |
+|----------------|----------------|-----------------------------------------------|-------------|
+| subscriptionId | String (uuid)  | PK                                            | Subscription identifier. |
+| companyId      | String (uuid)  | FK → `Company.companyId`, required           | Subscribed company. |
+| planType       | String         | enum: `Free` \| `Premium`, required          | Plan type. |
+| priceAmount    | Number         | required                                      | Price per billing cycle. |
+| currency       | String         | required                                      | Currency code. |
+| startDate      | Date           | required                                      | Subscription start date. |
+| expiryDate     | Date           | required                                      | Subscription end date. |
+| status         | String         | enum: `ACTIVE` \| `EXPIRED` \| `CANCELLED` \| `PENDING`, required | Current status. |
+| lastPaymentId  | String (uuid)  | optional, ref → `PaymentTransaction.transactionId` | Last successful payment. |
+| createdAt      | Date           | required                                      | Creation timestamp. |
+| updatedAt      | Date           | required                                      | Last update timestamp. |
+
+---
+
+## 🟨 12. PaymentTransaction
+
+Payment attempts for company subscriptions.
+
+| Attribute      | Type           | Constraints / Default                         | Description |
+|----------------|----------------|-----------------------------------------------|-------------|
+| transactionId  | String (uuid)  | PK                                            | Payment transaction ID. |
+| companyId      | String (uuid)  | required, string reference to Company        | Paying company ID (no cross-service FK). |
+| subscriptionId | String (uuid)  | optional, string reference to Subscription   | Related subscription record. |
+| email          | String         | required                                      | Billing email used at gateway. |
+| amount         | Number         | required                                      | Amount charged. |
+| currency       | String         | required                                      | Currency code. |
+| gateway        | String         | enum: `Stripe` \| `PayPal`, required          | Payment provider. |
+| timestamp      | Date           | required                                      | Time the payment was processed. |
+| status         | String         | enum: `Success` \| `Failed`, required         | Outcome. |
+| rawGatewayRef  | String         | optional                                      | Provider transaction reference. |
+
+---
+
+## 🟪 13. Notification
+
+Notifications for companies.
+
+| Attribute      | Type           | Constraints / Default                         | Description |
+|----------------|----------------|-----------------------------------------------|-------------|
+| notificationId | String (uuid)  | PK                                            | Notification identifier. |
+| recipientId    | String (uuid)  | required, string reference to `Company.companyId` | Company receiving the notification. |
+| type           | String         | enum: `JobMatch` \| `SubscriptionReminder` \| `System` \| `ApplicationUpdate`, required | Notification category. |
+| message        | String         | required (text)                               | Message content. |
+| channel        | String         | enum: `inApp` \| `email`, required            | Delivery channel. |
+| isRead         | Boolean        | default: `false`                              | Read/acknowledged flag (for in-app). |
+| timestamp      | Date           | required                                      | Creation / send time. |
