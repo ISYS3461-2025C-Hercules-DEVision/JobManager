@@ -3,11 +3,12 @@
 > Scope: Sections 1 – 7  
 > Milestone 1 Deliverable – Data Model (Level Simplex → Ultimo)
 
-Each entity represents a persistent data object required by the SRS.  
+Each entity represents a persistent data object required by the **Job Manager subsystem**.  
 All attributes are preliminary for ER Model v1 (to be refined in DM-02).
 
 This document lists all entities required by the Job Manager subsystem.  
 Each entity includes:
+
 - Description  
 - OwnedByService (microservice boundary)  
 - DBType (Mongo/Postgres/Redis etc.)  
@@ -17,199 +18,233 @@ Each entity includes:
 
 ---
 
-# 🟦 1. Company (Core Company Account)
+# 🟦 1. Company (Core Company Profile)
+
 **OwnedByService:** Profile Management Service  
 **DBType:** Postgres  
 **Sharded:** YES — shardKey = `country`  
 **Source of Truth:** Yes  
 
 **Description:**  
-Stores the core identity, contact, authentication and sharding information of the hiring company.
+Stores the core organisational identity and contact information for each hiring company (name, contact details, country, active/premium status, etc.). This is the “business” representation of a company used across the Job Manager subsystem.
 
 **Notes:**  
-- `companyId` is the primary identifier for all Job Manager microservices and is used in external APIs (e.g. by the Job Applicant subsystem).
+- `companyId` is the primary identifier for all Job Manager microservices and is used in integration with the Job Applicant subsystem (e.g. JobPost, Application, notifications).  
+- Authentication credentials are handled in `AuthAccount` to avoid duplication.
 
 ---
 
-# 🟦 2. AuthToken
+# 🟧 2. AuthAccount (Authentication – Login Identity)
+
 **OwnedByService:** Authentication Service  
-**DBType:** Postgres (metadata) + Redis (revocation)  
-**Sharded:** NO  
-**Source of Truth:** Authentication Service  
+**DBType:** Postgres  
+**Sharded:** NO (global account store)  
+**Source of Truth:** Yes  
 
 **Description:**  
-Stores token metadata for company login sessions, including encrypted access tokens, refresh tokens, issuance and expiry timestamps, revocation status and failed login counts.
+Represents the **login identity** of a company account, including login email, password hash (for local accounts), optional SSO provider/ID and basic security metadata such as creation/update times and failed login attempts.
 
 **Notes:**  
-- `companyId` links each token to a company account.  
-- Redis is used to cache revoked tokens/denylist for fast lookup.
+- Links one-to-one with `Company` via `companyId`.  
+- Used exclusively for **authentication** workflows (registration, login, password reset, SSO).  
+- Other services interact with tokens from `AuthToken`, not raw credentials.
 
 ---
 
-# 🟦 3. PublicProfile
+# 🟪 3. AuthToken (Authorization – API Access Token)
+
+**OwnedByService:** Authorization Service  
+**DBType:** Postgres (token metadata) + Redis (revocation cache)  
+**Sharded:** NO  
+**Source of Truth:** Authorization Service  
+
+**Description:**  
+Stores metadata for access and refresh tokens issued after successful authentication. Tokens are used to authorise API calls from web clients and between backend services.
+
+**Notes:**  
+- Each token record links back to the authenticated `AuthAccount` / `companyId`.  
+- Redis is used as a fast deny-list to store revoked tokens and support logout + brute-force protection as specified in the SRS.  
+
+---
+
+# 🟦 4. PublicProfile (Company Public Profile)
+
 **OwnedByService:** Profile Management Service  
 **DBType:** Postgres (same DB/shard as Company)  
 **Sharded:** YES  
 **Source of Truth:** Yes  
 
 **Description:**  
-Public-facing profile of the company, visible to applicants: brand name, description, what candidates they are looking for, website, industry domain and public location.
+Public-facing company profile visible to applicants: display name, about-us text, description of ideal candidates, website URL, industry domain, logo, banner and public location (country, city).
 
 **Notes:**  
 - One-to-one with `Company` via `companyId`.  
-- Exposed via Job Manager APIs for consumption by the Job Applicant subsystem.
+- Exposed via Job Manager APIs for the Job Applicant subsystem to show employer details on job listings and company profile pages.
 
 ---
 
-# 🟦 4. CompanyMedia
+# 🟦 5. CompanyMedia (Profile Media Gallery)
+
 **OwnedByService:** Profile Management Service  
 **DBType:** Postgres (same shard as Company)  
 **Sharded:** YES  
 **Source of Truth:** Yes  
 
 **Description:**  
-Metadata for images and videos displayed in the company profile gallery (URL, media type, captions, order, active flag).
+Stores metadata for media assets (images/videos) attached to a company’s public profile, including URLs, media type, titles, descriptions, order index and active flag.
 
 **Notes:**  
-- Actual files are stored in Object Storage (e.g. S3/minio); this entity stores only metadata and URLs.
+- Only the metadata and URLs are stored here; actual files are stored in object storage (e.g. S3/minio).  
+- Used to display a gallery on the company profile page.
 
 ---
 
-# 🟩 5. JobPost
+# 🟧 6. JobPost (Job Listing)
+
 **OwnedByService:** Job Post Service  
 **DBType:** Postgres  
 **Sharded:** YES — co-located with Company by `companyId` / `country`  
 **Source of Truth:** Yes  
 
 **Description:**  
-Represents a job posting created and managed by a company, including job title, detailed description, employment types, salary configuration, location and status (draft/published/archived).
+Represents a job posting created and managed by a company. Contains job title, full description, employment types, salary representation (RANGE/ABOUT/UP_TO/FROM/NEGOTIABLE), salary min/max, currency, location (city/country), publication status and lifecycle state (DRAFT/PUBLISHED/ARCHIVED).
 
 **Notes:**  
-- `jobPostId` is used externally by the Applicant subsystem in `Application.jobPostId` and in Kafka events.  
-- Job creation and updates trigger job-post events used for search and notification features.
+- `jobPostId` is used externally by the Job Applicant subsystem (`Application.jobPostId`) and in Kafka events (`job-post-created`, `job-post-updated`).  
+- Changes to job posts are propagated to Applicant-side search and premium notifications.
 
 ---
 
-# 🟩 6. JobPostSkill (Relation: JobPost ↔ SkillTag)
+# 🟧 7. JobPostSkill (Relation: JobPost ↔ SkillTag)
+
 **OwnedByService:** Job Post Service  
 **DBType:** Postgres (same shard as JobPost)  
 **Sharded:** YES  
 **Source of Truth:** Yes  
 
 **Description:**  
-Many-to-many mapping from JobPost to SkillTag, specifying which technical skills a job requires and whether each skill is must-have or nice-to-have.
+Many-to-many mapping between `JobPost` and `SkillTag`, specifying which technical skills are required by the job and whether each skill is `MUST_HAVE` or `NICE_TO_HAVE`.
 
 **Notes:**  
-- Primary key is (`jobPostId`, `skillId`).  
-- `skillId` is an ID referencing `SkillTag` (skill catalog).  
-- Any change to this mapping must be propagated via events so dependent services update their search indices.
+- Structurally mirrors `ApplicantSkill` on the Applicant side, but uses an `importance` field instead of `proficiency/endorsedBy`.  
+- Primary uniqueness is per (`jobPostId`, `skillId`).  
+- Any change in this mapping should trigger updates to search indices and matching logic.
 
 ---
 
-# 🟦 7. SkillTag
-**OwnedByService:** Job Post (Skill Catalog)  
-**DBType:** Global catalog (Mongo/Postgres)  
+# 🟦 8. SkillTag (Global Skill Catalog)
+
+**OwnedByService:** Catalog / Profile Service  
+**DBType:** Global catalog DB (Postgres or Mongo)  
 **Sharded:** NO  
 **Source of Truth:** Yes  
 
 **Description:**  
-Master list of skills/competencies (e.g. “React”, “Kafka”) reused across applicant profiles and job posts.
+Master catalog of skills and competencies (e.g. “React”, “Kafka”, “Docker”) used across the DEVision ecosystem. Shared logically between both subsystems.
 
 **Notes:**  
-- `skillId` is referenced by both `ApplicantSkill` (on the Applicant side) and `JobPostSkill` (on the Job Manager side).  
-- Managed by a dedicated skill/profile service; other services treat it as a read-only catalog.
+- `skillId` is referenced by:
+  - `ApplicantSkill` on the Job Applicant side.  
+  - `JobPostSkill` on the Job Manager side.  
+- A shared ID space allows the matching engine to compare applicant skills and job requirements directly.
 
 ---
 
-# 🟨 8. SearchProfile
-**OwnedByService:** Premium Subscription Service  
+# 🟨 9. SearchProfile (Company Headhunting Profile)
+
+**OwnedByService:** Applicant Search Service / Subscription Service  
 **DBType:** Postgres  
 **Sharded:** YES — shardKey = `companyId`  
 **Source of Truth:** Yes  
 
 **Description:**  
-Saved “headhunting profile” for a company, capturing desired candidate filters such as country, salary range, highest education, technical background and employment status. Used to drive real-time applicant matching and notifications.
+Saved “headhunting profiles” for companies that describe their desired candidate characteristics: target country, desired salary range, highest education level, technical background (skill tags) and employment status preferences.
 
 **Notes:**  
-- Logical counterpart to `SearchProfile` on the Applicant side (applicant-defined job search preferences).  
-- Evaluated whenever applicant profile events or updates arrive via Kafka.
+- Evaluated against applicant profile events (via Kafka) to generate real-time matches for premium companies.  
+- Only companies with an **ACTIVE Premium Subscription** are allowed to have `isActive = true` search profiles (business rule enforced at service level).  
 
 ---
 
-# 🟨 9. ApplicantFlag
+# 🟨 10. ApplicantFlag (Favorite / Warning Flags)
+
 **OwnedByService:** Applicant Search Service  
 **DBType:** Postgres  
 **Sharded:** YES — shardKey = `companyId`  
 **Source of Truth:** Yes  
 
 **Description:**  
-Per-company flag indicating whether a given applicant is marked as **WARNING** or **FAVORITE**, used in applicant search results and application views.
+Per-company classification of applicants as `FAVORITE` or `WARNING`. Used to highlight candidates in search results and application detail views.
 
 **Notes:**  
-- `applicantId` is a string reference to the Applicant subsystem (no foreign key).  
-- Satisfies requirements to persist and surface Warning/Favorite states.
+- `applicantId` is an external identifier from the Job Applicant subsystem (string reference, no FK).  
+- There is at most one record per (`companyId`, `applicantId`).  
 
 ---
 
-# 🟨 10. Subscription
+# 🟨 11. Subscription (Premium Company Subscription)
+
 **OwnedByService:** Subscription Service  
 **DBType:** Postgres  
 **Sharded:** YES — shardKey = `companyId`  
 **Source of Truth:** Subscription Service  
 
 **Description:**  
-Tracks premium subscription plans and validity for each company, including plan type (Free/Premium), price, currency, start/end dates and status.
+Records each company’s subscription to the premium plan, including plan type (Free/Premium), billing price and currency, start date, expiry date and current status.
 
 **Notes:**  
-- Used to determine whether a company is premium and enable premium features (e.g. headhunting).  
-- `lastPaymentId` links to the most recent payment transaction record.
+- Only one subscription per company can be `ACTIVE` at a time.  
+- Drives the `Company.isPremium` flag and enables premium features such as active `SearchProfile` and real-time notifications.  
+- Links to the most recent successful payment via `lastPaymentId`.
 
 ---
 
-# 🟨 11. PaymentTransaction
+# 🟨 12. PaymentTransaction (Company Subscription Payment)
+
 **OwnedByService:** Payment Service  
 **DBType:** Postgres (global)  
 **Sharded:** NO  
 **Source of Truth:** Payment Service  
 
 **Description:**  
-Records each payment attempt for company premium subscriptions, including the payer company, subscription, amount, currency, payment gateway and outcome.
+Records each payment attempt for company subscriptions, including the paying company, related subscription, amount, currency, payment gateway (e.g. Stripe/PayPal) and transaction status (Success/Failed).
 
 **Notes:**  
-- `transactionId` is the primary identifier; no sensitive card data is stored.  
-- `companyId` and `subscriptionId` are stored as string references only; other services reference payments via these IDs.
+- No sensitive card details are stored.  
+- `companyId` and `subscriptionId` are used as references by other services; they need not be strict foreign keys across service boundaries.
 
 ---
 
-# 🟪 12. Notification
+# 🟪 13. Notification (Company Notifications)
+
 **OwnedByService:** Notification Service  
 **DBType:** MongoDB/Postgres  
 **Sharded:** NO  
 **Source of Truth:** Notification Service  
 
 **Description:**  
-Represents email or in-app notifications sent to companies for events such as real-time applicant matches, subscription reminders and application updates.
+Represents notifications sent to companies, including real-time applicant matches, subscription reminders and general system messages. Supports both in-app and email channels.
 
 **Notes:**  
-- `recipientId` stores the `companyId` of the target company as a string reference.  
-- Supports different notification `type` values (e.g. JobMatch, SubscriptionReminder, System) and delivery `channel` (in-app or email).
+- `recipientId` stores the `companyId` of the target company (string reference).  
+- The Notification Service consumes Kafka events (e.g. applicant-updated, application-submitted, subscription events) and writes notification records for the Job Manager frontend to display.
 
 ---
 
 # 🧩 SUMMARY TABLE (Copy for report appendix)
 
-| Entity              | OwnedByService         | DB Type           | Sharded? | Notes |
-|---------------------|------------------------|-------------------|----------|-------|
-| Company             | Company Service        | Postgres          | YES      | ShardKey = country |
-| CompanyAuthToken    | Authentication Service | Postgres + Redis  | NO       | Token metadata + revocation |
-| CompanyPublicProfile| Company/Profile        | Postgres          | YES      | Public employer profile |
-| CompanyMedia        | Company/Profile        | Postgres          | YES      | Gallery metadata, files in object storage |
-| JobPost             | Job Post Service       | Postgres          | YES      | Job postings, referenced by applications |
-| JobPostSkill        | Job Post Service       | Postgres          | YES      | Job ↔ SkillTag mapping |
-| SkillTag            | Profile Service        | Catalog DB        | NO       | Global skill catalog |
-| CompanySearchProfile| Applicant Search       | Postgres          | YES      | Company headhunting profile |
-| ApplicantFlag       | Applicant Search       | Postgres          | YES      | WARNING / FAVORITE per (company, applicant) |
-| CompanySubscription | Subscription Service   | Postgres          | YES      | Premium subscription info |
-| PaymentTransaction  | Payment Service        | Postgres          | NO       | Payment attempts, no card data |
-| Notification        | Notification Service   | Mongo/Postgres    | NO       | Notifications to companies |
-
+| # | Entity             | OwnedByService           | DB Type               | Sharded? | Notes |
+|---|--------------------|--------------------------|-----------------------|----------|-------|
+| 1 | Company            | Profile Management       | Postgres              | YES      | ShardKey = country |
+| 2 | AuthAccount        | Authentication           | Postgres              | NO       | Login identity & credentials |
+| 3 | AuthToken          | Authorization            | Postgres + Redis      | NO       | API access tokens & revocation |
+| 4 | PublicProfile      | Profile Management       | Postgres              | YES      | Public employer profile |
+| 5 | CompanyMedia       | Profile Management       | Postgres              | YES      | Gallery metadata, files in object storage |
+| 6 | JobPost            | Job Post                 | Postgres              | YES      | Job postings, referenced by Applicant subsystem |
+| 7 | JobPostSkill       | Job Post                 | Postgres              | YES      | Job ↔ SkillTag mapping, importance flags |
+| 8 | SkillTag           | Catalog / Profile        | Catalog DB            | NO       | Global skill catalog |
+| 9 | SearchProfile      | Applicant Search         | Postgres              | YES      | Company headhunting profile (premium only) |
+|10 | ApplicantFlag      | Applicant Search         | Postgres              | YES      | WARNING / FAVORITE per (company, applicant) |
+|11 | Subscription       | Subscription             | Postgres              | YES      | Premium subscription info per company |
+|12 | PaymentTransaction | Payment                  | Postgres              | NO       | Payment attempts, no card data |
+|13 | Notification       | Notification             | MongoDB/Postgres      | NO       | Notifications to companies |
