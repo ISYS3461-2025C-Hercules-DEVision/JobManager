@@ -2,10 +2,6 @@
 
 This document outlines the high-level container architecture for the DeVision Platform.
 
-## Architecture Diagram
-
-![Context Diagram](images/Context%20Diagram.drawio.png)
-
 ## Component Breakdown
 
 ### 1\. Actors
