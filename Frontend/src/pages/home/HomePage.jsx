@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
+const words = ['TALENT.', 'Engineers.', 'Developers.', 'Leader.'];
+
 function HomePage() {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  const words = ['TALENT.', 'Engineers.', 'Developers.', 'Leader.'];
   
   useEffect(() => {
     const currentWord = words[currentIndex];
