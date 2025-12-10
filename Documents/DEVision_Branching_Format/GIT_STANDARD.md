@@ -36,9 +36,9 @@ Use **BE** as the prefix.
 
 Use **FE** as the prefix.
 
-* **Feature:** `FE-Lan-Feat-Login-Screen`
-* **Bug Fix:** `FE-Lan-Fix-Mobile-Layout`
-* **Refactor:** `FE-Lan-Chore-Upgrade-React`
+* **Feature:** `FE-Dong-Feat-Login-Screen`
+* **Bug Fix:** `FE-Dong-Fix-Mobile-Layout`
+* **Refactor:** `FE-Dong-Chore-Upgrade-React`
 
 ### Documentation / DevOps (DOCS)
 
