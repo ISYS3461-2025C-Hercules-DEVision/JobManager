@@ -15,4 +15,5 @@ public class User {
 
     private String username; // or email
     private String password; // hashed
+    private String role;
 }

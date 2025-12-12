@@ -18,5 +18,6 @@ public class RegisterRequest {
     private String country;
     private String password;
     private String companyId;
+    private String role;
     //todo: add remaining fields
 }

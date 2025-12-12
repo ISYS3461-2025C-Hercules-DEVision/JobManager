@@ -48,10 +48,11 @@ public class JwtUtil {
     public JwtUtil() throws Exception {
         this.privateKey = loadPrivateKey(PRIVATE_KEY);
     }
-    public String generateToken(String username) {
+    public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuer(KONG_CONSUMER)
+                .claim(role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(privateKey, SignatureAlgorithm.RS256)

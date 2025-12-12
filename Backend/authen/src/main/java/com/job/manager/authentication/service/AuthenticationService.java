@@ -46,6 +46,7 @@ public class AuthenticationService {
         User newUser = User.builder()
                 .username(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role("COMPANY")
                 .build();
 
         userRepository.save(newUser);
