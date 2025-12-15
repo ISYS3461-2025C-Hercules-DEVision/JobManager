@@ -42,8 +42,16 @@ export const useRegister = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // On success, navigate to login
-      navigate('/login');
+      // Mock successful registration with auto-login
+      // TODO: Replace with actual tokens from backend API response
+      const mockAccessToken = `access_token_${Date.now()}`;
+      const mockRefreshToken = `refresh_token_${Date.now()}`;
+
+      localStorage.setItem('accessToken', mockAccessToken);
+      localStorage.setItem('refreshToken', mockRefreshToken);
+
+      // On success, navigate to dashboard (auto-login after registration)
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
