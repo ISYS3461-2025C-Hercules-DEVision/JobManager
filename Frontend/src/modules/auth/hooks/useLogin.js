@@ -29,8 +29,16 @@ export const useLogin = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // On success, navigate to home
-      navigate('/');
+      // Mock successful login - store access token
+      // TODO: Replace with actual tokens from backend API response
+      const mockAccessToken = `access_token_${Date.now()}`;
+      const mockRefreshToken = `refresh_token_${Date.now()}`;
+
+      localStorage.setItem('accessToken', mockAccessToken);
+      localStorage.setItem('refreshToken', mockRefreshToken);
+
+      // On success, navigate to dashboard
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
