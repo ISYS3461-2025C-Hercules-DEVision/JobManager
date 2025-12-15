@@ -1,6 +1,9 @@
 package com.job.manager.authentication.service;
 
+import com.job.manager.authentication.constants.AuthenticationProvider;
 import com.job.manager.authentication.constants.CountryCode;
+import com.job.manager.authentication.dto.GoogleTokenResponse;
+import com.job.manager.authentication.dto.GoogleUserInfo;
 import com.job.manager.authentication.dto.LoginRequest;
 import com.job.manager.authentication.exception.BusinessException;
 import com.job.manager.authentication.kafka.KafkaProducer;
@@ -10,15 +13,22 @@ import com.job.manager.authentication.util.JwtUtil;
 import com.job.manager.authentication.util.OtpGenerator;
 import com.job.manager.dto.RegisterRequest;
 import com.job.manager.dto.VerifyEmailRequest;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class AuthenticationService {
 
+    private final RestTemplate restTemplate = new RestTemplate();
     private final PasswordEncoder passwordEncoder;
     private final EmailOtpService otpService;
     private final EmailService emailService;
@@ -26,6 +36,21 @@ public class AuthenticationService {
     private final KafkaProducer kafkaProducer;
     private final EmailOtpService emailOtpService;
     private final UserRepository userRepository;
+
+    @Value("${oauth.google.client-id}")
+    private String clientId;
+
+    @Value("${oauth.google.client-secret}")
+    private String clientSecret;
+
+    @Value("${oauth.google.redirect-uri}")
+    private String redirectUri;
+
+    @Value("${oauth.google.token-uri}")
+    private String tokenUri;
+
+    @Value("${oauth.google.user-info-uri}")
+    private String userInfoUri;
 
     public AuthenticationService(PasswordEncoder passwordEncoder, EmailOtpService tokenService, EmailService emailService, JwtUtil jwtUtil,
                                  KafkaProducer kafkaProducer, EmailOtpService emailOtpService, UserRepository userRepository) {
@@ -41,9 +66,11 @@ public class AuthenticationService {
     public String login(LoginRequest loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        if(AuthenticationProvider.GOOGLE.equals(AuthenticationProvider.valueOf(user.getProvider()))) {
+            throw new RuntimeException("This account is registered via Google. Please use Google login.");
+        }
         if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return jwtUtil.generateToken(user.getUsername());
+            return jwtUtil.generateToken(user);
         }
 
         throw new RuntimeException("Invalid credentials");
@@ -61,6 +88,7 @@ public class AuthenticationService {
         User newUser = User.builder()
                 .username(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .provider(AuthenticationProvider.LOCAL.name())
                 .isVerified(false)
                 .build();
 
@@ -121,6 +149,68 @@ public class AuthenticationService {
         String otp = OtpGenerator.generate();
         emailOtpService.store(user.getId(), otp);
         emailService.sendVerificationEmail(user.getUsername(), otp);
+    }
+
+    public String loginWithGoogle(String code) {
+        GoogleTokenResponse token = exchangeCodeForToken(code);
+        GoogleUserInfo userInfo = fetchUserInfo(token.getAccessToken());
+
+        Optional<User> user = userRepository.findByUsername(userInfo.getEmail());
+        if(user.isPresent()) {
+            if(AuthenticationProvider.LOCAL.equals(AuthenticationProvider.valueOf(user.get().getProvider()))) {
+                throw new BusinessException("Email already registered with local account. Please use local login.");
+            }
+            return jwtUtil.generateToken(user.get());
+        }
+        User newUser = registerUser(userInfo);
+        return jwtUtil.generateToken(newUser);
+    }
+
+    private GoogleTokenResponse exchangeCodeForToken(String code) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("code", code);
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("redirect_uri", redirectUri);
+        form.add("grant_type", "authorization_code");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<?> entity = new HttpEntity<>(form, headers);
+
+        return restTemplate.postForObject(tokenUri, entity, GoogleTokenResponse.class);
+    }
+
+    private GoogleUserInfo fetchUserInfo(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<GoogleUserInfo> response =
+                restTemplate.exchange(
+                        userInfoUri,
+                        HttpMethod.GET,
+                        entity,
+                        GoogleUserInfo.class
+                );
+
+        return response.getBody();
+    }
+
+    private User registerUser(GoogleUserInfo info) {
+        RegisterRequest request = RegisterRequest.builder()
+                .email(info.getEmail()).build();
+        kafkaProducer.publishRegisterEvent(request);
+        return userRepository.save(
+                User.builder()
+                        .username(info.getEmail())
+                        .provider(AuthenticationProvider.GOOGLE.name())
+                        .providerId(info.getSub())
+                        .isVerified(true)
+                        .build()
+        );
     }
 
 }

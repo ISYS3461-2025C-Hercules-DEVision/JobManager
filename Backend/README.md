@@ -137,6 +137,20 @@ Replace them later with real PNG/SVG images inside `/docs/images/`.
 
 ---
 
+## ⓖ OAUTH FLOW
+
+![Company Job Update Flow](docs/images/OAUTH_flow.png)
+
+**Flow Summary:**
+
+1. Front end redirect user to google consent screen
+2. User login via google, google redirected user back to front end with "code" as url parameter
+3. Front end send the "code" back to backend
+4. Backend send request to google server with the code, client id, secret to exchange for user email
+5. Backend issue the jwt token for user
+
+---
+
 # 🗂️ 5. Project Structure
 
 ```

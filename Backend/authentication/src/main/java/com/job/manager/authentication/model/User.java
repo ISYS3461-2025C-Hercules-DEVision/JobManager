@@ -22,4 +22,7 @@ public class User {
     private Boolean isVerified;
 
     private Date verifiedAt;
+
+    private String provider;
+    private String providerId;
 }
