@@ -1,0 +1,57 @@
+# IDE and Editor files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+
+# Build outputs and dependencies
+node_modules/
+dist/
+build/
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+logs/
+
+# Environment and configuration files
+.env
+.env.local
+.env.*.local
+*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Package manager files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Gradle files (optional - uncomment if you don't want to track wrapper)
+# .gradle/
+# gradle/
+
+# Docker volumes and data
+*.pid
+*.seed
+*.pid.lock
+
