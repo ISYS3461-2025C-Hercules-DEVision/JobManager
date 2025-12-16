@@ -17,7 +17,7 @@ function RegisterPage() {
 
         {registrationSuccess && (
           <div className="mb-4 p-4 border-4 border-green-500 bg-green-100 text-black font-bold">
-            ✅ Registration successful! Please check your email to verify your account. Redirecting to login...
+            ✅ Registration successful! Please check your email to verify your account. Redirecting to verification page...
           </div>
         )}
 

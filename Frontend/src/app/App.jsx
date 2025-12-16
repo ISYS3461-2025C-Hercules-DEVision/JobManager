@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from '../pages/home';
-import { LoginPage, RegisterPage } from '../modules/auth';
+import { LoginPage, RegisterPage, VerifyPage } from '../modules/auth';
 import {
   DashboardLayout,
   DashboardPage,
@@ -19,6 +19,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyPage />} />
 
         {/* Protected Dashboard Routes */}
         <Route
