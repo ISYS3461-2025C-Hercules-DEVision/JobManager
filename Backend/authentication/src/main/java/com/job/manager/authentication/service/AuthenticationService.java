@@ -64,6 +64,9 @@ public class AuthenticationService {
     }
 
     public String login(LoginRequest loginRequest) {
+        
+        System.out.println(">>> LOGIN username = " + loginRequest.getUsername());
+        System.out.println(">>> LOGIN password = " + loginRequest.getPassword());
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new BusinessException("User not found"));
         if(AuthenticationProvider.GOOGLE.equals(AuthenticationProvider.valueOf(user.getProvider()))) {
