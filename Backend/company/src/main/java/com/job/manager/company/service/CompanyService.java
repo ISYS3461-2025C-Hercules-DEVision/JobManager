@@ -13,9 +13,9 @@ public class CompanyService {
     @Autowired
     private CompanyRepository companyRepository;
 
-    public CompanyProfileUpdateDto updateProfile(String companyId, CompanyProfileUpdateDto updatedRequest) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with ID: " + companyId));
+    public CompanyProfileUpdateDto updateProfile(String email, CompanyProfileUpdateDto updatedRequest) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Company not found with email: " + email));
 
         // Update fields
         company.setName(updatedRequest.getName());

@@ -10,13 +10,12 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class RegisterRequest {
+    private String companyId;
     private String companyName;
+    private String city;
+    private String address;
+    private String password;
     private String email;
     private String phoneNumber;
-    private String address;
-    private String city;
     private String country;
-    private String password;
-    private String companyId;
-    //todo: add remaining fields
 }

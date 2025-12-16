@@ -1,5 +1,6 @@
 package com.job.manager.authentication.util;
 
+import com.job.manager.authentication.model.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
@@ -48,10 +49,11 @@ public class JwtUtil {
     public JwtUtil() throws Exception {
         this.privateKey = loadPrivateKey(PRIVATE_KEY);
     }
-    public String generateToken(String username) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(user.getUsername())
                 .setIssuer(KONG_CONSUMER)
+                .claim("id", user.getId())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(privateKey, SignatureAlgorithm.RS256)
