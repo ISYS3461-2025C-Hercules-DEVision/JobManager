@@ -29,7 +29,7 @@ public class AuthenticationController {
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest registerRequest) {
         authenticationService.register(registerRequest);
-        return null;
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/verify-email")

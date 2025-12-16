@@ -65,15 +65,15 @@ public class AuthenticationService {
 
     public String login(LoginRequest loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found"));
         if(AuthenticationProvider.GOOGLE.equals(AuthenticationProvider.valueOf(user.getProvider()))) {
-            throw new RuntimeException("This account is registered via Google. Please use Google login.");
+            throw new BusinessException("This account is registered via Google. Please use Google login.");
         }
         if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             return jwtUtil.generateToken(user);
         }
 
-        throw new RuntimeException("Invalid credentials");
+        throw new BusinessException("Invalid credentials");
     }
 
     public void register(RegisterRequest registerRequest) {
