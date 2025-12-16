@@ -9,6 +9,7 @@
 .settings/
 *.sublime-project
 *.sublime-workspace
+.idea
 
 # OS files
 .DS_Store
