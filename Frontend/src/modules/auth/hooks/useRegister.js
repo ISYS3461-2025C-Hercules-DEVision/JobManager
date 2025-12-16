@@ -30,8 +30,44 @@ export const useRegister = () => {
     e.preventDefault();
     
     // Validate password confirmation
-    if (step === 1 && formData.password !== formData.passwordConfirmation) {
+    if (formData.password !== formData.passwordConfirmation) {
       setError('Passwords do not match');
+      return;
+    }
+
+    // If user clicks "Create Profile" on step 1, register immediately and go to verify page
+    if (step === 1) {
+      setLoading(true);
+      setError(null);
+
+      try {
+        await authService.register({
+          companyName: formData.companyName,
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phoneNumber,
+          country: formData.country,
+          city: formData.city,
+          streetAddress: formData.streetAddress,
+        });
+
+        console.log('✅ Registration successful - Please verify your email');
+        setRegistrationSuccess(true);
+
+        setTimeout(() => {
+          navigate('/verify-email', {
+            state: {
+              email: formData.email,
+            }
+          });
+        }, 700);
+      } catch (err) {
+        console.error('❌ Registration failed:', err);
+        setError(err.message || 'Registration failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+
       return;
     }
 
@@ -61,15 +97,14 @@ export const useRegister = () => {
       // Show success message and redirect to verification page or login
       setRegistrationSuccess(true);
 
-      // Navigate to login with success message
-      // User needs to verify email before they can login
+      // Navigate to verification page with email prefilled
       setTimeout(() => {
-        navigate('/login', {
+        navigate('/verify-email', {
           state: {
-            message: 'Registration successful! Please check your email to verify your account.'
+            email: formData.email,
           }
         });
-      }, 2000);
+      }, 700);
 
     } catch (err) {
       console.error('❌ Registration failed:', err);
