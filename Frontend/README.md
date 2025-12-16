@@ -166,16 +166,16 @@ src/
 
 ## 📚 Documentation
 
-Comprehensive documentation is available:
+Comprehensive documentation is available in the `docs/` folder:
 
-| Document | Description | Audience |
-|----------|-------------|----------|
-| [**QUICK_START.md**](QUICK_START.md) | 3-minute setup & demo guide | All users |
-| [**TESTING_GUIDE.md**](TESTING_GUIDE.md) | Testing instructions with checklist | QA, Testers |
-| [**INTEGRATION_GUIDE.md**](INTEGRATION_GUIDE.md) | Backend integration walkthrough | Backend devs |
-| [**IMPLEMENTATION_REPORT.md**](IMPLEMENTATION_REPORT.md) | Executive summary & metrics | Management |
-| [**DASHBOARD_SUMMARY.md**](DASHBOARD_SUMMARY.md) | Feature overview | All stakeholders |
-| [**FILE_MANIFEST.md**](FILE_MANIFEST.md) | Complete file listing | Developers |
+- **[Quick Start](docs/guides/QUICK_START.md)** - Get up and running quickly
+- **[State Management](docs/guides/STATE_MANAGEMENT.md)** - Using React Context API
+- **[Authentication](docs/authentication/AUTHENTICATION_FLOW.md)** - Auth flow and testing
+- **[Integration Guide](docs/integration/INTEGRATION_GUIDE.md)** - Backend integration
+- **[Testing Guide](docs/guides/TESTING_GUIDE.md)** - Testing best practices
+- **[Quick Reference](docs/guides/QUICK_REFERENCE.md)** - Command cheat sheet
+
+**See [docs/README.md](docs/README.md) for complete documentation index.**
 
 ---
 
