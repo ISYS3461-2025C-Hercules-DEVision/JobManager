@@ -109,6 +109,8 @@ Frontend/
 ```env
 # API Configuration
 VITE_API_BASE_URL=http://localhost:8080
+# If you use Kong API Gateway locally, set the auth service to the gateway base
+# e.g. VITE_AUTH_SERVICE_URL=http://localhost:8000
 VITE_AUTH_SERVICE_URL=http://localhost:8080
 
 # Feature Flags
@@ -117,6 +119,8 @@ VITE_ENABLE_GOOGLE_AUTH=false
 # App Configuration
 VITE_APP_VERSION=1.0.0
 ```
+
+> Note: The Authentication service expects Vietnam phone numbers in the format `+84XXXXXXXXX` when `country` is `VN`. The frontend will attempt to auto-format phone numbers starting with `0` to the `+84` format, but it's best to provide `+84` explicitly to avoid validation errors.
 
 ### Vite Config (vite.config.js)
 ```javascript
