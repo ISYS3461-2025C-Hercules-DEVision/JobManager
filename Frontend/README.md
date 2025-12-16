@@ -203,6 +203,8 @@ Create a `.env` file:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
+# When using Kong API Gateway for local development, point the auth service to the gateway port (default: 8000)
+# e.g. VITE_AUTH_SERVICE_URL=http://localhost:8000
 VITE_AUTH_SERVICE_URL=http://localhost:8081
 ```
 
