@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
 export const useRegister = () => {
   const [step, setStep] = useState(1);
@@ -15,6 +16,7 @@ export const useRegister = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,8 +29,15 @@ export const useRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate password confirmation
+    if (step === 1 && formData.password !== formData.passwordConfirmation) {
+      setError('Passwords do not match');
+      return;
+    }
+
     if (step < 3) {
       setStep(step + 1);
+      setError(null);
       return;
     }
 
@@ -36,23 +45,34 @@ export const useRegister = () => {
     setError(null);
 
     try {
-      // TODO: Integrate with backend API
-      console.log('Register:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful registration with auto-login
-      // TODO: Replace with actual tokens from backend API response
-      const mockAccessToken = `access_token_${Date.now()}`;
-      const mockRefreshToken = `refresh_token_${Date.now()}`;
+      // Call backend API
+      await authService.register({
+        companyName: formData.companyName,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phoneNumber,
+        country: formData.country,
+        city: formData.city,
+        streetAddress: formData.streetAddress,
+      });
 
-      localStorage.setItem('accessToken', mockAccessToken);
-      localStorage.setItem('refreshToken', mockRefreshToken);
+      console.log('✅ Registration successful - Please verify your email');
 
-      // On success, navigate to dashboard (auto-login after registration)
-      navigate('/dashboard');
+      // Show success message and redirect to verification page or login
+      setRegistrationSuccess(true);
+
+      // Navigate to login with success message
+      // User needs to verify email before they can login
+      setTimeout(() => {
+        navigate('/login', {
+          state: {
+            message: 'Registration successful! Please check your email to verify your account.'
+          }
+        });
+      }, 2000);
+
     } catch (err) {
+      console.error('❌ Registration failed:', err);
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -64,6 +84,7 @@ export const useRegister = () => {
     formData,
     loading,
     error,
+    registrationSuccess,
     handleChange,
     handleSubmit
   };
