@@ -1,6 +1,7 @@
 import { httpClient } from '../../../utils/HttpUtil';
 import { saveToken, getToken, removeToken } from '../../../utils/tokenStorage';
 import { API_ENDPOINTS } from '../../../config/api';
+import { ENV } from '../../../config/env';
 
 /**
  * Authentication Service
@@ -46,6 +47,12 @@ export const authService = {
    */
   async register(userData) {
     try {
+      // Mock mode: simulate success without calling backend
+      if (ENV.MOCK_AUTH) {
+        await new Promise((r) => setTimeout(r, 400));
+        return { success: true };
+      }
+
       const registerData = {
         companyName: userData.companyName,
         email: userData.email,
@@ -75,6 +82,12 @@ export const authService = {
    */
   async verifyEmail(verifyData) {
     try {
+      // Mock mode: simulate verification success without calling backend
+      if (ENV.MOCK_AUTH) {
+        await new Promise((r) => setTimeout(r, 300));
+        return { verified: true };
+      }
+
       const response = await httpClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, {
         userName: verifyData.email,
         code: verifyData.code,
