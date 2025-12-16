@@ -1,14 +1,22 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLogin } from '../hooks/useLogin';
 
 function LoginPage() {
   const { formData, loading, error, handleChange, handleSubmit } = useLogin();
+  const location = useLocation();
+  const successMessage = location.state?.message;
 
   return (
     <div className="min-h-screen bg-light-gray flex items-center justify-center p-4">
       <div className="bg-white border-4 border-black p-10 w-full max-w-md shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <h1 className="text-4xl font-black text-center text-black mb-8 uppercase">Welcome back!</h1>
         
+        {successMessage && (
+          <div className="mb-4 p-4 border-4 border-green-500 bg-green-100 text-black font-bold">
+            {successMessage}
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-4 border-4 border-primary bg-primary/10 text-black font-bold">
             {error}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
 export const useLogin = () => {
   const [formData, setFormData] = useState({
@@ -23,16 +24,19 @@ export const useLogin = () => {
     setError(null);
 
     try {
-      // TODO: Integrate with backend API
-      console.log('Login:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // On success, navigate to home
-      navigate('/');
+      // Call backend API
+      const token = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log('✅ Login successful:', { token });
+
+      // On success, navigate to dashboard
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('❌ Login failed:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

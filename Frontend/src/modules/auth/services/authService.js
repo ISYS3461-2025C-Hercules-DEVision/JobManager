@@ -1,5 +1,7 @@
 import { httpClient } from '../../../utils/HttpUtil';
 import { saveToken, getToken, removeToken } from '../../../utils/tokenStorage';
+import { API_ENDPOINTS } from '../../../config/api';
+import { ENV } from '../../../config/env';
 
 /**
  * Authentication Service
@@ -12,57 +14,125 @@ export const authService = {
    * @param {Object} credentials - User credentials
    * @param {string} credentials.email - User email
    * @param {string} credentials.password - User password
-   * @returns {Promise<Object>} User data and token
+   * @returns {Promise<string>} JWT token
    */
   async login(credentials) {
     try {
-      const response = await httpClient.post('/auth/login', credentials);
-      
-      if (response.data.token) {
-        saveToken(response.data.token);
+      // Backend expects username field, but we use email
+      const loginData = {
+        username: credentials.email,
+        password: credentials.password,
+      };
+
+      const response = await httpClient.post(API_ENDPOINTS.AUTH.LOGIN, loginData);
+
+      // Backend returns token as plain string
+      if (response.data) {
+        const token = response.data;
+        saveToken(token);
+        return token;
       }
       
-      return response.data;
+      throw new Error('No token received from server');
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed');
     }
   },
 
   /**
    * Register new user/company
    * @param {Object} userData - User registration data
-   * @returns {Promise<Object>} User data and token
+   * @returns {Promise<void>}
    */
   async register(userData) {
     try {
-      const response = await httpClient.post('/auth/register', userData);
-      
-      if (response.data.token) {
-        saveToken(response.data.token);
+      // Mock mode: simulate success without calling backend
+      if (ENV.MOCK_AUTH) {
+        await new Promise((r) => setTimeout(r, 400));
+        return { success: true };
       }
-      
+
+      const registerData = {
+        companyName: userData.companyName,
+        email: userData.email,
+        password: userData.password,
+        phoneNumber: userData.phoneNumber,
+        country: userData.country,
+        city: userData.city,
+        address: userData.streetAddress,
+      };
+
+      const response = await httpClient.post(API_ENDPOINTS.AUTH.REGISTER, registerData);
+
+      // Registration successful - backend returns 200 OK
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed');
+    }
+  },
+
+  /**
+   * Verify email with OTP code
+   * @param {Object} verifyData - Verification data
+   * @param {string} verifyData.email - User email
+   * @param {string} verifyData.code - OTP code
+   * @returns {Promise<Object>} Verification result
+   */
+  async verifyEmail(verifyData) {
+    try {
+      // Mock mode: simulate verification success without calling backend
+      if (ENV.MOCK_AUTH) {
+        await new Promise((r) => setTimeout(r, 300));
+        return { verified: true };
+      }
+
+      const response = await httpClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, {
+        userName: verifyData.email,
+        code: verifyData.code,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Email verification error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Email verification failed');
+    }
+  },
+
+  /**
+   * Resend verification code
+   * @param {string} email - User email
+   * @returns {Promise<void>}
+   */
+  async resendVerification(email) {
+    try {
+      await httpClient.post(`${API_ENDPOINTS.AUTH.RESEND_VERIFICATION}?email=${email}`);
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to resend verification code');
     }
   },
 
   /**
    * Login with Google OAuth
-   * @param {string} googleToken - Google OAuth token
-   * @returns {Promise<Object>} User data and token
+   * @param {string} code - Google OAuth authorization code
+   * @returns {Promise<string>} JWT token
    */
-  async loginWithGoogle(googleToken) {
+  async loginWithGoogle(code) {
     try {
-      const response = await httpClient.post('/auth/google', { token: googleToken });
-      
-      if (response.data.token) {
-        saveToken(response.data.token);
+      const response = await httpClient.post(API_ENDPOINTS.AUTH.GOOGLE_AUTH, { code });
+
+      if (response.data) {
+        const token = response.data;
+        saveToken(token);
+        return token;
       }
       
-      return response.data;
+      throw new Error('No token received from server');
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Google login failed');
+      console.error('Google login error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Google login failed');
     }
   },
 
@@ -72,11 +142,11 @@ export const authService = {
    */
   async logout() {
     try {
-      await httpClient.post('/auth/logout');
+      // Just remove token locally (backend doesn't have logout endpoint)
+      removeToken();
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      removeToken();
+      removeToken(); // Always clear token even if request fails
     }
   },
 
@@ -86,83 +156,20 @@ export const authService = {
    */
   async getCurrentUser() {
     try {
-      const response = await httpClient.get('/auth/me');
+      const response = await httpClient.get(API_ENDPOINTS.AUTH.ME);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to get user profile');
-    }
-  },
-
-  /**
-   * Request password reset
-   * @param {string} email - User email
-   * @returns {Promise<Object>} Response message
-   */
-  async forgotPassword(email) {
-    try {
-      const response = await httpClient.post('/auth/forgot-password', { email });
-      return response.data;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Password reset request failed');
-    }
-  },
-
-  /**
-   * Reset password with token
-   * @param {Object} data - Reset password data
-   * @param {string} data.token - Reset token
-   * @param {string} data.password - New password
-   * @returns {Promise<Object>} Response message
-   */
-  async resetPassword(data) {
-    try {
-      const response = await httpClient.post('/auth/reset-password', data);
-      return response.data;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Password reset failed');
-    }
-  },
-
-  /**
-   * Verify email with token
-   * @param {string} token - Verification token
-   * @returns {Promise<Object>} Response message
-   */
-  async verifyEmail(token) {
-    try {
-      const response = await httpClient.post('/auth/verify-email', { token });
-      return response.data;
-    } catch (error) {
-      throw new Error(error.response?.data?.message || 'Email verification failed');
+      console.error('Get user error:', error);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to get user profile');
     }
   },
 
   /**
    * Check if user is authenticated
-   * @returns {boolean} Authentication status
+   * @returns {boolean} True if token exists
    */
   isAuthenticated() {
     return !!getToken();
   },
-
-  /**
-   * Refresh authentication token
-   * @returns {Promise<Object>} New token data
-   */
-  async refreshToken() {
-    try {
-      const response = await httpClient.post('/auth/refresh');
-      
-      if (response.data.token) {
-        saveToken(response.data.token);
-      }
-      
-      return response.data;
-    } catch (error) {
-      removeToken();
-      throw new Error(error.response?.data?.message || 'Token refresh failed');
-    }
-  }
 };
 
-export default authService;
