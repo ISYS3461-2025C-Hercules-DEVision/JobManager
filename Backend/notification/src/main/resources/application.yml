@@ -19,3 +19,12 @@ spring:
 kafka:
   topic:
     applicant-profile-updates: applicant-profile-updates
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
