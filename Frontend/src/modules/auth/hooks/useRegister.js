@@ -26,6 +26,30 @@ export const useRegister = () => {
     });
   };
 
+  const buildRegisterData = () => {
+    let phone = (formData.phoneNumber || '').trim();
+
+    // Format Vietnam numbers to +84XXXXXXXXX
+    if (formData.country === 'VN' && phone) {
+      if (phone.startsWith('0')) {
+        phone = '+84' + phone.substring(1);
+      } else if (!phone.startsWith('+84')) {
+        phone = '+84' + phone;
+      }
+    }
+
+    return {
+      companyName: formData.companyName,
+      email: formData.email,
+      password: formData.password,
+      phoneNumber: phone,
+      country: formData.country,
+      city: formData.city,
+      streetAddress: formData.streetAddress,
+      address: formData.streetAddress,
+    };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -41,14 +65,24 @@ export const useRegister = () => {
       setError(null);
 
       try {
+        const payload = buildRegisterData();
+
+        // Basic client-side validation for VN phone format
+        if (payload.country === 'VN' && payload.phoneNumber && !/^\+84\d{8,10}$/.test(payload.phoneNumber)) {
+          setError('Phone number must start with +84 and contain 8-10 digits after the prefix');
+          setLoading(false);
+          return;
+        }
+
         await authService.register({
-          companyName: formData.companyName,
-          email: formData.email,
-          password: formData.password,
-          phoneNumber: formData.phoneNumber,
-          country: formData.country,
-          city: formData.city,
-          streetAddress: formData.streetAddress,
+          companyName: payload.companyName,
+          email: payload.email,
+          password: payload.password,
+          phoneNumber: payload.phoneNumber,
+          country: payload.country,
+          city: payload.city,
+          streetAddress: payload.streetAddress,
+          address: payload.address,
         });
 
         console.log('✅ Registration successful - Please verify your email');
@@ -81,15 +115,25 @@ export const useRegister = () => {
     setError(null);
 
     try {
+      const payload = buildRegisterData();
+
+      // Basic client-side validation for VN phone format
+      if (payload.country === 'VN' && payload.phoneNumber && !/^\+84\d{8,10}$/.test(payload.phoneNumber)) {
+        setError('Phone number must start with +84 and contain 8-10 digits after the prefix');
+        setLoading(false);
+        return;
+      }
+
       // Call backend API
       await authService.register({
-        companyName: formData.companyName,
-        email: formData.email,
-        password: formData.password,
-        phoneNumber: formData.phoneNumber,
-        country: formData.country,
-        city: formData.city,
-        streetAddress: formData.streetAddress,
+        companyName: payload.companyName,
+        email: payload.email,
+        password: payload.password,
+        phoneNumber: payload.phoneNumber,
+        country: payload.country,
+        city: payload.city,
+        streetAddress: payload.streetAddress,
+        address: payload.address,
       });
 
       console.log('✅ Registration successful - Please verify your email');
