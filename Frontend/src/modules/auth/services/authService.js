@@ -36,7 +36,7 @@ export const authService = {
       throw new Error('No token received from server');
     } catch (error) {
       console.error('Login error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Login failed');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed');
     }
   },
 
@@ -69,7 +69,7 @@ export const authService = {
       return response.data;
     } catch (error) {
       console.error('Registration error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Registration failed');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed');
     }
   },
 
@@ -96,7 +96,7 @@ export const authService = {
       return response.data;
     } catch (error) {
       console.error('Email verification error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Email verification failed');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Email verification failed');
     }
   },
 
@@ -110,7 +110,7 @@ export const authService = {
       await httpClient.post(`${API_ENDPOINTS.AUTH.RESEND_VERIFICATION}?email=${email}`);
     } catch (error) {
       console.error('Resend verification error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Failed to resend verification code');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to resend verification code');
     }
   },
 
@@ -132,7 +132,7 @@ export const authService = {
       throw new Error('No token received from server');
     } catch (error) {
       console.error('Google login error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Google login failed');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Google login failed');
     }
   },
 
@@ -160,7 +160,7 @@ export const authService = {
       return response.data;
     } catch (error) {
       console.error('Get user error:', error);
-      throw new Error(error.response?.data?.message || error.message || 'Failed to get user profile');
+      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to get user profile');
     }
   },
 
