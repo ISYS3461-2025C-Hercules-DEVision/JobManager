@@ -11,8 +11,11 @@ function VerifyPage() {
     loading,
     error,
     verified,
+    resending,
+    resendSuccess,
     handleChange,
     handleSubmit,
+    handleResend,
     setEmail,
   } = useVerify();
 
@@ -38,6 +41,12 @@ function VerifyPage() {
         {verified && (
           <div className="mb-4 p-4 border-4 border-green-500 bg-green-100 text-black font-bold">
             ✅ Email verified! Redirecting to login...
+          </div>
+        )}
+
+        {resendSuccess && (
+          <div className="mb-4 p-4 border-4 border-green-500 bg-green-100 text-black font-bold">
+            ✅ Verification code sent! Check your email.
           </div>
         )}
 
@@ -73,10 +82,19 @@ function VerifyPage() {
           </button>
         </form>
 
-        <p className="text-center mt-6 text-black font-bold uppercase text-sm">
-          Didn't get a code? Check your spam folder or resend from the login
-          page.
-        </p>
+        <div className="text-center mt-6">
+          <p className="text-black font-bold uppercase text-sm mb-3">
+            Didn't get a code?
+          </p>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending || verified || !email}
+            className="text-primary font-black uppercase text-sm underline underline-offset-4 decoration-4 hover:text-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {resending ? "Sending..." : "Resend Code"}
+          </button>
+        </div>
       </div>
     </div>
   );
