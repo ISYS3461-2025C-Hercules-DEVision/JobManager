@@ -48,6 +48,4 @@ public class AuthenticationController {
         String token = authenticationService.loginWithGoogle(request.getCode());
         return ResponseEntity.ok(token);
     }
-
-
 }
