@@ -14,7 +14,7 @@ public class JobController {
         this.jobService = jobService;
     }
 
-    @PostMapping
+    @PostMapping("/jobs")
     public JobPost createJobPost(@RequestBody JobPost jobPost) {
         return jobService.createJobPost(jobPost);
     }
