@@ -591,6 +591,169 @@ Import this collection for easier testing:
           "path": ["company", "public-profile"]
         }
       }
+    },
+    {
+      "name": "7. Add Company Media",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://storage.example.com/media/office-tour.jpg\",\n  \"mediaType\": \"IMAGE\",\n  \"title\": \"Office Tour\",\n  \"description\": \"A tour of our modern workspace\",\n  \"orderIndex\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/company/media",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media"]
+        }
+      }
+    },
+    {
+      "name": "8. Get All Company Media",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/company/media",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media"]
+        }
+      }
+    },
+    {
+      "name": "9. Get Active Media",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/company/media/active",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "active"]
+        }
+      }
+    },
+    {
+      "name": "10. Get Media by Type",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/company/media/type/IMAGE",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "type", "IMAGE"]
+        }
+      }
+    },
+    {
+      "name": "11. Update Media",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Updated Office Tour\",\n  \"description\": \"Our newly renovated workspace\",\n  \"isActive\": true,\n  \"orderIndex\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/company/media/{{mediaId}}",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "{{mediaId}}"]
+        }
+      }
+    },
+    {
+      "name": "12. Reorder Media",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  \"mediaId1\",\n  \"mediaId2\",\n  \"mediaId3\"\n]",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/company/media/reorder",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "reorder"]
+        }
+      }
+    },
+    {
+      "name": "13. Get Media Count",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/company/media/count",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "count"]
+        }
+      }
+    },
+    {
+      "name": "14. Delete Media",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/company/media/{{mediaId}}",
+          "host": ["{{base_url}}"],
+          "path": ["company", "media", "{{mediaId}}"]
+        }
+      }
     }
   ]
 }
@@ -598,6 +761,96 @@ Import this collection for easier testing:
 
 ---
 
+## 🖼️ Media Management Features
+
+The Company Service now includes comprehensive media gallery management:
+
+### Media Types
+- `IMAGE` - Company photos, office images, team pictures
+- `VIDEO` - Company videos, promotional content
+
+### Media Limits
+- Maximum 10 media items per company
+- Automatic ordering with `orderIndex`
+- Active/inactive status control
+
+### Available Operations
+
+1. **Add Media** - Upload new images or videos to gallery
+2. **Get All Media** - Retrieve all media (ordered by `orderIndex`)
+3. **Get Active Media** - Filter only active/published media
+4. **Get by Type** - Filter by IMAGE or VIDEO type
+5. **Update Media** - Modify title, description, order, or status
+6. **Reorder Media** - Batch reorder by providing ordered list of IDs
+7. **Get Count** - Check current media count (useful before adding)
+8. **Delete Media** - Remove media from gallery
+
+---
+
+## 🔧 Kong Gateway Routes for Media Endpoints
+
+Add these routes to Kong for media management:
+
+```bash
+# 1. Add Company Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-add-media" \
+  --data "paths[]=/company/media" \
+  --data "methods[]=POST" \
+  --data "strip_path=true"
+
+# 2. Get All Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-get-media" \
+  --data "paths[]=/company/media" \
+  --data "methods[]=GET" \
+  --data "strip_path=true"
+
+# 3. Get Active Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-active-media" \
+  --data "paths[]=/company/media/active" \
+  --data "methods[]=GET" \
+  --data "strip_path=true"
+
+# 4. Get Media by Type
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-media-by-type" \
+  --data "paths[]=/company/media/type" \
+  --data "methods[]=GET" \
+  --data "strip_path=true"
+
+# 5. Update Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-update-media" \
+  --data "paths[]=/company/media" \
+  --data "methods[]=PUT" \
+  --data "strip_path=true"
+
+# 6. Delete Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-delete-media" \
+  --data "paths[]=/company/media" \
+  --data "methods[]=DELETE" \
+  --data "strip_path=true"
+
+# 7. Reorder Media
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-reorder-media" \
+  --data "paths[]=/company/media/reorder" \
+  --data "methods[]=PUT" \
+  --data "strip_path=true"
+
+# 8. Get Media Count
+curl -X POST http://localhost:8001/services/company-service/routes \
+  --data "name=company-media-count" \
+  --data "paths[]=/company/media/count" \
+  --data "methods[]=GET" \
+  --data "strip_path=true"
+```
+
+---
+
 ## 🎉 Done!
 
-Your Company Service is now fully functional and tested!
+Your Company Service is now fully functional with profile management and media gallery features!
