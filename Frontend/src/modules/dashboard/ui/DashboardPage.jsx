@@ -1,8 +1,29 @@
+import { useState, useEffect } from 'react';
+import CreatePublicProfile from '../../profile/ui/CreatePublicProfile';
+
 /**
  * DashboardPage - Main dashboard overview page
  * Shows key metrics, recent activities, and quick actions
  */
 function DashboardPage() {
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    // Check if user has completed their profile
+    const profileCompleted = localStorage.getItem('profileCompleted');
+    if (!profileCompleted) {
+      setShowProfileModal(true);
+    }
+  }, []);
+
+  const handleProfileSuccess = () => {
+    setShowProfileModal(false);
+  };
+
+  const handleProfileClose = () => {
+    setShowProfileModal(false);
+  };
+
   // Mock data - replace with actual API calls
   const stats = [
     { label: 'Active Jobs', value: 12, change: '+2 this week', trend: 'up' },
@@ -111,6 +132,14 @@ function DashboardPage() {
           View Reports
         </button>
       </div>
+
+      {/* Profile Creation Modal */}
+      {showProfileModal && (
+        <CreatePublicProfile
+          onClose={handleProfileClose}
+          onSuccess={handleProfileSuccess}
+        />
+      )}
     </div>
   );
 }
