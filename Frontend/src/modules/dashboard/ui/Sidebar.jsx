@@ -1,5 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useAuth } from '../../../state/AuthContext';
+import { useProfile } from '../../../state/ProfileContext';
+import { useApp } from '../../../state/AppContext';
 
 /**
  * Sidebar Component - Navigation sidebar for Job Manager Dashboard
@@ -10,22 +13,30 @@ import { useState } from 'react';
  */
 function Sidebar() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { profile, publicProfile, loading } = useProfile();
+  const { showSuccess, showError } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Mock company data - replace with actual data from context/state management
+  // Prepare company data from profile context
   const companyData = {
-    name: 'Tech Corp',
-    avatar: null,
-    subscriptionPlan: 'Premium',
-    subscriptionStatus: 'Active',
+    name: publicProfile?.displayName || profile?.companyName || 'Company',
+    avatar: publicProfile?.logoUrl || null,
+    subscriptionPlan: profile?.isPremium ? 'Premium' : 'Free',
+    subscriptionStatus: profile?.isActive ? 'Active' : 'Inactive',
   };
 
-  const handleLogout = () => {
-    // Clear authentication tokens
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    // Navigate to login page
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      showSuccess('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showError('Failed to logout');
+      // Still navigate to login even if logout fails
+      navigate('/login');
+    }
   };
 
   const navItems = [
