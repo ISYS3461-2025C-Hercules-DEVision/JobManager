@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { profileService } from "../services/profileService";
 
 /**
  * Custom hook for managing public profile creation
@@ -9,12 +10,10 @@ export const usePublicProfile = () => {
     companyName: "",
     aboutUs: "",
     whoWeAreLookingFor: "",
-    websiteURL: "",
+    websiteUrl: "",
     industryDomain: "",
-    country: "",
-    city: "",
-    companyLogo: null,
-    companyBanner: null,
+    logoUrl: "",
+    bannerUrl: "",
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
@@ -28,17 +27,22 @@ export const usePublicProfile = () => {
     if (type === 'file') {
       const file = files[0];
       if (file) {
-        setFormData({
-          ...formData,
-          [name]: file,
-        });
-        
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
         if (name === 'companyLogo') {
           setLogoPreview(previewUrl);
+          // In a real implementation, you would upload the file to a storage service
+          // and set the URL in formData. For now, we'll use the preview URL
+          setFormData({
+            ...formData,
+            logoUrl: previewUrl,
+          });
         } else if (name === 'companyBanner') {
           setBannerPreview(previewUrl);
+          setFormData({
+            ...formData,
+            bannerUrl: previewUrl,
+          });
         }
       }
     } else {
@@ -55,12 +59,13 @@ export const usePublicProfile = () => {
     setError(null);
 
     try {
-      // TODO: Replace with actual API call to save public profile
-      // await profileService.createPublicProfile(formData);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+      // Call backend API to create public profile
+      await profileService.createPublicProfile({
+        companyName: formData.companyName,
+        logoUrl: formData.logoUrl || undefined,
+        bannerUrl: formData.bannerUrl || undefined,
+      });
+
       // Mark profile as completed in localStorage
       localStorage.setItem("profileCompleted", "true");
       
@@ -68,7 +73,7 @@ export const usePublicProfile = () => {
       
       return { success: true };
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || "Failed to create profile";
+      const errorMessage = err.message || "Failed to create profile";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -82,7 +87,7 @@ export const usePublicProfile = () => {
   };
 
   const removeLogo = () => {
-    setFormData({ ...formData, companyLogo: null });
+    setFormData({ ...formData, logoUrl: "" });
     if (logoPreview) {
       URL.revokeObjectURL(logoPreview);
       setLogoPreview(null);
@@ -90,7 +95,7 @@ export const usePublicProfile = () => {
   };
 
   const removeBanner = () => {
-    setFormData({ ...formData, companyBanner: null });
+    setFormData({ ...formData, bannerUrl: "" });
     if (bannerPreview) {
       URL.revokeObjectURL(bannerPreview);
       setBannerPreview(null);
