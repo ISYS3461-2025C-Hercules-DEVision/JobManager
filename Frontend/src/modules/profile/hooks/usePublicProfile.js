@@ -10,8 +10,10 @@ export const usePublicProfile = () => {
     companyName: "",
     aboutUs: "",
     whoWeAreLookingFor: "",
-    websiteUrl: "",
+    websiteURL: "",
     industryDomain: "",
+    country: "",
+    city: "",
     logoUrl: "",
     bannerUrl: "",
   });
@@ -62,6 +64,12 @@ export const usePublicProfile = () => {
       // Call backend API to create public profile
       await profileService.createPublicProfile({
         companyName: formData.companyName,
+        aboutUs: formData.aboutUs,
+        whoWeAreLookingFor: formData.whoWeAreLookingFor,
+        websiteURL: formData.websiteURL,
+        industryDomain: formData.industryDomain,
+        country: formData.country,
+        city: formData.city,
         logoUrl: formData.logoUrl || undefined,
         bannerUrl: formData.bannerUrl || undefined,
       });
