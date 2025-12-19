@@ -1,4 +1,10 @@
+server:
+  port: 8082
+
 spring:
+  application:
+    name: company-service
+  
   kafka:
     bootstrap-servers: localhost:29092
     consumer:
@@ -8,13 +14,14 @@ spring:
       properties:
         spring.json.trusted.packages: com.job.manager.dto
 
-  mongodb:
-    host: localhost
-    port: 27018
-    database: mongodb-company
-    username: admin
-    password: admin
-    authentication-database: admin
+  data:
+    mongodb:
+      host: localhost
+      port: 27018
+      database: mongodb-company
+      username: admin
+      password: admin
+      authentication-database: admin
 
 kafka:
   topic:
@@ -28,3 +35,9 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+    hostname: localhost
+
+logging:
+  level:
+    com.job.manager.company: DEBUG
+    org.springframework.data.mongodb: DEBUG
