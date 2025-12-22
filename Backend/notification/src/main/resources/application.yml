@@ -8,13 +8,14 @@ spring:
       properties:
         spring.json.trusted.packages: com.job.manager.dto
 
-  mongodb:
-    host: localhost
-    port: 27021
-    database: mongodb-notification
-    username: admin
-    password: admin
-    authentication-database: admin
+  data:
+    mongodb:
+      host: localhost
+      port: 27021
+      database: mongodb-notification
+      username: admin
+      password: admin
+      authentication-database: admin
 
 kafka:
   topic:
