@@ -15,6 +15,8 @@ public class SubscriptionEventDTO {
     private String companyId;
     private String planType;
     private String status;
+    private LocalDateTime startDate;
+    private LocalDateTime expiryDate;
     private LocalDateTime timestamp;
     private String eventType; // "CREATED", "ACTIVATED", "EXPIRED", "CANCELLED"
 }

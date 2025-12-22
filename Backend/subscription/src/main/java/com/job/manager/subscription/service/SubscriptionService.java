@@ -30,7 +30,7 @@ public class SubscriptionService {
     private static final String USD_CURRENCY = "USD";
 
     public SubscriptionResponseDTO createSubscription(SubscriptionCreateDTO dto) {
-        log.info("Creating subscription for company: {}", dto.getCompanyId());
+        log.info("Creating PREMIUM subscription for company: {}", dto.getCompanyId());
 
         // Check if subscription already exists
         Optional<Subscription> existingSubscription = subscriptionRepository.findByCompanyId(dto.getCompanyId());
@@ -38,22 +38,17 @@ public class SubscriptionService {
             throw new IllegalArgumentException("Subscription already exists for company: " + dto.getCompanyId());
         }
 
+        // Validate plan type is PREMIUM (only PREMIUM subscriptions should be created)
+        if (!"PREMIUM".equalsIgnoreCase(dto.getPlanType())) {
+            throw new IllegalArgumentException("Only PREMIUM subscriptions can be created. Freemium access is default.");
+        }
+
         Subscription subscription = new Subscription();
         subscription.setCompanyId(dto.getCompanyId());
-        subscription.setPlanType(PlanType.valueOf(dto.getPlanType().toUpperCase()));
-        
-        // Set price based on plan type
-        if (subscription.getPlanType() == PlanType.PREMIUM) {
-            subscription.setPriceAmount(PREMIUM_PRICE);
-            subscription.setCurrency(USD_CURRENCY);
-            subscription.setStatus(SubscriptionStatus.PENDING); // Requires payment
-        } else {
-            subscription.setPriceAmount(BigDecimal.ZERO);
-            subscription.setCurrency(USD_CURRENCY);
-            subscription.setStatus(SubscriptionStatus.ACTIVE);
-            subscription.setStartDate(LocalDateTime.now());
-        }
-        
+        subscription.setPlanType(PlanType.PREMIUM);
+        subscription.setPriceAmount(PREMIUM_PRICE);
+        subscription.setCurrency(USD_CURRENCY);
+        subscription.setStatus(SubscriptionStatus.PENDING); // Requires payment
         subscription.setAutoRenew(false); // Manual renewal as per requirements
         subscription.setCreatedAt(LocalDateTime.now());
         subscription.setUpdatedAt(LocalDateTime.now());
@@ -184,6 +179,8 @@ public class SubscriptionService {
                 subscription.getCompanyId(),
                 subscription.getPlanType().toString(),
                 subscription.getStatus().toString(),
+                subscription.getStartDate(),
+                subscription.getExpiryDate(),
                 LocalDateTime.now(),
                 eventType
         );
