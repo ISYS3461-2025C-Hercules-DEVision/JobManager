@@ -25,13 +25,13 @@ export const usePublicProfile = () => {
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
-    if (type === 'file') {
+
+    if (type === "file") {
       const file = files[0];
       if (file) {
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
-        if (name === 'companyLogo') {
+        if (name === "companyLogo") {
           setLogoPreview(previewUrl);
           // In a real implementation, you would upload the file to a storage service
           // and set the URL in formData. For now, we'll use the preview URL
@@ -39,7 +39,7 @@ export const usePublicProfile = () => {
             ...formData,
             logoUrl: previewUrl,
           });
-        } else if (name === 'companyBanner') {
+        } else if (name === "companyBanner") {
           setBannerPreview(previewUrl);
           setFormData({
             ...formData,
@@ -75,9 +75,9 @@ export const usePublicProfile = () => {
       });
 
       // Profile is now saved in MongoDB - no need for localStorage
-      
+
       setSuccess(true);
-      
+
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || "Failed to create profile";
