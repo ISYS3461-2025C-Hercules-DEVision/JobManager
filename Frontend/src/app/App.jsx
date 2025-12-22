@@ -1,7 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HomePage } from '../pages/home';
-import { LoginPage, RegisterPage, VerifyPage } from '../modules/auth';
-import GoogleCallback from '../pages/GoogleCallback';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HomePage } from "../pages/home";
+import { LoginPage, RegisterPage, VerifyPage } from "../modules/auth";
+import GoogleCallback from "../pages/GoogleCallback";
 import {
   DashboardLayout,
   DashboardPage,
@@ -10,7 +10,7 @@ import {
   JobPostPage,
   SettingsPage,
   ProtectedRoute,
-} from '../modules/dashboard';
+} from "../modules/dashboard";
 
 function App() {
   return (

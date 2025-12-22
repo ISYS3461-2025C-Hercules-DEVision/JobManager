@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { authService } from '../modules/auth/services/authService';
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { authService } from "../modules/auth/services/authService";
 
 function GoogleCallback() {
   const [searchParams] = useSearchParams();
@@ -9,18 +9,18 @@ function GoogleCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      const code = searchParams.get('code');
-      const errorParam = searchParams.get('error');
+      const code = searchParams.get("code");
+      const errorParam = searchParams.get("error");
 
       if (errorParam) {
-        setError('Google authentication was cancelled or failed');
-        setTimeout(() => navigate('/register'), 3000);
+        setError("Google authentication was cancelled or failed");
+        setTimeout(() => navigate("/register"), 3000);
         return;
       }
 
       if (!code) {
-        setError('No authorization code received');
-        setTimeout(() => navigate('/register'), 3000);
+        setError("No authorization code received");
+        setTimeout(() => navigate("/register"), 3000);
         return;
       }
 
@@ -28,11 +28,11 @@ function GoogleCallback() {
         // Send code to backend
         await authService.loginWithGoogle(code);
         // Redirect to dashboard on success
-        navigate('/dashboard');
+        navigate("/dashboard");
       } catch (err) {
-        console.error('Google auth error:', err);
-        setError(err.message || 'Authentication failed');
-        setTimeout(() => navigate('/register'), 3000);
+        console.error("Google auth error:", err);
+        setError(err.message || "Authentication failed");
+        setTimeout(() => navigate("/register"), 3000);
       }
     };
 

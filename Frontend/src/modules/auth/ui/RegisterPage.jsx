@@ -267,7 +267,7 @@ function RegisterPage() {
           </div>
         </div>
 
-        <button 
+        <button
           type="button"
           onClick={handleGoogleSignup}
           disabled={loading}
