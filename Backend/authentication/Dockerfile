@@ -18,7 +18,7 @@ COPY src src
 RUN gradle clean bootJar --no-daemon -x test
 
 # Production stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
