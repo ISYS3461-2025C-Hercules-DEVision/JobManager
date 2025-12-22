@@ -200,7 +200,7 @@ export const useRegister = () => {
 
   const handleGoogleSignup = async () => {
     if (!ENV.ENABLE_GOOGLE_AUTH) {
-      setError('Google authentication is not enabled');
+      setError("Google authentication is not enabled");
       return;
     }
 
@@ -209,8 +209,8 @@ export const useRegister = () => {
       setError(null);
       await authService.signupWithGoogle();
     } catch (err) {
-      console.error('❌ Google signup failed:', err);
-      setError(err.message || 'Google signup failed. Please try again.');
+      console.error("❌ Google signup failed:", err);
+      setError(err.message || "Google signup failed. Please try again.");
       setLoading(false);
     }
   };
