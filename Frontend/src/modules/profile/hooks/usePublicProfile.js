@@ -74,8 +74,7 @@ export const usePublicProfile = () => {
         bannerUrl: formData.bannerUrl || undefined,
       });
 
-      // Mark profile as completed in localStorage
-      localStorage.setItem("profileCompleted", "true");
+      // Profile is now saved in MongoDB - no need for localStorage
       
       setSuccess(true);
       
