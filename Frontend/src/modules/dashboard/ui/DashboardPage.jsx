@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CreatePublicProfile from '../../profile/ui/CreatePublicProfile';
+import { profileService } from '../../profile/services/profileService';
 
 /**
  * DashboardPage - Main dashboard overview page
@@ -7,13 +8,32 @@ import CreatePublicProfile from '../../profile/ui/CreatePublicProfile';
  */
 function DashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user has completed their profile
-    const profileCompleted = localStorage.getItem('profileCompleted');
-    if (!profileCompleted) {
-      setShowProfileModal(true);
-    }
+    // Check if user has completed their profile from backend
+    const checkProfileStatus = async () => {
+      try {
+        const status = await profileService.checkProfileStatus();
+        console.log('🔍 Profile Status Check:', status); // DEBUG
+        console.log('  - hasPublicProfile:', status.hasPublicProfile); // DEBUG
+        console.log('  - Should show modal:', !status.hasPublicProfile); // DEBUG
+        
+        if (!status.hasPublicProfile) {
+          console.log('✅ Showing modal - user has no public profile'); // DEBUG
+          setShowProfileModal(true);
+        } else {
+          console.log('❌ Not showing modal - user already has profile'); // DEBUG
+        }
+      } catch (error) {
+        console.error('Failed to check profile status:', error);
+        // If error, don't show modal to avoid annoying user
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkProfileStatus();
   }, []);
 
   const handleProfileSuccess = () => {
