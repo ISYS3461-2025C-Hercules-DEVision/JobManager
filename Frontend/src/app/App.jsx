@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HomePage } from '../pages/home';
 import { LoginPage, RegisterPage, VerifyPage } from '../modules/auth';
+import GoogleCallback from '../pages/GoogleCallback';
 import {
   DashboardLayout,
   DashboardPage,
@@ -20,6 +21,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
         {/* Protected Dashboard Routes */}
         <Route
