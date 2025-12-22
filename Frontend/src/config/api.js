@@ -39,6 +39,11 @@ export const API_ENDPOINTS = {
     BASE: '/subscription',
     PLANS: '/subscription/plans',
     CURRENT: '/subscription/current',
+    UPGRADE: '/subscription/upgrade',
+    CANCEL: '/subscription/cancel',
+    REACTIVATE: '/subscription/reactivate',
+    BILLING_HISTORY: '/subscription/billing-history',
+    INVOICE: '/subscription/invoice',
   },
 };
 
