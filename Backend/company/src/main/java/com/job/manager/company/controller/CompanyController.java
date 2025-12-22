@@ -79,6 +79,12 @@ public class CompanyController {
         PublicProfile profile = companyService.createPublicProfile(
                 company.getCompanyId(),
                 requestDto.getCompanyName(),
+                requestDto.getAboutUs(),
+                requestDto.getWhoWeAreLookingFor(),
+                requestDto.getWebsiteURL(),
+                requestDto.getIndustryDomain(),
+                requestDto.getCountry(),
+                requestDto.getCity(),
                 requestDto.getLogoUrl(),
                 requestDto.getBannerUrl()
         );
@@ -143,5 +149,5 @@ public class CompanyController {
 @NoArgsConstructor
 class ProfileStatusDto {
     private String companyId;
-    private Boolean hasPublicProfile;
+    private boolean hasPublicProfile;  // Changed from Boolean to boolean primitive
 }
