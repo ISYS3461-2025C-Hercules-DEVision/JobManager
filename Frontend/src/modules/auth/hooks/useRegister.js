@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
+import { ENV } from "../../../config/env";
 
 export const useRegister = () => {
   const [step, setStep] = useState(1);
@@ -197,6 +198,23 @@ export const useRegister = () => {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    if (!ENV.ENABLE_GOOGLE_AUTH) {
+      setError('Google authentication is not enabled');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      await authService.signupWithGoogle();
+    } catch (err) {
+      console.error('❌ Google signup failed:', err);
+      setError(err.message || 'Google signup failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
   return {
     step,
     formData,
@@ -207,6 +225,7 @@ export const useRegister = () => {
     showPasswordConfirmation,
     handleChange,
     handleSubmit,
+    handleGoogleSignup,
     togglePasswordVisibility,
     togglePasswordConfirmationVisibility,
   };
