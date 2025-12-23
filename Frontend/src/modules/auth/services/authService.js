@@ -188,7 +188,7 @@ export const authService = {
       }
 
       // Build OAuth URL
-      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      const redirectUri = `${window.location.origin}/login/oauth2/code/google`;
       const scope = "email profile";
       const authUrl =
         `https://accounts.google.com/o/oauth2/v2/auth?` +
