@@ -21,7 +21,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyPage />} />
-        <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route path="/login/oauth2/code/google" element={<GoogleCallback />} />
 
         {/* Protected Dashboard Routes */}
         <Route
