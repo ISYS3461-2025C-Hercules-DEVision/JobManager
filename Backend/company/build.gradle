@@ -55,8 +55,8 @@ dependencies {
 	implementation 'org.springframework.kafka:spring-kafka'
 
 	// Eureka client + actuator
-	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+//	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+//	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 	//test
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
