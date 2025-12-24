@@ -2,12 +2,11 @@ spring:
   kafka:
     bootstrap-servers: localhost:29092
     consumer:
-      group-id: authentication-consumer-group
+      group-id: notification-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.job.manager.dto
-
+        spring.json.trusted.packages: com.job.manager.*
   data:
     mongodb:
       host: localhost
@@ -16,7 +15,6 @@ spring:
       username: admin
       password: admin
       authentication-database: admin
-
   mail:
     host: smtp.gmail.com
     port: 587
@@ -29,9 +27,9 @@ spring:
           starttls:
             enable: true
 
-kafka:
-  topic:
-    applicant-profile-updates: applicant-profile-updates
+services:
+  authentication:
+    base-url: http://localhost:8000/authentication
 
 eureka:
   client:
