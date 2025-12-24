@@ -15,9 +15,18 @@ public class NotificationApplication {
                 .ignoreIfMissing()
                 .load();
 
-        dotenv.entries().forEach(e ->
-                System.setProperty(e.getKey(), e.getValue())
-        );
+        dotenv.entries().forEach(e -> {
+            String key = e.getKey();
+            String value = e.getValue();
+
+            // Normalize only the SMTP password: remove spaces
+            if ("SMTP_PASSWORD".equals(key) && value != null) {
+                String normalized = value.replace(" ", "");
+                System.setProperty(key, normalized);
+            } else {
+                System.setProperty(key, value);
+            }
+        });
 
         SpringApplication.run(NotificationApplication.class, args);
     }

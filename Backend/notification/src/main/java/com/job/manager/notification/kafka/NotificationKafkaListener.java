@@ -18,7 +18,14 @@ public class NotificationKafkaListener {
             containerFactory = "matchedKafkaListenerContainerFactory"
     )
     public void onApplicantMatched(ApplicantMatchedEvent event) {
-        System.out.println("NotificationService: received matched event: " + event);
-        notificationService.handleApplicantMatched(event);
+        System.out.println("NotificationKafkaListener: received matched event: " + event);
+        try {
+            notificationService.handleApplicantMatched(event);
+        } catch (Exception ex) {
+            System.out.println("NotificationKafkaListener: ERROR handling event: " + ex.getMessage());
+            ex.printStackTrace();
+            // Optionally rethrow, Kafka will still log it:
+            throw ex;
+        }
     }
 }
