@@ -7,6 +7,8 @@ import com.job.manager.subscription.repository.CompanySearchProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CompanySearchProfileService {
@@ -35,11 +37,13 @@ public class CompanySearchProfileService {
         profileRepository.save(profile);
     }
 
+    // For a single company (used by GET /search-profile)
     public CompanySearchProfileResponse getProfile(String companyId) {
         CompanySearchProfile profile = profileRepository.findByCompanyId(companyId)
-                .orElseThrow(() -> new IllegalStateException("Search profile not found for company"));
+                .orElseThrow(() -> new IllegalStateException("Search profile not found for company " + companyId));
 
         return CompanySearchProfileResponse.builder()
+                .companyId(profile.getCompanyId())
                 .technicalTags(profile.getTechnicalTags())
                 .employmentStatus(profile.getEmploymentStatus())
                 .country(profile.getCountry())
@@ -47,5 +51,21 @@ public class CompanySearchProfileService {
                 .salaryMax(profile.getSalaryMax())
                 .highestEducationDegree(profile.getHighestEducationDegree())
                 .build();
+    }
+
+    // For matching service: return ALL company profiles
+    public List<CompanySearchProfileResponse> getAllProfiles() {
+        return profileRepository.findAll().stream()
+                .map(p -> CompanySearchProfileResponse.builder()
+                        .companyId(p.getCompanyId())   // assumes field exists in entity
+                        .technicalTags(p.getTechnicalTags())
+                        .employmentStatus(p.getEmploymentStatus())
+                        .country(p.getCountry())
+                        .salaryMin(p.getSalaryMin())
+                        .salaryMax(p.getSalaryMax())
+                        .highestEducationDegree(p.getHighestEducationDegree())
+                        .build()
+                )
+                .toList();
     }
 }

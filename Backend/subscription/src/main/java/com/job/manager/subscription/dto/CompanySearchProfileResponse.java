@@ -11,7 +11,7 @@ import java.util.Set;
 @Data
 @Builder
 public class CompanySearchProfileResponse {
-
+    private String companyId;                      // add this
     private List<String> technicalTags;
     private Set<EmploymentStatus> employmentStatus;
     private String country;
