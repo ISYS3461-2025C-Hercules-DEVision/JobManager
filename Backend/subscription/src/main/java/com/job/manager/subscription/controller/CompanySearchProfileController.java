@@ -8,7 +8,7 @@ import com.job.manager.subscription.service.CompanySearchProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import java.util.List;
 @RestController
 @RequestMapping("/subscriptions")
 @RequiredArgsConstructor
@@ -33,5 +33,10 @@ public class CompanySearchProfileController {
         String companyId = user.getUserId();
         CompanySearchProfileResponse response = profileService.getProfile(companyId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search-profiles")
+    public ResponseEntity<List<CompanySearchProfileResponse>> getAllSearchProfiles() {
+        return ResponseEntity.ok(profileService.getAllProfiles());
     }
 }
