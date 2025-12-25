@@ -1,0 +1,28 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27022
+      database: mongodb-job
+      username: admin
+      password: admin
+      authentication-database: admin
+
+kafka:
+  topic:
+    job-updates: job-post-updates
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true

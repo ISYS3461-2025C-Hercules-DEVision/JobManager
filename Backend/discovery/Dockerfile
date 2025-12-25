@@ -1,13 +1,17 @@
 # Build stage
-FROM gradle:8-jdk-21 AS builder
-WORKDIR /home/gradle/project
+FROM gradle:8-jdk21 AS builder
+WORKDIR /home/gradle/project/discovery
 
-# Docker build context phải là Backend/, 
-# nên trong Dockerfile (ở discovery) dùng:
-COPY .. .
+# Copy gradle wrapper files
+COPY discovery/gradlew discovery/gradlew.bat ./
+COPY discovery/gradle gradle
 
-RUN chmod +x gradlew
-RUN ./gradlew :discovery:bootJar --no-daemon -x test
+# Copy project files
+COPY discovery/build.gradle discovery/settings.gradle ./
+COPY discovery/src src
+
+#Build the application
+RUN gradle bootJar --no-daemon -x test
 
 # Run stage
 FROM eclipse-temurin:21-jre

@@ -8,6 +8,8 @@ export const useVerify = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [verified, setVerified] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -39,14 +41,43 @@ export const useVerify = () => {
     }
   };
 
+  const handleResend = async () => {
+    if (!email) {
+      setError("Please enter your email address first");
+      return;
+    }
+
+    setResending(true);
+    setError(null);
+    setResendSuccess(false);
+
+    try {
+      await authService.resendVerification(email);
+      setResendSuccess(true);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Resend failed:", err);
+      setError(err.message || "Failed to resend verification code");
+    } finally {
+      setResending(false);
+    }
+  };
+
   return {
     email,
     code,
     loading,
     error,
     verified,
+    resending,
+    resendSuccess,
     handleChange,
     handleSubmit,
+    handleResend,
     setEmail,
   };
 };
