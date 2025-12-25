@@ -17,6 +17,12 @@ docs/
 │   ├── AUTHENTICATION_FLOW.md
 │   ├── AUTH_UPDATE_SUMMARY.md
 │   └── TESTING_AUTHENTICATION.md
+├── subscription/                # Subscription feature docs
+│   ├── README.md
+│   ├── SUBSCRIPTION_UI.md
+│   ├── SUBSCRIPTION_UI_QUICK_REFERENCE.md
+│   ├── SUBSCRIPTION_IMPLEMENTATION_SUMMARY.md
+│   └── SUBSCRIPTION_UI_VISUAL_REFERENCE.md
 ├── guides/                      # How-to guides
 │   ├── QUICK_START.md
 │   ├── QUICK_REFERENCE.md
@@ -36,6 +42,12 @@ docs/
 - **[Quick Start Guide](guides/QUICK_START.md)** - Start here for setup instructions
 - **[Quick Reference](guides/QUICK_REFERENCE.md)** - Command cheat sheet
 
+### Subscription
+- **[Subscription Overview](subscription/README.md)** - Complete subscription feature guide
+- **[Quick Reference](subscription/SUBSCRIPTION_UI_QUICK_REFERENCE.md)** - Fast lookup for subscription features
+- **[Implementation Summary](subscription/SUBSCRIPTION_IMPLEMENTATION_SUMMARY.md)** - What was built
+- **[Visual Reference](subscription/SUBSCRIPTION_UI_VISUAL_REFERENCE.md)** - UI design guide
+
 ### Authentication
 - **[Authentication Flow](authentication/AUTHENTICATION_FLOW.md)** - How authentication works
 - **[Testing Authentication](authentication/TESTING_AUTHENTICATION.md)** - Test auth integration
@@ -53,6 +65,13 @@ docs/
 ---
 
 ## 📋 Documentation by Topic
+
+### 💳 Subscription Management
+Understanding and implementing subscription features:
+1. Read [Subscription Overview](subscription/README.md)
+2. Check [Quick Reference](subscription/SUBSCRIPTION_UI_QUICK_REFERENCE.md)
+3. Review [Implementation Summary](subscription/SUBSCRIPTION_IMPLEMENTATION_SUMMARY.md)
+4. Study [Visual Reference](subscription/SUBSCRIPTION_UI_VISUAL_REFERENCE.md)
 
 ### 🔐 Authentication
 Understanding and implementing authentication:
@@ -124,6 +143,9 @@ Testing your application:
 #### **Set up the project**
 → [Quick Start Guide](guides/QUICK_START.md)
 
+#### **Understand subscription features**
+→ [Subscription Overview](subscription/README.md)
+
 #### **Understand authentication**
 → [Authentication Flow](authentication/AUTHENTICATION_FLOW.md)
 
@@ -170,6 +192,13 @@ When updating documentation:
 ---
 
 ## 🆕 Latest Updates
+
+### 2025-12-22
+- ✅ Created comprehensive Subscription UI component
+- ✅ Implemented subscription management features
+- ✅ Added subscription service layer for API integration
+- ✅ Created complete subscription documentation (5 files)
+- ✅ Organized subscription docs into dedicated folder
 
 ### 2025-12-16
 - ✅ Created state management system (React Context API)
@@ -231,6 +260,7 @@ When updating documentation:
 - [x] State management
 - [x] Quick start guide
 - [x] Testing guide
+- [x] Subscription management
 
 ### 🚧 In Progress
 - [ ] Component library docs
@@ -263,7 +293,7 @@ When updating documentation:
 ---
 
 **Documentation Status**: ✅ Well Organized  
-**Last Updated**: 2025-12-16  
+**Last Updated**: 2025-12-22  
 **Maintained by**: DEVision Team
 
 ---

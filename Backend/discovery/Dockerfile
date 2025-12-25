@@ -1,3 +1,7 @@
+# Discovery Service Dockerfile
+# Build from Backend directory: docker-compose up -d
+# Works on Windows, Mac, and Linux
+
 # Build stage
 FROM gradle:8-jdk21 AS builder
 WORKDIR /home/gradle/project/discovery

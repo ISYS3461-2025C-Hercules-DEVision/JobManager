@@ -9,6 +9,10 @@ export const ENV = {
 
   // Authentication endpoints
   AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://localhost:8080',
+
+  // Company Service endpoints
+  COMPANY_SERVICE_URL: import.meta.env.VITE_COMPANY_SERVICE_URL || 'http://localhost:8082',
+
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
   MOCK_AUTH: import.meta.env.VITE_MOCK_AUTH === 'true',
 

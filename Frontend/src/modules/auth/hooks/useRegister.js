@@ -17,6 +17,9 @@ export const useRegister = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] =
+    useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -24,6 +27,14 @@ export const useRegister = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const togglePasswordConfirmationVisibility = () => {
+    setShowPasswordConfirmation(!showPasswordConfirmation);
   };
 
   const buildRegisterData = () => {
@@ -192,7 +203,11 @@ export const useRegister = () => {
     loading,
     error,
     registrationSuccess,
+    showPassword,
+    showPasswordConfirmation,
     handleChange,
     handleSubmit,
+    togglePasswordVisibility,
+    togglePasswordConfirmationVisibility,
   };
 };

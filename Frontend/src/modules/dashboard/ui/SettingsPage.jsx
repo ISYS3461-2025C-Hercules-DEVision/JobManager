@@ -1,20 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useProfile } from '../../../state/ProfileContext';
+import { useApp } from '../../../state/AppContext';
+import SubscriptionSection from './SubscriptionSection';
 
 /**
  * SettingsPage - Company and account settings
  * Features: Profile settings, subscription management, preferences
  */
 function SettingsPage() {
+  const { profile, publicProfile, updateProfile, updatePublicProfile, loading } = useProfile();
+  const { showSuccess, showError, showInfo } = useApp();
+
   const [activeSection, setActiveSection] = useState('company');
   const [companyData, setCompanyData] = useState({
-    companyName: 'Tech Corp',
-    email: 'contact@techcorp.com',
-    phoneNumber: '+1 (555) 123-4567',
-    country: 'United States',
-    city: 'San Francisco',
-    streetAddress: '123 Tech Street',
-    website: 'https://techcorp.com',
-    description: 'Leading technology company specializing in innovative solutions.',
+    companyName: '',
+    email: '',
+    phoneNumber: '',
+    country: '',
+    city: '',
+    streetAddress: '',
+  });
+
+  const [publicData, setPublicData] = useState({
+    displayName: '',
+    aboutUs: '',
+    whoWeAreLookingFor: '',
+    websiteUrl: '',
+    industryDomain: '',
+    logoUrl: '',
+    bannerUrl: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -31,9 +45,43 @@ function SettingsPage() {
     marketingEmails: false,
   });
 
+  // Load profile data when component mounts or profile changes
+  useEffect(() => {
+    if (profile) {
+      setCompanyData({
+        companyName: profile.companyName || '',
+        email: profile.email || '',
+        phoneNumber: profile.phoneNumber || '',
+        country: profile.country || '',
+        city: profile.city || '',
+        streetAddress: profile.streetAddress || '',
+      });
+    }
+  }, [profile]);
+
+  // Load public profile data when it changes
+  useEffect(() => {
+    if (publicProfile) {
+      setPublicData({
+        displayName: publicProfile.displayName || '',
+        aboutUs: publicProfile.aboutUs || '',
+        whoWeAreLookingFor: publicProfile.whoWeAreLookingFor || '',
+        websiteUrl: publicProfile.websiteUrl || '',
+        industryDomain: publicProfile.industryDomain || '',
+        logoUrl: publicProfile.logoUrl || '',
+        bannerUrl: publicProfile.bannerUrl || '',
+      });
+    }
+  }, [publicProfile]);
+
   const handleCompanyChange = (e) => {
     const { name, value } = e.target;
     setCompanyData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePublicProfileChange = (e) => {
+    const { name, value } = e.target;
+    setPublicData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePasswordChange = (e) => {
@@ -45,16 +93,35 @@ function SettingsPage() {
     setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSaveCompany = (e) => {
+  const handleSaveCompany = async (e) => {
     e.preventDefault();
-    console.log('Saving company data:', companyData);
-    // API call here
+
+    const result = await updateProfile(companyData);
+
+    if (result.success) {
+      showSuccess('Company profile updated successfully');
+    } else {
+      showError(result.error || 'Failed to update company profile');
+    }
+  };
+
+  const handleSavePublicProfile = async (e) => {
+    e.preventDefault();
+
+    const result = await updatePublicProfile(publicData);
+
+    if (result.success) {
+      showSuccess('Public profile updated successfully');
+    } else {
+      showError(result.error || 'Failed to update public profile');
+    }
   };
 
   const handleChangePassword = (e) => {
     e.preventDefault();
     console.log('Changing password');
-    // API call here
+    // TODO: Implement password change API when backend is ready
+    showInfo('Password change feature coming soon');
   };
 
   const sections = [
@@ -138,16 +205,6 @@ function SettingsPage() {
                       className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Website</label>
-                    <input
-                      type="url"
-                      name="website"
-                      value={companyData.website}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -183,24 +240,118 @@ function SettingsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold uppercase mb-2">Company Description</label>
-                  <textarea
-                    name="description"
-                    value={companyData.description}
-                    onChange={handleCompanyChange}
-                    rows={4}
-                    className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
-                  />
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
-
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors"
-                >
-                  Save Changes
-                </button>
               </form>
+
+              {/* Public Profile Section */}
+              <div className="mt-8 pt-8 border-t-4 border-black">
+                <h2 className="text-2xl font-black uppercase mb-6">Public Profile</h2>
+                <form onSubmit={handleSavePublicProfile} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold uppercase mb-2">Display Name</label>
+                      <input
+                        type="text"
+                        name="displayName"
+                        value={publicData.displayName}
+                        onChange={handlePublicProfileChange}
+                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold uppercase mb-2">Industry Domain</label>
+                      <input
+                        type="text"
+                        name="industryDomain"
+                        value={publicData.industryDomain}
+                        onChange={handlePublicProfileChange}
+                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold uppercase mb-2">Website URL</label>
+                    <input
+                      type="url"
+                      name="websiteUrl"
+                      value={publicData.websiteUrl}
+                      onChange={handlePublicProfileChange}
+                      placeholder="https://example.com"
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold uppercase mb-2">About Us</label>
+                    <textarea
+                      name="aboutUs"
+                      value={publicData.aboutUs}
+                      onChange={handlePublicProfileChange}
+                      rows={4}
+                      maxLength={2000}
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">{publicData.aboutUs.length}/2000 characters</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold uppercase mb-2">Who We Are Looking For</label>
+                    <textarea
+                      name="whoWeAreLookingFor"
+                      value={publicData.whoWeAreLookingFor}
+                      onChange={handlePublicProfileChange}
+                      rows={4}
+                      maxLength={1000}
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">{publicData.whoWeAreLookingFor.length}/1000 characters</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold uppercase mb-2">Logo URL</label>
+                      <input
+                        type="url"
+                        name="logoUrl"
+                        value={publicData.logoUrl}
+                        onChange={handlePublicProfileChange}
+                        placeholder="https://example.com/logo.png"
+                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold uppercase mb-2">Banner URL</label>
+                      <input
+                        type="url"
+                        name="bannerUrl"
+                        value={publicData.bannerUrl}
+                        onChange={handlePublicProfileChange}
+                        placeholder="https://example.com/banner.jpg"
+                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Saving...' : 'Save Public Profile'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -265,56 +416,7 @@ function SettingsPage() {
 
           {/* Subscription Section */}
           {activeSection === 'subscription' && (
-            <div className="bg-white border-4 border-black p-6">
-              <h2 className="text-2xl font-black uppercase mb-6">Subscription Plan</h2>
-
-              {/* Current Plan */}
-              <div className="bg-primary text-white border-4 border-black p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-3xl font-black uppercase">Premium Plan</h3>
-                    <p className="font-bold">Active until Jan 15, 2026</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-4xl font-black">$99</p>
-                    <p className="font-bold">/month</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Unlimited job posts
-                  </p>
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Advanced applicant search
-                  </p>
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Priority support
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="space-y-3">
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  Upgrade Plan
-                </button>
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  View Billing History
-                </button>
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  Cancel Subscription
-                </button>
-              </div>
-            </div>
+            <SubscriptionSection />
           )}
 
           {/* Notifications Section */}

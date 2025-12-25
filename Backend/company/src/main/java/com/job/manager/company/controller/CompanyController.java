@@ -143,5 +143,5 @@ public class CompanyController {
 @NoArgsConstructor
 class ProfileStatusDto {
     private String companyId;
-    private Boolean hasPublicProfile;
+    private boolean hasPublicProfile;  // Changed from Boolean to boolean primitive
 }

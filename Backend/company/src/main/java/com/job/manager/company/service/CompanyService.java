@@ -95,7 +95,10 @@ public class CompanyService {
     }
 
     @Transactional
-    public PublicProfile createPublicProfile(String companyId, String displayName, String logoUrl, String bannerUrl) {
+    public PublicProfile createPublicProfile(String companyId, String displayName, String aboutUs, 
+                                            String whoWeAreLookingFor, String websiteUrl, 
+                                            String industryDomain, String country, String city,
+                                            String logoUrl, String bannerUrl) {
         // Check if company exists
         Company company = companyRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found"));
@@ -105,20 +108,23 @@ public class CompanyService {
             throw new BusinessException("Public profile already exists for this company");
         }
 
-        // Create PublicProfile
+        // Create PublicProfile and save to MongoDB
         PublicProfile publicProfile = PublicProfile.builder()
                 .companyId(companyId)
                 .displayName(displayName)
+                .aboutUs(aboutUs != null ? aboutUs : "")
+                .whoWeAreLookingFor(whoWeAreLookingFor != null ? whoWeAreLookingFor : "")
+                .websiteUrl(websiteUrl)
+                .industryDomain(industryDomain)
+                .country(country != null ? country : company.getCountry())
+                .city(city != null ? city : company.getCity())
                 .logoUrl(logoUrl)
                 .bannerUrl(bannerUrl)
-                .country(company.getCountry())
-                .city(company.getCity())
-                .aboutUs("") // Will be filled later in settings
-                .whoWeAreLookingFor("") // Will be filled later in settings
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
+        // Save to MongoDB and return
         return publicProfileRepository.save(publicProfile);
     }
 

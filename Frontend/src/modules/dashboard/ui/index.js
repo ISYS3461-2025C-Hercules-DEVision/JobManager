@@ -6,4 +6,5 @@ export { default as PostManagerPage } from './PostManagerPage';
 export { default as JobPostPage } from './JobPostPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as SubscriptionSection } from './SubscriptionSection';
 
