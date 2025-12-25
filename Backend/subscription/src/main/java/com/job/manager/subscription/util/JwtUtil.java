@@ -59,4 +59,15 @@ public class JwtUtil {
             throw new BusinessException("Failed to parse token: " + e.getMessage());
         }
     }
+
+    public void validateToken(String token) {
+        // Since Kong already validated the token, we just do basic format check
+        if (token == null || token.trim().isEmpty()) {
+            throw new BusinessException("Token is required");
+        }
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) {
+            throw new BusinessException("Invalid token format");
+        }
+    }
 }

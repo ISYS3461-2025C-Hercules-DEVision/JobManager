@@ -34,3 +34,9 @@ kafka:
     subscription-activated: subscription-activated
     subscription-expired: subscription-expired
     subscription-cancelled: subscription-cancelled
+    payment-failed: payment-failed
+
+services:
+  subscription:
+    url: http://localhost:8083
+    activate-endpoint: /subscriptions/{subscriptionId}/activate
