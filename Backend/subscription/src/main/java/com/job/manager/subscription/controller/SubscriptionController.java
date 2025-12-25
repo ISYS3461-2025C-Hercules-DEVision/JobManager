@@ -120,17 +120,21 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponseDTO> activateSubscription(
             @PathVariable String subscriptionId,
             @RequestParam String paymentId,
-            @RequestHeader("Authorization") String token) {
+            @RequestHeader(value = "Authorization", required = false) String token) {
         
         log.info("Activating subscription: {} with payment: {}", subscriptionId, paymentId);
         
-        // Validate JWT token
-        try {
-            String jwt = token.replace("Bearer ", "");
-            jwtUtil.validateToken(jwt);
-        } catch (Exception e) {
-            log.error("Invalid JWT token", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        // Validate JWT token if provided (optional for internal service calls)
+        if (token != null && !token.isEmpty()) {
+            try {
+                String jwt = token.replace("Bearer ", "");
+                jwtUtil.validateToken(jwt);
+            } catch (Exception e) {
+                log.error("Invalid JWT token", e);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        } else {
+            log.info(">>> [INTERNAL] Activation called without token (internal service call)");
         }
 
         try {
