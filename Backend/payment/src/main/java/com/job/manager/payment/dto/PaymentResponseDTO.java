@@ -16,7 +16,7 @@ public class PaymentResponseDTO {
     private String subsystem;
     private String paymentType;
     private String customerId;
-    private String email;
+    // email removed per SRS DM-07: "Not in public receipts; used only for reconciliation / invoicing"
     private String referenceId;
     private BigDecimal amount;
     private String currency;

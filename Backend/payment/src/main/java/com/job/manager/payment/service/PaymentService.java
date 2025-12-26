@@ -61,6 +61,12 @@ public class PaymentService {
     }
 
     private void handleJobManagerPaymentSuccess(PaymentResponseDTO payment, String jwtToken) {
+        // Only activate subscription for SUBSCRIPTION payment type
+        if (!"SUBSCRIPTION".equals(payment.getPaymentType())) {
+            log.info("Payment type is not SUBSCRIPTION, skipping subscription activation");
+            return;
+        }
+
         log.info("Handling Job Manager payment success - activating subscription: {}", payment.getReferenceId());
 
         try {
@@ -68,16 +74,15 @@ public class PaymentService {
             String url = subscriptionServiceUrl + endpoint + "?paymentId=" + payment.getTransactionId();
 
             WebClient webClient = webClientBuilder.build();
-            webClient.put()
+            String response = webClient.put()
                     .uri(url)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .subscribe(
-                            response -> log.info("Subscription activated successfully: {}", response),
-                            error -> log.error("Failed to activate subscription: {}", error.getMessage())
-                    );
+                    .block(); // Use block() for synchronous call to ensure subscription is activated
+
+            log.info("Subscription activated successfully: {}", response);
 
         } catch (Exception e) {
             log.error("Error calling subscription service: {}", e.getMessage(), e);
@@ -133,7 +138,7 @@ public class PaymentService {
                 transaction.getSubsystem().toString(),
                 transaction.getPaymentType().toString(),
                 transaction.getCustomerId(),
-                transaction.getEmail(),
+                // email intentionally excluded per SRS privacy requirements
                 transaction.getReferenceId(),
                 transaction.getAmount(),
                 transaction.getCurrency(),

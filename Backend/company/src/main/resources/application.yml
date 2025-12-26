@@ -26,6 +26,10 @@ spring:
 kafka:
   topic:
     register: company-registration
+  topics:
+    subscription-activated: subscription-activated
+    subscription-cancelled: subscription-cancelled
+    subscription-expired: subscription-expired
 
 eureka:
   client:
