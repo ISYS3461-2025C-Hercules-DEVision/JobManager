@@ -15,7 +15,10 @@ import com.stripe.param.checkout.SessionCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -29,6 +32,7 @@ public class StripePaymentService {
 
     private final PaymentTransactionRepository paymentRepository;
     private final PaymentEventProducer eventProducer;
+    private final WebClient.Builder webClientBuilder;
 
     @Value("${stripe.api-key}")
     private String stripeApiKey;
@@ -38,6 +42,12 @@ public class StripePaymentService {
 
     @Value("${stripe.cancel-url}")
     private String cancelUrl;
+
+    @Value("${services.subscription.url}")
+    private String subscriptionServiceUrl;
+
+    @Value("${services.subscription.activate-endpoint}")
+    private String subscriptionActivateEndpoint;
 
     @PostConstruct
     public void init() {
@@ -144,6 +154,18 @@ public class StripePaymentService {
             PaymentEventDTO event = mapToEventDTO(updatedTransaction, "SUCCESS");
             eventProducer.sendPaymentSuccessEvent(event);
 
+            // Activate subscription directly from webhook if payment type is SUBSCRIPTION
+            if (updatedTransaction.getPaymentType() == PaymentType.SUBSCRIPTION && 
+                updatedTransaction.getSubsystem() == Subsystem.JOB_MANAGER) {
+                try {
+                    activateSubscriptionDirectly(updatedTransaction.getReferenceId(), updatedTransaction.getTransactionId());
+                    log.info(">>> [WEBHOOK] Successfully activated subscription {} from webhook", updatedTransaction.getReferenceId());
+                } catch (Exception e) {
+                    log.error(">>> [WEBHOOK] Failed to activate subscription from webhook: {}", e.getMessage(), e);
+                    // Don't fail the payment - subscription can be activated manually
+                }
+            }
+
             return mapToResponseDTO(updatedTransaction);
 
         } catch (StripeException e) {
@@ -151,6 +173,10 @@ public class StripePaymentService {
             throw new RuntimeException("Failed to retrieve payment session: " + e.getMessage());
         }
     }
+
+    // REMOVED: activateSubscription() method
+    // Subscription activation is handled by PaymentService.completePayment() 
+    // which has access to the user's JWT token required for authentication
 
     public PaymentResponseDTO handleFailedPayment(String sessionId, String reason) {
         log.info("Handling failed payment for session: {}", sessionId);
@@ -179,7 +205,7 @@ public class StripePaymentService {
                 transaction.getSubsystem().toString(),
                 transaction.getPaymentType().toString(),
                 transaction.getCustomerId(),
-                transaction.getEmail(),
+                // email intentionally excluded per SRS privacy requirements
                 transaction.getReferenceId(),
                 transaction.getAmount(),
                 transaction.getCurrency(),
@@ -207,4 +233,29 @@ public class StripePaymentService {
                 eventType
         );
     }
-}
+    /**
+     * Activate subscription directly without JWT (called from webhook)
+     * Uses internal service-to-service communication
+     */
+    private void activateSubscriptionDirectly(String subscriptionId, String paymentId) {
+        log.info(">>> [WEBHOOK] Activating subscription: {} with payment: {}", subscriptionId, paymentId);
+
+        try {
+            String endpoint = subscriptionActivateEndpoint.replace("{subscriptionId}", subscriptionId);
+            String url = subscriptionServiceUrl + endpoint + "?paymentId=" + paymentId;
+
+            WebClient webClient = webClientBuilder.build();
+            String response = webClient.put()
+                    .uri(url)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            log.info(">>> [WEBHOOK] Subscription activated successfully: {}", response);
+
+        } catch (Exception e) {
+            log.error(">>> [WEBHOOK] Error calling subscription service: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to activate subscription: " + e.getMessage());
+        }
+    }}

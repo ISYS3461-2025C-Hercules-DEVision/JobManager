@@ -58,7 +58,9 @@ public class PaymentController {
 
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(jwtToken)) {
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
                 logger.warn("Invalid JWT token for payment initiation");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
@@ -68,7 +70,7 @@ public class PaymentController {
             PaymentInitiateResponseDTO response = paymentService.initiatePayment(request);
             
             logger.info("Payment initiated successfully. Transaction ID: {}, Session ID: {}", 
-                    response.getTransactionId(), response.getStripeSessionId());
+                    response.getTransactionId(), response.getSessionId());
 
             return ResponseEntity.ok(response);
 
@@ -102,7 +104,9 @@ public class PaymentController {
 
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(jwtToken)) {
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
                 logger.warn("Invalid JWT token for payment completion");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
@@ -142,7 +146,9 @@ public class PaymentController {
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(jwtToken)) {
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
@@ -177,12 +183,14 @@ public class PaymentController {
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(jwtToken)) {
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }
 
-            List<PaymentResponseDTO> payments = paymentService.getPaymentsByCustomerId(customerId);
+            List<PaymentResponseDTO> payments = paymentService.getPaymentsByCustomerId(customerId, null);
             
             logger.info("Retrieved {} payments for customer: {}", payments.size(), customerId);
 
@@ -208,7 +216,9 @@ public class PaymentController {
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
-            if (!jwtUtil.validateToken(jwtToken)) {
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Invalid or expired token"));
             }

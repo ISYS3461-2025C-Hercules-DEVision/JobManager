@@ -3,6 +3,8 @@ package com.job.manager.payment.controller;
 import com.job.manager.payment.service.StripePaymentService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
+import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import org.slf4j.Logger;
@@ -26,7 +28,7 @@ public class StripeWebhookController {
 
     private static final Logger logger = LoggerFactory.getLogger(StripeWebhookController.class);
 
-    @Value("${stripe.webhook.secret}")
+    @Value("${stripe.webhook-secret}")
     private String webhookSecret;
 
     @Autowired
@@ -73,7 +75,7 @@ public class StripeWebhookController {
         try {
             switch (event.getType()) {
                 case "checkout.session.completed":
-                    handleCheckoutSessionCompleted(event);
+                    handleCheckoutSessionCompleted(event, payload);
                     break;
 
                 case "payment_intent.succeeded":
@@ -103,24 +105,27 @@ public class StripeWebhookController {
      * Triggered when a Checkout Session is successfully completed.
      * 
      * @param event Stripe event
+     * @param payload Raw JSON payload
      */
-    private void handleCheckoutSessionCompleted(Event event) {
+    private void handleCheckoutSessionCompleted(Event event, String payload) {
         try {
-            Session session = (Session) event.getDataObjectDeserializer()
-                    .getObject()
-                    .orElseThrow(() -> new IllegalStateException("Unable to deserialize event"));
-
-            String sessionId = session.getId();
+            // Extract session ID from raw JSON payload
+            // Find the "id" field within "data.object"
+            String sessionId = extractJsonValue(payload, "\"id\":\\s*\"(cs_[^\"]+)\"");
+            
+            if (sessionId == null) {
+                throw new IllegalStateException("Could not extract session ID from webhook payload");
+            }
+            
+            // Retrieve full session details from Stripe API
+            Session session = Session.retrieve(sessionId);
             String paymentStatus = session.getPaymentStatus();
 
             logger.info("Checkout session completed: {}, payment status: {}", sessionId, paymentStatus);
 
             if ("paid".equals(paymentStatus)) {
                 // Mark payment as successful
-                stripePaymentService.handleSuccessfulPayment(
-                        sessionId,
-                        session.getPaymentIntent()
-                );
+                stripePaymentService.handleSuccessfulPayment(sessionId);
 
                 logger.info("Payment marked as successful for session: {}", sessionId);
             } else {
@@ -132,6 +137,18 @@ public class StripeWebhookController {
             logger.error("Error handling checkout.session.completed event: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to handle checkout session completed", e);
         }
+    }
+    
+    /**
+     * Extract a value from JSON using regex
+     */
+    private String extractJsonValue(String json, String pattern) {
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher m = p.matcher(json);
+        if (m.find()) {
+            return m.group(1);
+        }
+        return null;
     }
 
     /**

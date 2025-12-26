@@ -163,4 +163,15 @@ public class CompanyService {
         return publicProfileRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new BusinessException("Public profile not found"));
     }
+
+    @Transactional
+    public void updatePremiumStatus(String companyId, boolean isPremium) {
+        Company company = companyRepository.findByCompanyId(companyId)
+                .orElseThrow(() -> new BusinessException("Company not found: " + companyId));
+        
+        company.setIsPremium(isPremium);
+        company.setUpdatedAt(LocalDateTime.now());
+        
+        companyRepository.save(company);
+    }
 }
