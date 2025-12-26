@@ -1,10 +1,9 @@
 package com.job.manager.job.controller;
 
-import com.job.manager.job.dto.AuthenticatedUser;
 import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.service.JobService;
 import org.springframework.web.bind.annotation.*;
-import com.job.manager.job.annotation.CurrentUser;
+
 @RestController
 @RequestMapping("")
 public class JobController {
@@ -15,15 +14,10 @@ public class JobController {
         this.jobService = jobService;
     }
 
-    @PostMapping("/jobs")
-    public JobPost createJob(
-            @CurrentUser AuthenticatedUser user,
-            @RequestBody JobPost jobPost
-    ) {
-        jobPost.setCompanyId(user.getUserId());
+    @PostMapping
+    public JobPost createJobPost(@RequestBody JobPost jobPost) {
         return jobService.createJobPost(jobPost);
     }
-
 
     @GetMapping("ping")
     public String ping() {

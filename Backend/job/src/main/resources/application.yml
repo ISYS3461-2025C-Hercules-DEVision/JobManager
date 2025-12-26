@@ -7,14 +7,14 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.job.manager.dto
-  data:
-    mongodb:
-      host: localhost
-      port: 27022
-      database: mongodb-job
-      username: admin
-      password: admin
-      authentication-database: admin
+
+  mongodb:
+    host: localhost
+    port: 27022
+    database: mongodb-company
+    username: admin
+    password: admin
+    authentication-database: admin
 
 kafka:
   topic:

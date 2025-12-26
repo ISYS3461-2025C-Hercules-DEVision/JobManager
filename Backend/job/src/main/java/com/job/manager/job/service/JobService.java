@@ -5,9 +5,6 @@ import com.job.manager.job.kafka.JobKafkaProducer;
 import com.job.manager.job.repository.JobRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.UUID;
-
 @Service
 public class JobService {
 
@@ -21,17 +18,8 @@ public class JobService {
     }
 
     public JobPost createJobPost(JobPost jobPost) {
-        jobPost.setId(UUID.randomUUID());
-        jobPost.setPostedDate(LocalDate.now());
-
         JobPost saved = jobRepository.save(jobPost);
-        try {
-        kafkaProducer.sendJobUpdate(saved);
-        } catch (Exception e) {
-            // log only — do NOT fail API
-            System.err.println("Kafka publish failed: " + e.getMessage());
-        }
-        
+        kafkaProducer.sendJobUpdate(saved); // Notify applicants
         return saved;
     }
 
