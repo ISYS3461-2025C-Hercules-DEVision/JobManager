@@ -116,22 +116,46 @@ export const profileService = {
 
   /**
    * Get complete company profile (both basic and public profile)
-   * @returns {Promise<{company: Object, publicProfile: Object}>}
+   * @returns {Promise<{companyProfile: Object, publicProfile: Object, hasPublicProfile: boolean}>}
    */
   async getCompleteProfile() {
     try {
-      const [company, status] = await Promise.all([
+      // Use Promise.allSettled to handle cases where profile doesn't exist yet
+      const [companyResult, statusResult] = await Promise.allSettled([
         this.getCompanyProfile(),
         this.checkProfileStatus(),
       ]);
 
+      // Handle company profile result
+      if (companyResult.status === 'rejected') {
+        const error = companyResult.reason;
+        // If company not found (new user), return empty profile
+        if (error.message?.includes('Company not found') || error.message?.includes('404')) {
+          return {
+            companyProfile: null,
+            publicProfile: null,
+            hasPublicProfile: false,
+          };
+        }
+        // Other errors - rethrow
+        throw error;
+      }
+
+      const company = companyResult.value;
+      const status = statusResult.status === 'fulfilled' ? statusResult.value : { hasPublicProfile: false };
+
       let publicProfile = null;
       if (status.hasPublicProfile) {
-        publicProfile = await this.getPublicProfile();
+        try {
+          publicProfile = await this.getPublicProfile();
+        } catch (err) {
+          console.warn('Failed to fetch public profile:', err);
+          // Continue without public profile
+        }
       }
 
       return {
-        company,
+        companyProfile: company,
         publicProfile,
         hasPublicProfile: status.hasPublicProfile,
       };
