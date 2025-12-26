@@ -79,12 +79,6 @@ public class CompanyController {
         PublicProfile profile = companyService.createPublicProfile(
                 company.getCompanyId(),
                 requestDto.getCompanyName(),
-                requestDto.getAboutUs(),
-                requestDto.getWhoWeAreLookingFor(),
-                requestDto.getWebsiteURL(),
-                requestDto.getIndustryDomain(),
-                requestDto.getCountry(),
-                requestDto.getCity(),
                 requestDto.getLogoUrl(),
                 requestDto.getBannerUrl()
         );

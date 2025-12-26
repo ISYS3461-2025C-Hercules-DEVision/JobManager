@@ -18,6 +18,13 @@ public class KafkaProducer {
     }
 
     public void publishRegisterEvent(RegisterRequest registerRequest) {
+        System.out.println(">>> [KAFKA PRODUCER] Publishing registration event to topic: " + registerTopic);
+        System.out.println(">>> [KAFKA PRODUCER] CompanyId: " + registerRequest.getCompanyId());
+        System.out.println(">>> [KAFKA PRODUCER] Email: " + registerRequest.getEmail());
+        System.out.println(">>> [KAFKA PRODUCER] CompanyName: " + registerRequest.getCompanyName());
+        
         kafkaTemplate.send(registerTopic, registerRequest);
+        
+        System.out.println(">>> [KAFKA PRODUCER] Event published successfully");
     }
 }

@@ -103,8 +103,15 @@ public class AuthenticationService {
         // 3. Store in Redis
         otpService.store(user.getId(), otp);
 
-        // 4. Send email
-        emailService.sendVerificationEmail(user.getUsername(), otp);
+        // 4. Send email - TEMPORARILY DISABLED FOR TESTING
+        // TODO: Fix Gmail authentication in production
+        try {
+            emailService.sendVerificationEmail(user.getUsername(), otp);
+            System.out.println(">>> Email sent successfully");
+        } catch (Exception e) {
+            System.err.println(">>> Email sending failed (continuing anyway): " + e.getMessage());
+            System.out.println(">>> VERIFICATION OTP: " + otp);
+        }
 
         registerRequest.setCompanyId(newUser.getId());
 

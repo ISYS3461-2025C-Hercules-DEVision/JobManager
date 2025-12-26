@@ -4,19 +4,18 @@
 
 # Build stage
 FROM gradle:8-jdk21 AS builder
-WORKDIR /home/gradle/project
-
-# Copy discovery service files from Backend directory (build context)
-COPY discovery/ ./discovery/
-
-# Build the discovery service
 WORKDIR /home/gradle/project/discovery
 
-# Windows: Use gradle from base image (avoids line-ending issues)
-RUN gradle bootJar --no-daemon -x test
+# Copy gradle wrapper files
+COPY discovery/gradlew discovery/gradlew.bat ./
+COPY discovery/gradle gradle
 
-# Mac/Linux: Uncomment below and comment above if you prefer gradlew
-# RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
+# Copy project files
+COPY discovery/build.gradle discovery/settings.gradle ./
+COPY discovery/src src
+
+#Build the application
+RUN gradle bootJar --no-daemon -x test
 
 # Run stage
 FROM eclipse-temurin:21-jre
