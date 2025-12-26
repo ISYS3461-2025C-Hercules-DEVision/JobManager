@@ -27,6 +27,11 @@ function GoogleCallback() {
       try {
         // Send code to backend
         await authService.loginWithGoogle(code);
+        
+        // Small delay to allow backend services to sync via Kafka
+        // This gives time for the company profile to be created
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
         // Redirect to dashboard on success
         navigate("/dashboard");
       } catch (err) {

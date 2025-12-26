@@ -26,6 +26,7 @@ export const ProfileProvider = ({ children }) => {
   const [hasPublicProfile, setHasPublicProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   /**
    * Load company profile and public profile
@@ -47,7 +48,18 @@ export const ProfileProvider = ({ children }) => {
       setHasPublicProfile(data.hasPublicProfile);
     } catch (err) {
       console.error('Failed to load profile:', err);
-      setError(err.message || 'Failed to load profile');
+      
+      // Check if this is a "profile not found" error (new user)
+      if (err.message?.includes('Company not found') || err.message?.includes('404')) {
+        console.log('Company profile not yet created - this is expected for new users');
+        // Don't set error state for new users without profiles yet
+        setProfile(null);
+        setPublicProfile(null);
+        setHasPublicProfile(false);
+      } else {
+        // Real error - set error state
+        setError(err.message || 'Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }
@@ -158,8 +170,22 @@ export const ProfileProvider = ({ children }) => {
       loadProfile();
     } else {
       clearProfile();
+      setRetryCount(0);
     }
   }, [isAuthenticated, loadProfile, clearProfile]);
+
+  // Retry loading profile if it failed to load initially (for new users)
+  useEffect(() => {
+    if (isAuthenticated && !profile && !loading && !error && retryCount < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Retrying profile load (attempt ${retryCount + 1}/3)...`);
+        setRetryCount(prev => prev + 1);
+        loadProfile();
+      }, 2000); // Retry every 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, profile, loading, error, retryCount, loadProfile]);
 
   const value = {
     // State
