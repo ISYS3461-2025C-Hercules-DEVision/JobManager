@@ -12,7 +12,10 @@ docs/
 ├── integration/                 # Backend integration docs
 │   ├── INTEGRATION_GUIDE.md
 │   ├── INTEGRATION_COMPLETE.md
-│   └── INTEGRATION_CHECKLIST.md
+│   ├── INTEGRATION_CHECKLIST.md
+│   ├── NOTIFICATION_PAYMENT_SUBSCRIPTION_INTEGRATION.md
+│   ├── NOTIFICATION_PAYMENT_SUBSCRIPTION_IMPLEMENTATION.md
+│   └── QUICK_REFERENCE_PAYMENT.md
 ├── authentication/              # Authentication docs
 │   ├── AUTHENTICATION_FLOW.md
 │   ├── AUTH_UPDATE_SUMMARY.md
@@ -42,6 +45,11 @@ docs/
 - **[Quick Start Guide](guides/QUICK_START.md)** - Start here for setup instructions
 - **[Quick Reference](guides/QUICK_REFERENCE.md)** - Command cheat sheet
 
+### 🆕 Payment & Subscription Integration (NEW!)
+- **[Complete Integration Guide](integration/NOTIFICATION_PAYMENT_SUBSCRIPTION_INTEGRATION.md)** - Full integration documentation
+- **[Quick Reference](integration/QUICK_REFERENCE_PAYMENT.md)** - Fast lookup for payment & subscription
+- **[Implementation Summary](integration/NOTIFICATION_PAYMENT_SUBSCRIPTION_IMPLEMENTATION.md)** - What was built
+
 ### Subscription
 - **[Subscription Overview](subscription/README.md)** - Complete subscription feature guide
 - **[Quick Reference](subscription/SUBSCRIPTION_UI_QUICK_REFERENCE.md)** - Fast lookup for subscription features
@@ -65,6 +73,13 @@ docs/
 ---
 
 ## 📋 Documentation by Topic
+
+### 💰 Payment, Subscription & Notification (NEW!)
+Complete backend integration for payment processing, subscription management, and notifications:
+1. Read [Complete Integration Guide](integration/NOTIFICATION_PAYMENT_SUBSCRIPTION_INTEGRATION.md)
+2. Check [Quick Reference](integration/QUICK_REFERENCE_PAYMENT.md)
+3. Review [Implementation Summary](integration/NOTIFICATION_PAYMENT_SUBSCRIPTION_IMPLEMENTATION.md)
+4. Test with backend services
 
 ### 💳 Subscription Management
 Understanding and implementing subscription features:
