@@ -41,7 +41,15 @@ kafka:
     payment-success: payment-success
     payment-failed: payment-failed
 
-# Service URLs (for callbacks)
+# Service URLs for validation and callbacks
+subscription:
+  service:
+    url: http://localhost:8083
+
+company:
+  service:
+    url: http://localhost:8082
+
 services:
   subscription:
     url: http://localhost:8083
