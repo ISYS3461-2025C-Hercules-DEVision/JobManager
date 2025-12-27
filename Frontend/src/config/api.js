@@ -36,14 +36,36 @@ export const API_ENDPOINTS = {
 
   // Subscription
   SUBSCRIPTION: {
-    BASE: '/subscription',
-    PLANS: '/subscription/plans',
-    CURRENT: '/subscription/current',
-    UPGRADE: '/subscription/upgrade',
-    CANCEL: '/subscription/cancel',
-    REACTIVATE: '/subscription/reactivate',
-    BILLING_HISTORY: '/subscription/billing-history',
-    INVOICE: '/subscription/invoice',
+    BASE: '/subscriptions',
+    CREATE: '/subscriptions',
+    GET_BY_COMPANY: '/subscriptions/company',
+    GET_BY_ID: '/subscriptions',
+    GET_ALL: '/subscriptions',
+    ACTIVATE: '/subscriptions/:id/activate',
+    CANCEL: '/subscriptions/:id/cancel',
+    CHECK_EXPIRED: '/subscriptions/check-expired',
+  },
+
+  // Payment
+  PAYMENT: {
+    BASE: '/payments',
+    INITIATE: '/payments/initiate',
+    COMPLETE: '/payments/complete',
+    GET_BY_ID: '/payments',
+    GET_CUSTOMER_PAYMENTS: '/payments/customer',
+    GET_ALL: '/payments',
+    CANCEL: '/payments/cancel',
+    WEBHOOK: '/payments/webhook',
+  },
+
+  // Notification
+  NOTIFICATION: {
+    BASE: '/notifications',
+    GET_BY_COMPANY: '/notifications',
+    MARK_AS_READ: '/notifications/:id/read',
+    DELETE: '/notifications/:id',
   },
 };
+
+
 
