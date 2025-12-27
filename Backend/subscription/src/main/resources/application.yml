@@ -40,7 +40,7 @@ kafka:
 # Service URLs - Company Service for validation
 company:
   service:
-    url: http://localhost:8081
+    url: http://localhost:8082
 
 services:
   subscription:
