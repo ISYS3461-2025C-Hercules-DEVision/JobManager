@@ -26,18 +26,23 @@ public class CompanyController {
     // validation)
     @GetMapping("/companies/{companyId}")
     public ResponseEntity<CompanyInternalDTO> getCompanyById(@PathVariable String companyId) {
-        Company company = companyService.getCompanyById(companyId);
+        try {
+            Company company = companyService.getCompanyById(companyId);
 
-        CompanyInternalDTO dto = CompanyInternalDTO.builder()
-                .companyId(company.getCompanyId())
-                .companyName(company.getCompanyName())
-                .email(company.getEmail())
-                .isPremium(company.getIsPremium())
-                .isActive(company.getIsActive())
-                .isEmailVerified(company.getIsEmailVerified())
-                .build();
+            CompanyInternalDTO dto = CompanyInternalDTO.builder()
+                    .companyId(company.getCompanyId())
+                    .companyName(company.getCompanyName())
+                    .email(company.getEmail())
+                    .isPremium(company.getIsPremium())
+                    .isActive(company.getIsActive())
+                    .isEmailVerified(company.getIsEmailVerified())
+                    .build();
 
-        return ResponseEntity.ok(dto);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            // Return 404 if company not found (for proper error handling in other services)
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // Check if user has completed public profile setup
