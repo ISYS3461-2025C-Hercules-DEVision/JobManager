@@ -31,7 +31,7 @@ public class KafkaConfig {
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.job.manager.dto,com.job.manager.company.dto");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, RegisterRequest.class);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        
+
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
@@ -43,25 +43,26 @@ public class KafkaConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.job.manager.dto,com.job.manager.company.dto");
+        props.put(JsonDeserializer.TRUSTED_PACKAGES,
+                "com.job.manager.dto,com.job.manager.company.dto,com.job.manager.subscription.dto");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, SubscriptionEventDTO.class);
+        props.put(JsonDeserializer.TYPE_MAPPINGS,
+                "com.job.manager.subscription.dto.SubscriptionEventDTO:com.job.manager.company.dto.SubscriptionEventDTO");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        
+
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, RegisterRequest> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, RegisterRequest> factory = 
-            new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, RegisterRequest> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(registerConsumerFactory());
         return factory;
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO> subscriptionKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO> factory = 
-            new ConcurrentKafkaListenerContainerFactory<>();
+        ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(subscriptionConsumerFactory());
         return factory;
     }
