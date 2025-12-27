@@ -15,6 +15,18 @@ export const ENV = {
   COMPANY_SERVICE_URL:
     import.meta.env.VITE_COMPANY_SERVICE_URL || "http://localhost:8082",
 
+  // Subscription Service endpoints
+  SUBSCRIPTION_SERVICE_URL:
+    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://localhost:8083",
+
+  // Payment Service endpoints
+  PAYMENT_SERVICE_URL:
+    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:8084",
+
+  // Notification Service endpoints
+  NOTIFICATION_SERVICE_URL:
+    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://localhost:8085",
+
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
   MOCK_AUTH: import.meta.env.VITE_MOCK_AUTH === "true",
 
