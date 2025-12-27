@@ -15,6 +15,8 @@ public class CompanyDTO {
 
     private String companyId;
     private String companyName;
-    private Boolean isPremium;
     private String email;
+    private Boolean isPremium;
+    private Boolean isActive;
+    private Boolean isEmailVerified;
 }
