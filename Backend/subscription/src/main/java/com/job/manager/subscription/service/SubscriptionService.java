@@ -23,16 +23,17 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionEventProducer eventProducer;
 
-    // TODO: replace with real subscription lookup
     public boolean isPremiumActive(String companyId) {
-        // For now, pretend all companies are premium.
-        // Later, look up the subscription in MongoDB or another source.
-        return true;
+        return subscriptionRepository.findByCompanyId(companyId)
+                .map(sub -> sub.getStatus() == Subscription.SubscriptionStatus.ACTIVE &&
+                        sub.getExpiryDate() != null &&
+                        sub.getExpiryDate().isAfter(LocalDateTime.now()))
+                .orElse(false);
     }
 
     public SubscriptionResponseDTO createSubscription(SubscriptionCreateDTO dto) {
         log.info("Creating subscription for company: {}", dto.getCompanyId());
-        
+
         Subscription subscription = new Subscription();
         subscription.setCompanyId(dto.getCompanyId());
         subscription.setPlanType(Subscription.PlanType.valueOf(dto.getPlanType().toUpperCase()));
@@ -41,22 +42,23 @@ public class SubscriptionService {
         subscription.setUpdatedAt(LocalDateTime.now());
         subscription.setAutoRenew(false);
         subscription.setCurrency("USD");
-        
+
         if (subscription.getPlanType() == Subscription.PlanType.PREMIUM) {
-            subscription.setPriceAmount(new BigDecimal("99.99"));
+            subscription.setPriceAmount(new BigDecimal("30.00"));
         } else {
             subscription.setPriceAmount(BigDecimal.ZERO);
             subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
             subscription.setStartDate(LocalDateTime.now());
+            // Free plans might be indefinite or have a set expiry
             subscription.setExpiryDate(LocalDateTime.now().plusYears(100));
         }
-        
+
         Subscription saved = subscriptionRepository.save(subscription);
-        
+
         // Publish Kafka event
         SubscriptionEventDTO event = mapToEventDTO(saved);
         eventProducer.sendSubscriptionCreatedEvent(event);
-        
+
         return mapToResponseDTO(saved);
     }
 
@@ -85,20 +87,32 @@ public class SubscriptionService {
         log.info("Activating subscription: {} with payment: {}", subscriptionId, paymentId);
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
-        
+
         subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
-        subscription.setStartDate(LocalDateTime.now());
-        subscription.setExpiryDate(LocalDateTime.now().plusMonths(1));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime currentExpiry = subscription.getExpiryDate();
+        LocalDateTime newExpiry;
+
+        // If currently active and not expired, extend. Otherwise start from now.
+        if (currentExpiry != null && currentExpiry.isAfter(now)) {
+            newExpiry = currentExpiry.plusMonths(1);
+        } else {
+            subscription.setStartDate(now); // Reset start date if expired or new
+            newExpiry = now.plusMonths(1);
+        }
+
+        subscription.setExpiryDate(newExpiry);
         subscription.setLastPaymentId(paymentId);
-        subscription.setUpdatedAt(LocalDateTime.now());
-        
+        subscription.setUpdatedAt(now);
+
         Subscription saved = subscriptionRepository.save(subscription);
-        
+
         // Publish Kafka event to notify company service
         SubscriptionEventDTO event = mapToEventDTO(saved);
         eventProducer.sendSubscriptionActivatedEvent(event);
         log.info(">>> [SUBSCRIPTION] Published activation event for company: {}", saved.getCompanyId());
-        
+
         return mapToResponseDTO(saved);
     }
 
@@ -106,37 +120,73 @@ public class SubscriptionService {
         log.info("Cancelling subscription: {}", subscriptionId);
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
-        
+
         subscription.setStatus(Subscription.SubscriptionStatus.CANCELLED);
         subscription.setUpdatedAt(LocalDateTime.now());
-        
+
         Subscription saved = subscriptionRepository.save(subscription);
-        
+
         // Publish Kafka event to notify company service
         SubscriptionEventDTO event = mapToEventDTO(saved);
         eventProducer.sendSubscriptionCancelledEvent(event);
         log.info(">>> [SUBSCRIPTION] Published cancellation event for company: {}", saved.getCompanyId());
-        
+
         return mapToResponseDTO(saved);
     }
 
     public List<SubscriptionResponseDTO> checkExpiredSubscriptions() {
-        log.info("Checking for expired subscriptions");
+        return checkExpiredSubscriptions(false);
+    }
+
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * ?") // Every day at midnight
+    public void scheduleSubscriptionChecks() {
+        log.info("Running scheduled subscription checks...");
+        checkExpiredSubscriptions(true);
+        checkExpiringSoonSubscriptions();
+    }
+
+    private List<SubscriptionResponseDTO> checkExpiredSubscriptions(boolean autoRun) {
+        log.info("Checking for expired subscriptions (auto: {})", autoRun);
         LocalDateTime now = LocalDateTime.now();
         List<Subscription> expiredSubscriptions = subscriptionRepository.findAll().stream()
                 .filter(s -> s.getExpiryDate() != null && s.getExpiryDate().isBefore(now))
                 .filter(s -> s.getStatus() == Subscription.SubscriptionStatus.ACTIVE)
                 .collect(Collectors.toList());
-        
+
         expiredSubscriptions.forEach(subscription -> {
             subscription.setStatus(Subscription.SubscriptionStatus.EXPIRED);
             subscription.setUpdatedAt(LocalDateTime.now());
-            subscriptionRepository.save(subscription);
+            Subscription saved = subscriptionRepository.save(subscription);
+
+            // Send EXPIRED event
+            eventProducer.sendSubscriptionExpiredEvent(mapToEventDTO(saved));
         });
-        
+
         return expiredSubscriptions.stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    private void checkExpiringSoonSubscriptions() {
+        log.info("Checking for subscriptions expiring in 7 days...");
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime warningWindowStart = now.plusDays(7).minusHours(1); // 7 days from now (tolerant)
+        LocalDateTime warningWindowEnd = now.plusDays(7).plusHours(25); // Window to catch today's +7 matches
+
+        // Find active subscriptions expiring roughly 7 days from now
+        List<Subscription> expiringSoon = subscriptionRepository.findAll().stream()
+                .filter(s -> s.getStatus() == Subscription.SubscriptionStatus.ACTIVE)
+                .filter(s -> s.getExpiryDate() != null)
+                .filter(s -> s.getExpiryDate().isAfter(warningWindowStart)
+                        && s.getExpiryDate().isBefore(warningWindowEnd))
+                .collect(Collectors.toList());
+
+        log.info("Found {} subscriptions expiring soon", expiringSoon.size());
+
+        expiringSoon.forEach(sub -> {
+            log.info("Notifying expiring soon for company: {}", sub.getCompanyId());
+            eventProducer.sendSubscriptionExpiringSoonEvent(mapToEventDTO(sub));
+        });
     }
 
     private SubscriptionResponseDTO mapToResponseDTO(Subscription subscription) {

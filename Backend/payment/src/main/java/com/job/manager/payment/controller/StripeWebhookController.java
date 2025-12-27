@@ -23,7 +23,7 @@ import java.util.Map;
  * Verifies webhook signatures and processes events.
  */
 @RestController
-@RequestMapping("/payments/webhook")
+@RequestMapping("/webhook/stripe")
 public class StripeWebhookController {
 
     private static final Logger logger = LoggerFactory.getLogger(StripeWebhookController.class);
