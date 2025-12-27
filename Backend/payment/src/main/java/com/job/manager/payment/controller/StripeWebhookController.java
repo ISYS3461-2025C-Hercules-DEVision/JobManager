@@ -22,8 +22,9 @@ import java.util.Map;
  * Handles server-side payment confirmations from Stripe.
  * Verifies webhook signatures and processes events.
  */
+
+// The STRIPE_WEBHOOK commnand to run is "stripe listen --forward-to localhost:8084/payments/webhook"
 @RestController
-@RequestMapping("/webhook/stripe")
 public class StripeWebhookController {
 
     private static final Logger logger = LoggerFactory.getLogger(StripeWebhookController.class);
@@ -47,8 +48,8 @@ public class StripeWebhookController {
      * @param sigHeader Stripe signature header
      * @return Response acknowledging webhook receipt
      */
-    @PostMapping
-    public ResponseEntity<?> handleWebhook(
+        @PostMapping({"/webhook/stripe", "/payments/webhook"})
+        public ResponseEntity<?> handleWebhook(
             @RequestBody String payload,
             @RequestHeader("Stripe-Signature") String sigHeader) {
         

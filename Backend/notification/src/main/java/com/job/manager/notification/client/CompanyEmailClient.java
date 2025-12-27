@@ -11,7 +11,7 @@ public class CompanyEmailClient {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${services.authentication.base-url}")
-    private String authBaseUrl; // http://localhost:8000/authentication
+    private String authBaseUrl; // http://localhost:8000/auth
 
     public String getCompanyEmail(String companyId) {
         String url = authBaseUrl + "/users/" + companyId;
