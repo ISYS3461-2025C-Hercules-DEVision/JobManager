@@ -1,6 +1,8 @@
-// Home pages
-export { HomePage } from './home';
+/**
+ * Pages Index
+ * Export all page components
+ */
 
-// Auth pages
-export { LoginPage, RegisterPage, VerifyPage } from './auth';
+export { default as PaymentSuccess } from './PaymentSuccess';
+export { default as PaymentCancel } from './PaymentCancel';
 
