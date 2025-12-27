@@ -36,7 +36,7 @@ public class SubscriptionServiceClient {
      */
     public SubscriptionDTO getSubscriptionById(String subscriptionId) {
         try {
-            String url = subscriptionServiceUrl + "/subscriptions/" + subscriptionId;
+            String url = subscriptionServiceUrl + "/subscriptions/internal/" + subscriptionId;
             log.info("Fetching subscription from: {}", url);
 
             ResponseEntity<SubscriptionDTO> response = restTemplate.getForEntity(
