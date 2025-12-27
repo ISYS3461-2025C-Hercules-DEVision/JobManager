@@ -35,6 +35,7 @@ kafka:
     subscription-expired: subscription-expired
     subscription-cancelled: subscription-cancelled
     payment-failed: payment-failed
+    subscription-expiring-soon: subscription-expiring-soon
 
 services:
   subscription:

@@ -1,4 +1,4 @@
-package com.job.manager.subscription.dto;
+package com.job.manager.company.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubscriptionEventDTO {
-
+    
     private String subscriptionId;
     private String companyId;
     private String planType;
@@ -18,5 +18,5 @@ public class SubscriptionEventDTO {
     private LocalDateTime startDate;
     private LocalDateTime expiryDate;
     private LocalDateTime timestamp;
-    private String eventType; // "CREATED", "ACTIVATED", "EXPIRED", "CANCELLED", "EXPIRING_SOON"
+    private String eventType;
 }

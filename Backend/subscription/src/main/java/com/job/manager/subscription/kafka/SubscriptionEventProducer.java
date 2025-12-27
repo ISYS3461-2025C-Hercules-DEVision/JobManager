@@ -45,4 +45,13 @@ public class SubscriptionEventProducer {
         log.info("Sending subscription cancelled event: {}", event);
         kafkaTemplate.send(subscriptionCancelledTopic, event.getCompanyId(), event);
     }
+
+    @Value("${kafka.topics.subscription-expiring-soon:subscription-expiring-soon}")
+    private String subscriptionExpiringSoonTopic;
+
+    public void sendSubscriptionExpiringSoonEvent(SubscriptionEventDTO event) {
+        log.info("Sending subscription expiring-soon event: {}", event);
+        event.setEventType("EXPIRING_SOON");
+        kafkaTemplate.send(subscriptionExpiringSoonTopic, event.getCompanyId(), event);
+    }
 }
