@@ -21,46 +21,60 @@ export const getCurrentSubscription = async () => {
 };
 
 /**
- * Get available subscription plans
- * @returns {Promise<Array>} List of available plans
+ * Get subscription by ID
+ * @param {string} subscriptionId - Subscription ID
+ * @returns {Promise<Object>} Subscription details
  */
-export const getSubscriptionPlans = async () => {
+export const getSubscriptionById = async (subscriptionId) => {
   try {
-    const response = await http.get(API_ENDPOINTS.SUBSCRIPTION.PLANS);
+    const response = await subscriptionClient.get(`/subscriptions/${subscriptionId}`);
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch subscription plans:', error);
+    console.error('Failed to fetch subscription:', error);
     throw error;
   }
 };
 
 /**
- * Upgrade or change subscription plan
- * @param {string} planId - ID of the plan to upgrade to
- * @returns {Promise<Object>} Updated subscription data
+ * Get all subscriptions (admin)
+ * @returns {Promise<Array>} List of all subscriptions
  */
-export const upgradePlan = async (planId) => {
+export const getAllSubscriptions = async () => {
   try {
-    const response = await http.post(`${API_ENDPOINTS.SUBSCRIPTION.BASE}/upgrade`, {
-      planId,
-    });
+    const response = await subscriptionClient.get('/subscriptions');
     return response.data;
   } catch (error) {
-    console.error('Failed to upgrade plan:', error);
+    console.error('Failed to fetch all subscriptions:', error);
     throw error;
   }
 };
 
 /**
- * Cancel current subscription
- * @param {string} reason - Optional cancellation reason
- * @returns {Promise<Object>} Cancellation confirmation
+ * Activate a subscription with payment
+ * @param {string} subscriptionId - Subscription ID
+ * @param {string} paymentId - Payment transaction ID
+ * @returns {Promise<Object>} Activated subscription data
  */
-export const cancelSubscription = async (reason = '') => {
+export const activateSubscription = async (subscriptionId, paymentId) => {
   try {
-    const response = await http.post(`${API_ENDPOINTS.SUBSCRIPTION.BASE}/cancel`, {
-      reason,
+    const response = await subscriptionClient.put(`/subscriptions/${subscriptionId}/activate`, null, {
+      params: { paymentId }
     });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to activate subscription:', error);
+    throw error;
+  }
+};
+
+/**
+ * Cancel subscription
+ * @param {string} subscriptionId - Subscription ID
+ * @returns {Promise<Object>} Cancelled subscription data
+ */
+export const cancelSubscription = async (subscriptionId) => {
+  try {
+    const response = await subscriptionClient.put(`/subscriptions/${subscriptionId}/cancel`);
     return response.data;
   } catch (error) {
     console.error('Failed to cancel subscription:', error);
@@ -69,36 +83,29 @@ export const cancelSubscription = async (reason = '') => {
 };
 
 /**
- * Get billing history
- * @param {number} limit - Number of records to fetch (default: 10)
- * @returns {Promise<Array>} List of payment transactions
+ * Check for expired subscriptions (admin)
+ * @returns {Promise<Array>} List of expired subscriptions
  */
-export const getBillingHistory = async (limit = 10) => {
+export const checkExpiredSubscriptions = async () => {
   try {
-    const response = await http.get(`${API_ENDPOINTS.SUBSCRIPTION.BASE}/billing-history`, {
-      params: { limit },
-    });
+    const response = await subscriptionClient.post('/subscriptions/check-expired');
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch billing history:', error);
+    console.error('Failed to check expired subscriptions:', error);
     throw error;
   }
 };
 
-/**
- * Download invoice PDF
- * @param {string} transactionId - Transaction ID
- * @returns {Promise<Blob>} Invoice PDF blob
- */
-export const downloadInvoice = async (transactionId) => {
-  try {
-    const response = await http.get(
-      `${API_ENDPOINTS.SUBSCRIPTION.BASE}/invoice/${transactionId}`,
-      {
-        responseType: 'blob',
-      }
-    );
-    return response.data;
+export default {
+  createSubscription,
+  getSubscriptionByCompanyId,
+  getCurrentSubscription,
+  getSubscriptionById,
+  getAllSubscriptions,
+  activateSubscription,
+  cancelSubscription,
+  checkExpiredSubscriptions,
+};
   } catch (error) {
     console.error('Failed to download invoice:', error);
     throw error;
