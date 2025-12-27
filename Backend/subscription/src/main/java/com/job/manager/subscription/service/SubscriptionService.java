@@ -6,6 +6,7 @@ import com.job.manager.subscription.dto.SubscriptionResponseDTO;
 import com.job.manager.subscription.entity.Subscription;
 import com.job.manager.subscription.kafka.SubscriptionEventProducer;
 import com.job.manager.subscription.repository.SubscriptionRepository;
+import com.job.manager.subscription.validator.SubscriptionValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionEventProducer eventProducer;
+    private final SubscriptionValidator subscriptionValidator;
 
     public boolean isPremiumActive(String companyId) {
         return subscriptionRepository.findByCompanyId(companyId)
@@ -33,6 +35,9 @@ public class SubscriptionService {
 
     public SubscriptionResponseDTO createSubscription(SubscriptionCreateDTO dto) {
         log.info("Creating subscription for company: {}", dto.getCompanyId());
+
+        // VALIDATION: Apply all business rules before creating subscription
+        subscriptionValidator.validateSubscriptionCreation(dto);
 
         Subscription subscription = new Subscription();
         subscription.setCompanyId(dto.getCompanyId());

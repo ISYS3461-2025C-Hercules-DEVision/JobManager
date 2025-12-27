@@ -26,9 +26,9 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponseDTO> createSubscription(
             @Valid @RequestBody SubscriptionCreateDTO dto,
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Creating subscription for company: {}", dto.getCompanyId());
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");
@@ -38,22 +38,18 @@ public class SubscriptionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        try {
-            SubscriptionResponseDTO response = subscriptionService.createSubscription(dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            log.error("Error creating subscription: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
+        // Validation and error handling is now managed by GlobalExceptionHandler
+        SubscriptionResponseDTO response = subscriptionService.createSubscription(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/company/{companyId}")
     public ResponseEntity<SubscriptionResponseDTO> getSubscriptionByCompanyId(
             @PathVariable String companyId,
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Getting subscription for company: {}", companyId);
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");
@@ -72,13 +68,29 @@ public class SubscriptionController {
         }
     }
 
+    // Internal endpoint for service-to-service calls (no authentication required)
+    @GetMapping("/internal/{subscriptionId}")
+    public ResponseEntity<SubscriptionResponseDTO> getSubscriptionByIdInternal(
+            @PathVariable String subscriptionId) {
+
+        log.info("Internal call - Getting subscription: {}", subscriptionId);
+
+        try {
+            SubscriptionResponseDTO response = subscriptionService.getSubscriptionById(subscriptionId);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Subscription not found: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/{subscriptionId}")
     public ResponseEntity<SubscriptionResponseDTO> getSubscriptionById(
             @PathVariable String subscriptionId,
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Getting subscription: {}", subscriptionId);
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");
@@ -100,9 +112,9 @@ public class SubscriptionController {
     @GetMapping
     public ResponseEntity<List<SubscriptionResponseDTO>> getAllSubscriptions(
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Getting all subscriptions");
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");
@@ -121,9 +133,9 @@ public class SubscriptionController {
             @PathVariable String subscriptionId,
             @RequestParam String paymentId,
             @RequestHeader(value = "Authorization", required = false) String token) {
-        
+
         log.info("Activating subscription: {} with payment: {}", subscriptionId, paymentId);
-        
+
         // Validate JWT token if provided (optional for internal service calls)
         if (token != null && !token.isEmpty()) {
             try {
@@ -150,9 +162,9 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponseDTO> cancelSubscription(
             @PathVariable String subscriptionId,
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Cancelling subscription: {}", subscriptionId);
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");
@@ -174,9 +186,9 @@ public class SubscriptionController {
     @PostMapping("/check-expired")
     public ResponseEntity<List<SubscriptionResponseDTO>> checkExpiredSubscriptions(
             @RequestHeader("Authorization") String token) {
-        
+
         log.info("Checking for expired subscriptions");
-        
+
         // Validate JWT token
         try {
             String jwt = token.replace("Bearer ", "");

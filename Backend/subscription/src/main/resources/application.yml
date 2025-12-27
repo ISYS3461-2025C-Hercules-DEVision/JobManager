@@ -37,6 +37,11 @@ kafka:
     payment-failed: payment-failed
     subscription-expiring-soon: subscription-expiring-soon
 
+# Service URLs - Company Service for validation
+company:
+  service:
+    url: http://localhost:8082
+
 services:
   subscription:
     url: http://localhost:8083

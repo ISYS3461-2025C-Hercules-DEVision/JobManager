@@ -22,12 +22,35 @@ public class CompanyController {
     @Autowired
     private CompanyService companyService;
 
+    // Internal endpoint for service-to-service calls (e.g., subscription service
+    // validation)
+    @GetMapping("/companies/{companyId}")
+    public ResponseEntity<CompanyInternalDTO> getCompanyById(@PathVariable String companyId) {
+        try {
+            Company company = companyService.getCompanyById(companyId);
+
+            CompanyInternalDTO dto = CompanyInternalDTO.builder()
+                    .companyId(company.getCompanyId())
+                    .companyName(company.getCompanyName())
+                    .email(company.getEmail())
+                    .isPremium(company.getIsPremium())
+                    .isActive(company.getIsActive())
+                    .isEmailVerified(company.getIsEmailVerified())
+                    .build();
+
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            // Return 404 if company not found (for proper error handling in other services)
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     // Check if user has completed public profile setup
     @GetMapping("/profile/status")
     public ResponseEntity<ProfileStatusDto> checkProfileStatus(@CurrentUser AuthenticatedUser user) {
         Company company = companyService.getCompanyByEmail(user.getEmail());
         boolean hasProfile = companyService.hasPublicProfile(company.getCompanyId());
-        
+
         return ResponseEntity.ok(ProfileStatusDto.builder()
                 .companyId(company.getCompanyId())
                 .hasPublicProfile(hasProfile)
@@ -39,7 +62,7 @@ public class CompanyController {
     public ResponseEntity<CompanyResponseDto> getProfile(@CurrentUser AuthenticatedUser user) {
         Company company = companyService.getCompanyByEmail(user.getEmail());
         boolean hasProfile = companyService.hasPublicProfile(company.getCompanyId());
-        
+
         CompanyResponseDto response = CompanyResponseDto.builder()
                 .companyId(company.getCompanyId())
                 .companyName(company.getCompanyName())
@@ -56,14 +79,14 @@ public class CompanyController {
                 .updatedAt(company.getUpdatedAt())
                 .hasPublicProfile(hasProfile)
                 .build();
-        
+
         return ResponseEntity.ok(response);
     }
 
     // Update company basic information
     @PutMapping("/profile")
     public ResponseEntity<CompanyProfileUpdateDto> updateProfile(
-            @CurrentUser AuthenticatedUser user, 
+            @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody CompanyProfileUpdateDto requestDto) {
         CompanyProfileUpdateDto response = companyService.updateProfile(user.getEmail(), requestDto);
         return ResponseEntity.ok(response);
@@ -75,14 +98,13 @@ public class CompanyController {
             @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody PublicProfileCreateDto requestDto) {
         Company company = companyService.getCompanyByEmail(user.getEmail());
-        
+
         PublicProfile profile = companyService.createPublicProfile(
                 company.getCompanyId(),
                 requestDto.getCompanyName(),
                 requestDto.getLogoUrl(),
-                requestDto.getBannerUrl()
-        );
-        
+                requestDto.getBannerUrl());
+
         PublicProfileResponseDto response = mapToPublicProfileResponse(profile);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -92,7 +114,7 @@ public class CompanyController {
     public ResponseEntity<PublicProfileResponseDto> getPublicProfile(@CurrentUser AuthenticatedUser user) {
         Company company = companyService.getCompanyByEmail(user.getEmail());
         PublicProfile profile = companyService.getPublicProfile(company.getCompanyId());
-        
+
         PublicProfileResponseDto response = mapToPublicProfileResponse(profile);
         return ResponseEntity.ok(response);
     }
@@ -103,7 +125,7 @@ public class CompanyController {
             @CurrentUser AuthenticatedUser user,
             @Valid @RequestBody PublicProfileUpdateDto requestDto) {
         Company company = companyService.getCompanyByEmail(user.getEmail());
-        
+
         PublicProfile profile = companyService.updatePublicProfile(
                 company.getCompanyId(),
                 requestDto.getDisplayName(),
@@ -112,9 +134,8 @@ public class CompanyController {
                 requestDto.getWebsiteUrl(),
                 requestDto.getIndustryDomain(),
                 requestDto.getLogoUrl(),
-                requestDto.getBannerUrl()
-        );
-        
+                requestDto.getBannerUrl());
+
         PublicProfileResponseDto response = mapToPublicProfileResponse(profile);
         return ResponseEntity.ok(response);
     }
