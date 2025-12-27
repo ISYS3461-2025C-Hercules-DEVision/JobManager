@@ -68,6 +68,22 @@ public class SubscriptionController {
         }
     }
 
+    // Internal endpoint for service-to-service calls (no authentication required)
+    @GetMapping("/internal/{subscriptionId}")
+    public ResponseEntity<SubscriptionResponseDTO> getSubscriptionByIdInternal(
+            @PathVariable String subscriptionId) {
+
+        log.info("Internal call - Getting subscription: {}", subscriptionId);
+
+        try {
+            SubscriptionResponseDTO response = subscriptionService.getSubscriptionById(subscriptionId);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Subscription not found: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/{subscriptionId}")
     public ResponseEntity<SubscriptionResponseDTO> getSubscriptionById(
             @PathVariable String subscriptionId,
