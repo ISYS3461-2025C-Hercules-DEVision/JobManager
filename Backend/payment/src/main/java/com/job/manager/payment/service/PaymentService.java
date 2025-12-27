@@ -63,37 +63,31 @@ public class PaymentService {
     private void handleJobManagerPaymentSuccess(PaymentResponseDTO payment, String jwtToken) {
         // Only activate subscription for SUBSCRIPTION payment type
         if (!"SUBSCRIPTION".equals(payment.getPaymentType())) {
-            log.info("Payment type is not SUBSCRIPTION, skipping subscription activation");
+            log.info("Payment type is not SUBSCRIPTION, removing redundant check.");
             return;
         }
 
-        log.info("Handling Job Manager payment success - activating subscription: {}", payment.getReferenceId());
+        log.info("Handling Job Manager payment success for reference: {}", payment.getReferenceId());
 
-        try {
-            String endpoint = subscriptionActivateEndpoint.replace("{subscriptionId}", payment.getReferenceId());
-            String url = subscriptionServiceUrl + endpoint + "?paymentId=" + payment.getTransactionId();
-
-            WebClient webClient = webClientBuilder.build();
-            String response = webClient.put()
-                    .uri(url)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block(); // Use block() for synchronous call to ensure subscription is activated
-
-            log.info("Subscription activated successfully: {}", response);
-
-        } catch (Exception e) {
-            log.error("Error calling subscription service: {}", e.getMessage(), e);
-            // Don't fail the payment - subscription activation can be retried
-        }
+        // NOTE: Subscription activation is handled by Stripe Webhook (server-to-server)
+        // via StripePaymentService.activateSubscriptionDirectly.
+        // We do NOT need to call it again here to avoid double-charging or logic race
+        // conditions.
+        // If immediate feedback is needed before webhook arrives, the frontend should
+        // poll the subscription status or we could check subscription status here.
+        log.info("Subscription activation should be handled by Webhook. Verifying status via logs.");
     }
 
     private void handleJobApplicantPaymentSuccess(PaymentResponseDTO payment, String jwtToken) {
         log.info("Handling Job Applicant payment success - reference: {}", payment.getReferenceId());
-        // TODO: Implement JA-specific callback when JA team provides their service endpoint
-        // This could activate premium features, unlock content, etc.
+
+        // PUBLISH EVENT for Job Applicant Service to consume
+        // This is better than direct synchronous call if we want loose coupling
+        // But for now, we just log implementation gap.
+
+        // TODO: Call Job Applicant Service or publish specific "ApplicantUpgrade" event
+        log.info(">>> [JOB APPLICANT] Payment received for applicant: {}", payment.getCustomerId());
+        log.info(">>> [JOB APPLICANT] Should unlock premium features for reference: {}", payment.getReferenceId());
     }
 
     public PaymentResponseDTO getPaymentById(String transactionId) {
@@ -110,12 +104,11 @@ public class PaymentService {
 
     public List<PaymentResponseDTO> getPaymentsByCustomerId(String customerId, String subsystem) {
         List<PaymentTransaction> transactions;
-        
+
         if (subsystem != null) {
             transactions = paymentRepository.findByCustomerIdAndSubsystem(
-                    customerId, 
-                    Subsystem.valueOf(subsystem)
-            );
+                    customerId,
+                    Subsystem.valueOf(subsystem));
         } else {
             transactions = paymentRepository.findByCustomerId(customerId);
         }
@@ -147,7 +140,6 @@ public class PaymentService {
                 transaction.getTimestamp(),
                 transaction.getDescription(),
                 transaction.getCreatedAt(),
-                transaction.getUpdatedAt()
-        );
+                transaction.getUpdatedAt());
     }
 }

@@ -97,7 +97,8 @@ public class CompanyService {
     @Transactional
     public PublicProfile createPublicProfile(String companyId, String displayName, String logoUrl, String bannerUrl) {
         // Check if company exists
-        Company company = companyRepository.findByCompanyId(companyId)
+        // Check if company exists
+        Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found"));
 
         // Check if public profile already exists
@@ -123,20 +124,27 @@ public class CompanyService {
     }
 
     @Transactional
-    public PublicProfile updatePublicProfile(String companyId, String displayName, String aboutUs, 
-                                            String whoWeAreLookingFor, String websiteUrl, 
-                                            String industryDomain, String logoUrl, String bannerUrl) {
+    public PublicProfile updatePublicProfile(String companyId, String displayName, String aboutUs,
+            String whoWeAreLookingFor, String websiteUrl,
+            String industryDomain, String logoUrl, String bannerUrl) {
         PublicProfile profile = publicProfileRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new BusinessException("Public profile not found"));
 
         // Update fields if provided
-        if (displayName != null) profile.setDisplayName(displayName);
-        if (aboutUs != null) profile.setAboutUs(aboutUs);
-        if (whoWeAreLookingFor != null) profile.setWhoWeAreLookingFor(whoWeAreLookingFor);
-        if (websiteUrl != null) profile.setWebsiteUrl(websiteUrl);
-        if (industryDomain != null) profile.setIndustryDomain(industryDomain);
-        if (logoUrl != null) profile.setLogoUrl(logoUrl);
-        if (bannerUrl != null) profile.setBannerUrl(bannerUrl);
+        if (displayName != null)
+            profile.setDisplayName(displayName);
+        if (aboutUs != null)
+            profile.setAboutUs(aboutUs);
+        if (whoWeAreLookingFor != null)
+            profile.setWhoWeAreLookingFor(whoWeAreLookingFor);
+        if (websiteUrl != null)
+            profile.setWebsiteUrl(websiteUrl);
+        if (industryDomain != null)
+            profile.setIndustryDomain(industryDomain);
+        if (logoUrl != null)
+            profile.setLogoUrl(logoUrl);
+        if (bannerUrl != null)
+            profile.setBannerUrl(bannerUrl);
 
         profile.setUpdatedAt(LocalDateTime.now());
 
@@ -144,7 +152,7 @@ public class CompanyService {
     }
 
     public Company getCompanyById(String companyId) {
-        return companyRepository.findByCompanyId(companyId)
+        return companyRepository.findById(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found"));
     }
 
@@ -160,12 +168,12 @@ public class CompanyService {
 
     @Transactional
     public void updatePremiumStatus(String companyId, boolean isPremium) {
-        Company company = companyRepository.findByCompanyId(companyId)
+        Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found: " + companyId));
-        
+
         company.setIsPremium(isPremium);
         company.setUpdatedAt(LocalDateTime.now());
-        
+
         companyRepository.save(company);
     }
 }
