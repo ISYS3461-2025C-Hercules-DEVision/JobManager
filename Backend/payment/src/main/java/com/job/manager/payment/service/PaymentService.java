@@ -7,6 +7,7 @@ import com.job.manager.payment.entity.PaymentTransaction;
 import com.job.manager.payment.entity.PaymentTransaction.PaymentStatus;
 import com.job.manager.payment.entity.PaymentTransaction.Subsystem;
 import com.job.manager.payment.repository.PaymentTransactionRepository;
+import com.job.manager.payment.validator.PaymentValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ public class PaymentService {
     private final PaymentTransactionRepository paymentRepository;
     private final StripePaymentService stripePaymentService;
     private final WebClient.Builder webClientBuilder;
+    private final PaymentValidator paymentValidator;
 
     @Value("${services.subscription.url}")
     private String subscriptionServiceUrl;
@@ -35,6 +37,9 @@ public class PaymentService {
 
     public PaymentInitiateResponseDTO initiatePayment(PaymentInitiateRequestDTO request) {
         log.info("Initiating payment for {} subsystem", request.getSubsystem());
+
+        // VALIDATION: Apply all business rules before initiating payment
+        paymentValidator.validatePaymentInitiation(request);
 
         // Route to appropriate gateway
         if ("STRIPE".equalsIgnoreCase(request.getGateway())) {
