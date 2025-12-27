@@ -1,6 +1,12 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { profileService } from '../modules/profile/services/profileService';
-import { useAuth } from './AuthContext';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import { profileService } from "../modules/profile/services/profileService";
+import { useAuth } from "./AuthContext";
 
 /**
  * Profile Context
@@ -13,7 +19,7 @@ const ProfileContext = createContext(null);
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error('useProfile must be used within ProfileProvider');
+    throw new Error("useProfile must be used within ProfileProvider");
   }
   return context;
 };
@@ -26,6 +32,7 @@ export const ProfileProvider = ({ children }) => {
   const [hasPublicProfile, setHasPublicProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   /**
    * Load company profile and public profile
@@ -46,8 +53,24 @@ export const ProfileProvider = ({ children }) => {
       setPublicProfile(data.publicProfile);
       setHasPublicProfile(data.hasPublicProfile);
     } catch (err) {
-      console.error('Failed to load profile:', err);
-      setError(err.message || 'Failed to load profile');
+      console.error("Failed to load profile:", err);
+
+      // Check if this is a "profile not found" error (new user)
+      if (
+        err.message?.includes("Company not found") ||
+        err.message?.includes("404")
+      ) {
+        console.log(
+          "Company profile not yet created - this is expected for new users"
+        );
+        // Don't set error state for new users without profiles yet
+        setProfile(null);
+        setPublicProfile(null);
+        setHasPublicProfile(false);
+      } else {
+        // Real error - set error state
+        setError(err.message || "Failed to load profile");
+      }
     } finally {
       setLoading(false);
     }
@@ -66,7 +89,7 @@ export const ProfileProvider = ({ children }) => {
       setHasPublicProfile(status.hasPublicProfile);
       return status.hasPublicProfile;
     } catch (err) {
-      console.error('Failed to check profile status:', err);
+      console.error("Failed to check profile status:", err);
       return false;
     }
   }, [isAuthenticated]);
@@ -79,13 +102,15 @@ export const ProfileProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const updatedProfile = await profileService.updateCompanyProfile(profileData);
+      const updatedProfile = await profileService.updateCompanyProfile(
+        profileData
+      );
       setProfile(updatedProfile);
 
       return { success: true, data: updatedProfile };
     } catch (err) {
-      console.error('Failed to update profile:', err);
-      setError(err.message || 'Failed to update profile');
+      console.error("Failed to update profile:", err);
+      setError(err.message || "Failed to update profile");
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
@@ -100,14 +125,16 @@ export const ProfileProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const newPublicProfile = await profileService.createPublicProfile(publicProfileData);
+      const newPublicProfile = await profileService.createPublicProfile(
+        publicProfileData
+      );
       setPublicProfile(newPublicProfile);
       setHasPublicProfile(true);
 
       return { success: true, data: newPublicProfile };
     } catch (err) {
-      console.error('Failed to create public profile:', err);
-      setError(err.message || 'Failed to create public profile');
+      console.error("Failed to create public profile:", err);
+      setError(err.message || "Failed to create public profile");
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
@@ -122,13 +149,15 @@ export const ProfileProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const updatedPublicProfile = await profileService.updatePublicProfile(publicProfileData);
+      const updatedPublicProfile = await profileService.updatePublicProfile(
+        publicProfileData
+      );
       setPublicProfile(updatedPublicProfile);
 
       return { success: true, data: updatedPublicProfile };
     } catch (err) {
-      console.error('Failed to update public profile:', err);
-      setError(err.message || 'Failed to update public profile');
+      console.error("Failed to update public profile:", err);
+      setError(err.message || "Failed to update public profile");
       return { success: false, error: err.message };
     } finally {
       setLoading(false);
@@ -158,8 +187,22 @@ export const ProfileProvider = ({ children }) => {
       loadProfile();
     } else {
       clearProfile();
+      setRetryCount(0);
     }
   }, [isAuthenticated, loadProfile, clearProfile]);
+
+  // Retry loading profile if it failed to load initially (for new users)
+  useEffect(() => {
+    if (isAuthenticated && !profile && !loading && !error && retryCount < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Retrying profile load (attempt ${retryCount + 1}/3)...`);
+        setRetryCount((prev) => prev + 1);
+        loadProfile();
+      }, 2000); // Retry every 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, profile, loading, error, retryCount, loadProfile]);
 
   const value = {
     // State
@@ -179,6 +222,7 @@ export const ProfileProvider = ({ children }) => {
     clearProfile,
   };
 
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+  return (
+    <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
+  );
 };
-

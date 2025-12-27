@@ -1,7 +1,7 @@
-import { httpClient } from '../../../utils/HttpUtil';
-import { saveToken, getToken, removeToken } from '../../../utils/tokenStorage';
-import { API_ENDPOINTS } from '../../../config/api';
-import { ENV } from '../../../config/env';
+import { httpClient } from "../../../utils/HttpUtil";
+import { saveToken, getToken, removeToken } from "../../../utils/tokenStorage";
+import { API_ENDPOINTS } from "../../../config/api";
+import { ENV } from "../../../config/env";
 
 /**
  * Authentication Service
@@ -24,7 +24,10 @@ export const authService = {
         password: credentials.password,
       };
 
-      const response = await httpClient.post(API_ENDPOINTS.AUTH.LOGIN, loginData);
+      const response = await httpClient.post(
+        API_ENDPOINTS.AUTH.LOGIN,
+        loginData
+      );
 
       // Backend returns token as plain string
       if (response.data) {
@@ -32,11 +35,16 @@ export const authService = {
         saveToken(token);
         return token;
       }
-      
-      throw new Error('No token received from server');
+
+      throw new Error("No token received from server");
     } catch (error) {
-      console.error('Login error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Login failed');
+      console.error("Login error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Login failed"
+      );
     }
   },
 
@@ -63,13 +71,21 @@ export const authService = {
         address: userData.streetAddress,
       };
 
-      const response = await httpClient.post(API_ENDPOINTS.AUTH.REGISTER, registerData);
+      const response = await httpClient.post(
+        API_ENDPOINTS.AUTH.REGISTER,
+        registerData
+      );
 
       // Registration successful - backend returns 200 OK
       return response.data;
     } catch (error) {
-      console.error('Registration error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed');
+      console.error("Registration error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Registration failed"
+      );
     }
   },
 
@@ -95,8 +111,13 @@ export const authService = {
 
       return response.data;
     } catch (error) {
-      console.error('Email verification error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Email verification failed');
+      console.error("Email verification error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Email verification failed"
+      );
     }
   },
 
@@ -107,10 +128,17 @@ export const authService = {
    */
   async resendVerification(email) {
     try {
-      await httpClient.post(`${API_ENDPOINTS.AUTH.RESEND_VERIFICATION}?email=${email}`);
+      await httpClient.post(
+        `${API_ENDPOINTS.AUTH.RESEND_VERIFICATION}?email=${email}`
+      );
     } catch (error) {
-      console.error('Resend verification error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to resend verification code');
+      console.error("Resend verification error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to resend verification code"
+      );
     }
   },
 
@@ -121,18 +149,61 @@ export const authService = {
    */
   async loginWithGoogle(code) {
     try {
-      const response = await httpClient.post(API_ENDPOINTS.AUTH.GOOGLE_AUTH, { code });
+      const response = await httpClient.post(API_ENDPOINTS.AUTH.GOOGLE_AUTH, {
+        code,
+      });
 
       if (response.data) {
         const token = response.data;
         saveToken(token);
         return token;
       }
-      
-      throw new Error('No token received from server');
+
+      throw new Error("No token received from server");
     } catch (error) {
-      console.error('Google login error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Google login failed');
+      console.error("Google login error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Google login failed"
+      );
+    }
+  },
+
+  /**
+   * Signup with Google OAuth
+   * Initiates Google OAuth flow for registration
+   * @returns {Promise<void>}
+   */
+  async signupWithGoogle() {
+    try {
+      // Get Google Client ID from environment
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+      if (!googleClientId) {
+        throw new Error(
+          "Google Client ID is not configured. Please set VITE_GOOGLE_CLIENT_ID in your .env file."
+        );
+      }
+
+      // Build OAuth URL
+      const redirectUri = `${window.location.origin}/login/oauth2/code/google`;
+      const scope = "email profile";
+      const authUrl =
+        `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${googleClientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `access_type=offline&` +
+        `prompt=consent`;
+
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Google signup error:", error);
+      throw new Error(error.message || "Failed to initiate Google signup");
     }
   },
 
@@ -145,7 +216,7 @@ export const authService = {
       // Just remove token locally (backend doesn't have logout endpoint)
       removeToken();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       removeToken(); // Always clear token even if request fails
     }
   },
@@ -159,8 +230,13 @@ export const authService = {
       const response = await httpClient.get(API_ENDPOINTS.AUTH.ME);
       return response.data;
     } catch (error) {
-      console.error('Get user error:', error);
-      throw new Error(error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to get user profile');
+      console.error("Get user error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to get user profile"
+      );
     }
   },
 
@@ -172,4 +248,3 @@ export const authService = {
     return !!getToken();
   },
 };
-

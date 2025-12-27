@@ -3,8 +3,8 @@
  * Handles all company profile-related API calls
  */
 
-import { companyApi } from '../../../utils/companyHttpClient';
-import { API_ENDPOINTS } from '../../../config/api';
+import { companyApi } from "../../../utils/companyHttpClient";
+import { API_ENDPOINTS } from "../../../config/api";
 
 /**
  * Profile Service
@@ -17,10 +17,12 @@ export const profileService = {
    */
   async checkProfileStatus() {
     try {
-      const response = await companyApi.get(API_ENDPOINTS.COMPANY.PROFILE_STATUS);
+      const response = await companyApi.get(
+        API_ENDPOINTS.COMPANY.PROFILE_STATUS
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to check profile status:', error);
+      console.error("Failed to check profile status:", error);
       throw error;
     }
   },
@@ -34,7 +36,7 @@ export const profileService = {
       const response = await companyApi.get(API_ENDPOINTS.COMPANY.PROFILE);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch company profile:', error);
+      console.error("Failed to fetch company profile:", error);
       throw error;
     }
   },
@@ -52,10 +54,13 @@ export const profileService = {
    */
   async updateCompanyProfile(profileData) {
     try {
-      const response = await companyApi.put(API_ENDPOINTS.COMPANY.UPDATE_PROFILE, profileData);
+      const response = await companyApi.put(
+        API_ENDPOINTS.COMPANY.UPDATE_PROFILE,
+        profileData
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to update company profile:', error);
+      console.error("Failed to update company profile:", error);
       throw error;
     }
   },
@@ -70,10 +75,13 @@ export const profileService = {
    */
   async createPublicProfile(publicProfileData) {
     try {
-      const response = await companyApi.post(API_ENDPOINTS.COMPANY.PUBLIC_PROFILE, publicProfileData);
+      const response = await companyApi.post(
+        API_ENDPOINTS.COMPANY.PUBLIC_PROFILE,
+        publicProfileData
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to create public profile:', error);
+      console.error("Failed to create public profile:", error);
       throw error;
     }
   },
@@ -84,10 +92,12 @@ export const profileService = {
    */
   async getPublicProfile() {
     try {
-      const response = await companyApi.get(API_ENDPOINTS.COMPANY.PUBLIC_PROFILE);
+      const response = await companyApi.get(
+        API_ENDPOINTS.COMPANY.PUBLIC_PROFILE
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch public profile:', error);
+      console.error("Failed to fetch public profile:", error);
       throw error;
     }
   },
@@ -106,39 +116,71 @@ export const profileService = {
    */
   async updatePublicProfile(publicProfileData) {
     try {
-      const response = await companyApi.put(API_ENDPOINTS.COMPANY.UPDATE_PUBLIC_PROFILE, publicProfileData);
+      const response = await companyApi.put(
+        API_ENDPOINTS.COMPANY.UPDATE_PUBLIC_PROFILE,
+        publicProfileData
+      );
       return response.data;
     } catch (error) {
-      console.error('Failed to update public profile:', error);
+      console.error("Failed to update public profile:", error);
       throw error;
     }
   },
 
   /**
    * Get complete company profile (both basic and public profile)
-   * @returns {Promise<{company: Object, publicProfile: Object}>}
+   * @returns {Promise<{companyProfile: Object, publicProfile: Object, hasPublicProfile: boolean}>}
    */
   async getCompleteProfile() {
     try {
-      const [company, status] = await Promise.all([
+      // Use Promise.allSettled to handle cases where profile doesn't exist yet
+      const [companyResult, statusResult] = await Promise.allSettled([
         this.getCompanyProfile(),
         this.checkProfileStatus(),
       ]);
 
+      // Handle company profile result
+      if (companyResult.status === "rejected") {
+        const error = companyResult.reason;
+        // If company not found (new user), return empty profile
+        if (
+          error.message?.includes("Company not found") ||
+          error.message?.includes("404")
+        ) {
+          return {
+            companyProfile: null,
+            publicProfile: null,
+            hasPublicProfile: false,
+          };
+        }
+        // Other errors - rethrow
+        throw error;
+      }
+
+      const company = companyResult.value;
+      const status =
+        statusResult.status === "fulfilled"
+          ? statusResult.value
+          : { hasPublicProfile: false };
+
       let publicProfile = null;
       if (status.hasPublicProfile) {
-        publicProfile = await this.getPublicProfile();
+        try {
+          publicProfile = await this.getPublicProfile();
+        } catch (err) {
+          console.warn("Failed to fetch public profile:", err);
+          // Continue without public profile
+        }
       }
 
       return {
-        company,
+        companyProfile: company,
         publicProfile,
         hasPublicProfile: status.hasPublicProfile,
       };
     } catch (error) {
-      console.error('Failed to fetch complete profile:', error);
+      console.error("Failed to fetch complete profile:", error);
       throw error;
     }
   },
 };
-
