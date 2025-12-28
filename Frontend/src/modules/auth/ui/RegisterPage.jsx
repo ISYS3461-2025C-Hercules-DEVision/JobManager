@@ -20,7 +20,7 @@ function RegisterPage() {
   return (
     <div className="min-h-screen bg-light-gray flex items-center justify-center p-4">
       <div className="bg-white border-4 border-black p-10 w-full max-w-md shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <h1 className="text-4xl font-black text-center text-black mb-8 uppercase">
+        <h1 className="text-4xl font-black text-center text-black mb-8  ">
           Get started now!
         </h1>
 
@@ -46,7 +46,7 @@ function RegisterPage() {
                 placeholder="COMPANY NAME"
                 value={formData.companyName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -56,7 +56,7 @@ function RegisterPage() {
                 placeholder="COMPANY EMAIL"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -67,7 +67,7 @@ function RegisterPage() {
                   placeholder="PASSWORD"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-12 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                  className="w-full px-4 py-3 pr-12 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                   required
                   disabled={loading}
                 />
@@ -122,7 +122,7 @@ function RegisterPage() {
                   placeholder="CONFIRM PASSWORD"
                   value={formData.passwordConfirmation}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-12 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                  className="w-full px-4 py-3 pr-12 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                   required
                   disabled={loading}
                 />
@@ -176,7 +176,7 @@ function RegisterPage() {
                 placeholder="PHONE NUMBER"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -186,7 +186,7 @@ function RegisterPage() {
                 placeholder="COUNTRY"
                 value={formData.country}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -196,7 +196,7 @@ function RegisterPage() {
                 placeholder="CITY"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -206,7 +206,7 @@ function RegisterPage() {
                 placeholder="STREET ADDRESS"
                 value={formData.streetAddress}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold uppercase placeholder:text-dark"
+                className="w-full px-4 py-3 border-4 border-black focus:outline-none focus:ring-4 focus:ring-primary font-bold   placeholder:text-dark"
                 required
                 disabled={loading}
               />
@@ -216,7 +216,7 @@ function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white font-black py-4 border-4 border-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-none flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white font-black py-4 border-4 border-black   hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-none flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Loading..." : step < 3 ? "Create Profile" : "Complete"}
             <svg
@@ -261,9 +261,7 @@ function RegisterPage() {
             <div className="w-full border-t-4 border-black"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-black font-black uppercase">
-              OR
-            </span>
+            <span className="px-4 bg-white text-black font-black  ">OR</span>
           </div>
         </div>
 
@@ -271,7 +269,7 @@ function RegisterPage() {
           type="button"
           onClick={handleGoogleSignup}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 border-4 border-black hover:bg-black hover:text-white text-black font-bold py-4 uppercase transition-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 border-4 border-black hover:bg-black hover:text-white text-black font-bold py-4   transition-none disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -294,7 +292,7 @@ function RegisterPage() {
           Sign up with Google
         </button>
 
-        <p className="text-center mt-6 text-black font-bold uppercase text-sm">
+        <p className="text-center mt-6 text-black font-bold   text-sm">
           Already have an account?{" "}
           <Link
             to="/login"
