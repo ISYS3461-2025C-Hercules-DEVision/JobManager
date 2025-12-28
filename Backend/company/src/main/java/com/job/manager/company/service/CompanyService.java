@@ -95,9 +95,13 @@ public class CompanyService {
     }
 
     @Transactional
-    public PublicProfile createPublicProfile(String companyId, String displayName, String logoUrl, String bannerUrl) {
+    public PublicProfile createPublicProfile(String companyId, String displayName, String aboutUs, 
+                                            String whoWeAreLookingFor, String websiteUrl, 
+                                            String industryDomain, String country, String city,
+                                            String logoUrl, String bannerUrl) {
         // Check if company exists
-        Company company = companyRepository.findByCompanyId(companyId)
+        // Check if company exists
+        Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found"));
 
         // Check if public profile already exists
@@ -105,38 +109,48 @@ public class CompanyService {
             throw new BusinessException("Public profile already exists for this company");
         }
 
-        // Create PublicProfile
+        // Create PublicProfile and save to MongoDB
         PublicProfile publicProfile = PublicProfile.builder()
                 .companyId(companyId)
                 .displayName(displayName)
+                .aboutUs(aboutUs != null ? aboutUs : "")
+                .whoWeAreLookingFor(whoWeAreLookingFor != null ? whoWeAreLookingFor : "")
+                .websiteUrl(websiteUrl)
+                .industryDomain(industryDomain)
+                .country(country != null ? country : company.getCountry())
+                .city(city != null ? city : company.getCity())
                 .logoUrl(logoUrl)
                 .bannerUrl(bannerUrl)
-                .country(company.getCountry())
-                .city(company.getCity())
-                .aboutUs("") // Will be filled later in settings
-                .whoWeAreLookingFor("") // Will be filled later in settings
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
+        // Save to MongoDB and return
         return publicProfileRepository.save(publicProfile);
     }
 
     @Transactional
-    public PublicProfile updatePublicProfile(String companyId, String displayName, String aboutUs, 
-                                            String whoWeAreLookingFor, String websiteUrl, 
-                                            String industryDomain, String logoUrl, String bannerUrl) {
+    public PublicProfile updatePublicProfile(String companyId, String displayName, String aboutUs,
+            String whoWeAreLookingFor, String websiteUrl,
+            String industryDomain, String logoUrl, String bannerUrl) {
         PublicProfile profile = publicProfileRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new BusinessException("Public profile not found"));
 
         // Update fields if provided
-        if (displayName != null) profile.setDisplayName(displayName);
-        if (aboutUs != null) profile.setAboutUs(aboutUs);
-        if (whoWeAreLookingFor != null) profile.setWhoWeAreLookingFor(whoWeAreLookingFor);
-        if (websiteUrl != null) profile.setWebsiteUrl(websiteUrl);
-        if (industryDomain != null) profile.setIndustryDomain(industryDomain);
-        if (logoUrl != null) profile.setLogoUrl(logoUrl);
-        if (bannerUrl != null) profile.setBannerUrl(bannerUrl);
+        if (displayName != null)
+            profile.setDisplayName(displayName);
+        if (aboutUs != null)
+            profile.setAboutUs(aboutUs);
+        if (whoWeAreLookingFor != null)
+            profile.setWhoWeAreLookingFor(whoWeAreLookingFor);
+        if (websiteUrl != null)
+            profile.setWebsiteUrl(websiteUrl);
+        if (industryDomain != null)
+            profile.setIndustryDomain(industryDomain);
+        if (logoUrl != null)
+            profile.setLogoUrl(logoUrl);
+        if (bannerUrl != null)
+            profile.setBannerUrl(bannerUrl);
 
         profile.setUpdatedAt(LocalDateTime.now());
 
@@ -144,7 +158,7 @@ public class CompanyService {
     }
 
     public Company getCompanyById(String companyId) {
-        return companyRepository.findByCompanyId(companyId)
+        return companyRepository.findById(companyId)
                 .orElseThrow(() -> new BusinessException("Company not found"));
     }
 
@@ -156,5 +170,16 @@ public class CompanyService {
     public PublicProfile getPublicProfile(String companyId) {
         return publicProfileRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new BusinessException("Public profile not found"));
+    }
+
+    @Transactional
+    public void updatePremiumStatus(String companyId, boolean isPremium) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new BusinessException("Company not found: " + companyId));
+
+        company.setIsPremium(isPremium);
+        company.setUpdatedAt(LocalDateTime.now());
+
+        companyRepository.save(company);
     }
 }

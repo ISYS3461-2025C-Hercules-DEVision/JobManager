@@ -10,8 +10,10 @@ export const usePublicProfile = () => {
     companyName: "",
     aboutUs: "",
     whoWeAreLookingFor: "",
-    websiteUrl: "",
+    websiteURL: "",
     industryDomain: "",
+    country: "",
+    city: "",
     logoUrl: "",
     bannerUrl: "",
   });
@@ -23,13 +25,13 @@ export const usePublicProfile = () => {
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
-    if (type === 'file') {
+
+    if (type === "file") {
       const file = files[0];
       if (file) {
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
-        if (name === 'companyLogo') {
+        if (name === "companyLogo") {
           setLogoPreview(previewUrl);
           // In a real implementation, you would upload the file to a storage service
           // and set the URL in formData. For now, we'll use the preview URL
@@ -37,7 +39,7 @@ export const usePublicProfile = () => {
             ...formData,
             logoUrl: previewUrl,
           });
-        } else if (name === 'companyBanner') {
+        } else if (name === "companyBanner") {
           setBannerPreview(previewUrl);
           setFormData({
             ...formData,
@@ -62,15 +64,20 @@ export const usePublicProfile = () => {
       // Call backend API to create public profile
       await profileService.createPublicProfile({
         companyName: formData.companyName,
+        aboutUs: formData.aboutUs,
+        whoWeAreLookingFor: formData.whoWeAreLookingFor,
+        websiteURL: formData.websiteURL,
+        industryDomain: formData.industryDomain,
+        country: formData.country,
+        city: formData.city,
         logoUrl: formData.logoUrl || undefined,
         bannerUrl: formData.bannerUrl || undefined,
       });
 
-      // Mark profile as completed in localStorage
-      localStorage.setItem("profileCompleted", "true");
-      
+      // Profile is now saved in MongoDB - no need for localStorage
+
       setSuccess(true);
-      
+
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || "Failed to create profile";

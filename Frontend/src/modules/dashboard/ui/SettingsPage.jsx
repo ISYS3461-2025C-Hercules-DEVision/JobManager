@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProfile } from '../../../state/ProfileContext';
 import { useApp } from '../../../state/AppContext';
+import SubscriptionSection from './SubscriptionSection';
 
 /**
  * SettingsPage - Company and account settings
@@ -415,56 +416,7 @@ function SettingsPage() {
 
           {/* Subscription Section */}
           {activeSection === 'subscription' && (
-            <div className="bg-white border-4 border-black p-6">
-              <h2 className="text-2xl font-black uppercase mb-6">Subscription Plan</h2>
-
-              {/* Current Plan */}
-              <div className="bg-primary text-white border-4 border-black p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-3xl font-black uppercase">Premium Plan</h3>
-                    <p className="font-bold">Active until Jan 15, 2026</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-4xl font-black">$99</p>
-                    <p className="font-bold">/month</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Unlimited job posts
-                  </p>
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Advanced applicant search
-                  </p>
-                  <p className="font-bold flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Priority support
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="space-y-3">
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  Upgrade Plan
-                </button>
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  View Billing History
-                </button>
-                <button className="w-full px-6 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors">
-                  Cancel Subscription
-                </button>
-              </div>
-            </div>
+            <SubscriptionSection />
           )}
 
           {/* Notifications Section */}

@@ -16,14 +16,15 @@ import java.time.LocalDateTime;
 public class Company {
 
     @Id
-    private String companyId;  // UUID
+    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
+    private String companyId; // UUID
 
     private String companyName;
 
     @Indexed(unique = true)
     private String email;
 
-    private String passwordHash;  // Can be null for SSO accounts
+    private String passwordHash; // Can be null for SSO accounts
 
     private String phoneNumber;
 
@@ -32,17 +33,17 @@ public class Company {
     private String city;
 
     @Indexed
-    private String country;  // Shard key
+    private String country; // Shard key
 
-    private String shardKey;  // Set to country value
+    private String shardKey; // Set to country value
 
     private Boolean isEmailVerified;
 
     private Boolean isActive;
 
-    private SsoProvider ssoProvider;  // enum: local, google, microsoft, facebook, github
+    private SsoProvider ssoProvider; // enum: local, google, microsoft, facebook, github
 
-    private String ssoId;  // SSO provider ID
+    private String ssoId; // SSO provider ID
 
     private Boolean isPremium;
 

@@ -12,6 +12,7 @@ function RegisterPage() {
     showPasswordConfirmation,
     handleChange,
     handleSubmit,
+    handleGoogleSignup,
     togglePasswordVisibility,
     togglePasswordConfirmationVisibility,
   } = useRegister();
@@ -266,7 +267,12 @@ function RegisterPage() {
           </div>
         </div>
 
-        <button className="w-full flex items-center justify-center gap-3 border-4 border-black hover:bg-black hover:text-white text-black font-bold py-4 uppercase transition-none">
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 border-4 border-black hover:bg-black hover:text-white text-black font-bold py-4 uppercase transition-none disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
               fill="#4285F4"

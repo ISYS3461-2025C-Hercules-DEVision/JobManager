@@ -7,3 +7,33 @@ spring:
       username: admin
       password: admin
       authentication-database: admin
+  application:
+    name: subscription
+  kafka:
+    bootstrap-servers: localhost:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: 8083
+
+# Kafka Topics
+kafka:
+  topics:
+    subscription-created: subscription-created
+    subscription-activated: subscription-activated
+    subscription-expired: subscription-expired
+    subscription-cancelled: subscription-cancelled
+    payment-failed: payment-failed
+    subscription-expiring-soon: subscription-expiring-soon
+
+# Service URLs - Company Service for validation
+company:
+  service:
+    url: http://localhost:8082
+
+services:
+  subscription:
+    url: http://localhost:8083
+    activate-endpoint: /subscriptions/{subscriptionId}/activate

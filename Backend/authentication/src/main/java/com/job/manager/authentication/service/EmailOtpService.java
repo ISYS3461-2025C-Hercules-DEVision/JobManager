@@ -22,6 +22,8 @@ public class EmailOtpService {
     public boolean verify(String userId, String code) {
         String key = key(userId);
         String stored = redisTemplate.opsForValue().get(key);
+        if (stored == null) return false; // ✅ important
+
 
         boolean matched = stored.equals(code);
         if (matched) {

@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 public class PublicProfile {
 
     @Id
+    private String id;  // MongoDB auto-generated ID
+
+    @Indexed(unique = true)
     private String companyId;  // UUID - same as Company.companyId (FK)
 
     private String displayName;

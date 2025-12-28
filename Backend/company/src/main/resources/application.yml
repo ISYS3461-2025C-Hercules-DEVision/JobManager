@@ -12,7 +12,8 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: com.job.manager.dto
+        spring.json.trusted.packages: com.job.manager.dto,com.job.manager.subscription.dto
+        spring.json.type.mapping: com.job.manager.subscription.dto.SubscriptionEventDTO:com.job.manager.company.dto.SubscriptionEventDTO
 
   data:
     mongodb:
@@ -26,6 +27,10 @@ spring:
 kafka:
   topic:
     register: company-registration
+  topics:
+    subscription-activated: subscription-activated
+    subscription-cancelled: subscription-cancelled
+    subscription-expired: subscription-expired
 
 logging:
   level:
