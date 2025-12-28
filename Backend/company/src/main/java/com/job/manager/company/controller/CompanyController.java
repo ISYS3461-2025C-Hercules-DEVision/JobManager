@@ -109,7 +109,8 @@ public class CompanyController {
                 requestDto.getCountry(),
                 requestDto.getCity(),
                 requestDto.getLogoUrl(),
-                requestDto.getBannerUrl());
+                requestDto.getBannerUrl()
+        );
 
         PublicProfileResponseDto response = mapToPublicProfileResponse(profile);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
