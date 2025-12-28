@@ -52,8 +52,9 @@ public class AuthenticationService {
     @Value("${oauth.google.user-info-uri}")
     private String userInfoUri;
 
-    public AuthenticationService(PasswordEncoder passwordEncoder, EmailOtpService tokenService, EmailService emailService, JwtUtil jwtUtil,
-                                 KafkaProducer kafkaProducer, EmailOtpService emailOtpService, UserRepository userRepository) {
+    public AuthenticationService(PasswordEncoder passwordEncoder, EmailOtpService tokenService,
+            EmailService emailService, JwtUtil jwtUtil,
+            KafkaProducer kafkaProducer, EmailOtpService emailOtpService, UserRepository userRepository) {
         this.passwordEncoder = passwordEncoder;
         this.otpService = tokenService;
         this.emailService = emailService;
@@ -64,12 +65,12 @@ public class AuthenticationService {
     }
 
     public String login(LoginRequest loginRequest) {
-        
+
         System.out.println(">>> LOGIN username = " + loginRequest.getUsername());
         System.out.println(">>> LOGIN password = " + loginRequest.getPassword());
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new BusinessException("User not found"));
-        if(AuthenticationProvider.GOOGLE.equals(AuthenticationProvider.valueOf(user.getProvider()))) {
+        if (AuthenticationProvider.GOOGLE.equals(AuthenticationProvider.valueOf(user.getProvider()))) {
             throw new BusinessException("This account is registered via Google. Please use Google login.");
         }
         if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
@@ -108,13 +109,17 @@ public class AuthenticationService {
 
         registerRequest.setCompanyId(newUser.getId());
 
-        // Publish registration event to Kafka
-        kafkaProducer.publishRegisterEvent(registerRequest);
+        // Store registration request in Redis (to be used after email verification)
+        emailOtpService.storeRegistrationData(newUser.getId(), registerRequest);
+
+        // NOTE: removed immediate Kafka publishing. It will be published after email
+        // verification.
     }
 
     private void validateCountry(String country) {
         try {
-            if(country != null && !country.isEmpty()) CountryCode.valueOf(country.toUpperCase());
+            if (country != null && !country.isEmpty())
+                CountryCode.valueOf(country.toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("Invalid country");
         }
@@ -125,12 +130,17 @@ public class AuthenticationService {
                 .orElseThrow(() -> new BusinessException("User not found"));
         boolean verified = emailOtpService.verify(
                 user.getId(),
-                request.getCode()
-        );
+                request.getCode());
         if (!verified) {
             throw new BusinessException("Invalid or expired code");
         }
         markEmailVerified(user.getId());
+
+        // Publish registration event to Kafka now that email is verified
+        RegisterRequest registerRequest = emailOtpService.getRegistrationData(user.getId());
+        if (registerRequest != null) {
+            kafkaProducer.publishRegisterEvent(registerRequest);
+        }
     }
 
     private void markEmailVerified(String userId) {
@@ -159,8 +169,8 @@ public class AuthenticationService {
         GoogleUserInfo userInfo = fetchUserInfo(token.getAccessToken());
 
         Optional<User> user = userRepository.findByUsername(userInfo.getEmail());
-        if(user.isPresent()) {
-            if(AuthenticationProvider.LOCAL.equals(AuthenticationProvider.valueOf(user.get().getProvider()))) {
+        if (user.isPresent()) {
+            if (AuthenticationProvider.LOCAL.equals(AuthenticationProvider.valueOf(user.get().getProvider()))) {
                 throw new BusinessException("Email already registered with local account. Please use local login.");
             }
             return jwtUtil.generateToken(user.get());
@@ -191,13 +201,11 @@ public class AuthenticationService {
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<GoogleUserInfo> response =
-                restTemplate.exchange(
-                        userInfoUri,
-                        HttpMethod.GET,
-                        entity,
-                        GoogleUserInfo.class
-                );
+        ResponseEntity<GoogleUserInfo> response = restTemplate.exchange(
+                userInfoUri,
+                HttpMethod.GET,
+                entity,
+                GoogleUserInfo.class);
 
         return response.getBody();
     }
@@ -212,8 +220,7 @@ public class AuthenticationService {
                         .provider(AuthenticationProvider.GOOGLE.name())
                         .providerId(info.getSub())
                         .isVerified(true)
-                        .build()
-        );
+                        .build());
     }
 
 }

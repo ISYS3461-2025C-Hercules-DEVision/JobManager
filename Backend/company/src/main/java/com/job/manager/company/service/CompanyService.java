@@ -68,6 +68,20 @@ public class CompanyService {
             throw new BusinessException("Company with this email already exists");
         }
 
+        // Validate required fields
+        if (registerRequest.getCompanyName() == null || registerRequest.getCompanyName().trim().isEmpty()) {
+            throw new BusinessException("Company name is required");
+        }
+        if (registerRequest.getCity() == null || registerRequest.getCity().trim().isEmpty()) {
+            throw new BusinessException("City is required");
+        }
+        if (registerRequest.getCountry() == null || registerRequest.getCountry().trim().isEmpty()) {
+            throw new BusinessException("Country is required");
+        }
+        if (registerRequest.getAddress() == null || registerRequest.getAddress().trim().isEmpty()) {
+            throw new BusinessException("Address is required");
+        }
+
         // Create Company entity only
         // PublicProfile will be created later when user completes onboarding
         Company newCompany = Company.builder()
@@ -95,10 +109,10 @@ public class CompanyService {
     }
 
     @Transactional
-    public PublicProfile createPublicProfile(String companyId, String displayName, String aboutUs, 
-                                            String whoWeAreLookingFor, String websiteUrl, 
-                                            String industryDomain, String country, String city,
-                                            String logoUrl, String bannerUrl) {
+    public PublicProfile createPublicProfile(String companyId, String displayName, String aboutUs,
+            String whoWeAreLookingFor, String websiteUrl,
+            String industryDomain, String country, String city,
+            String logoUrl, String bannerUrl) {
         // Check if company exists
         // Check if company exists
         Company company = companyRepository.findById(companyId)
@@ -107,6 +121,23 @@ public class CompanyService {
         // Check if public profile already exists
         if (publicProfileRepository.existsByCompanyId(companyId)) {
             throw new BusinessException("Public profile already exists for this company");
+        }
+
+        // Validate required fields
+        if (displayName == null || displayName.trim().isEmpty()) {
+            throw new BusinessException("Display Name is required");
+        }
+        if (aboutUs == null || aboutUs.trim().isEmpty()) {
+            throw new BusinessException("About Us is required");
+        }
+        if (industryDomain == null || industryDomain.trim().isEmpty()) {
+            throw new BusinessException("Industry Domain is required");
+        }
+        if (country == null || country.trim().isEmpty()) {
+            throw new BusinessException("Country is required");
+        }
+        if (city == null || city.trim().isEmpty()) {
+            throw new BusinessException("City is required");
         }
 
         // Create PublicProfile and save to MongoDB
