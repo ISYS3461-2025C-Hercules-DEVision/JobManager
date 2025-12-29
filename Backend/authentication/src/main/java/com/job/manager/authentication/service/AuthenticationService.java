@@ -176,10 +176,31 @@ public class AuthenticationService {
             return jwtUtil.generateToken(user.get());
         }
         User newUser = registerUser(userInfo);
+
+        // Wait for company profile to be available (max 2s, poll every 200ms)
+        boolean companyExists = false;
+        int attempts = 0;
+        while (!companyExists && attempts < 10) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            // Call company service (via REST or repository) to check if company exists
+            // This is a placeholder: replace with actual check if needed
+            // companyExists = companyService.existsByEmail(userInfo.getEmail());
+            // For now, just set to true to avoid blocking forever
+            companyExists = true; // TODO: implement real check if possible
+            attempts++;
+        }
+
         return jwtUtil.generateToken(newUser);
     }
 
     private GoogleTokenResponse exchangeCodeForToken(String code) {
+        System.out.println("[DEBUG] Google OAuth code: " + code);
+        System.out.println("[DEBUG] Google OAuth redirect_uri: " + redirectUri);
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("code", code);
         form.add("client_id", clientId);
@@ -211,16 +232,38 @@ public class AuthenticationService {
     }
 
     private User registerUser(GoogleUserInfo info) {
+        // Prevent duplicate Google users by username or providerId
+        String email = info.getEmail();
+        String providerId = info.getSub();
+        // Check for existing user by username (email) or providerId
+
+        Optional<User> existingUser = userRepository.findByUsername(email);
+        if (existingUser.isPresent() && AuthenticationProvider.GOOGLE.name().equals(existingUser.get().getProvider())) {
+            return existingUser.get();
+        }
+        Optional<User> byProviderId = userRepository.findByProviderId(providerId);
+        if (byProviderId.isPresent()) {
+            return byProviderId.get();
+        }
+
+        String emailPrefix = email != null && email.contains("@") ? email.substring(0, email.indexOf("@")) : "googleuser";
         RegisterRequest request = RegisterRequest.builder()
-                .email(info.getEmail()).build();
+            .email(email)
+            .companyName(emailPrefix + " (Google)")
+            .city("UNKNOWN")
+            .address("UNKNOWN")
+            .country("UNKNOWN")
+            .phoneNumber("")
+            .password("") // Not used for Google, but required by DTO
+            .build();
         kafkaProducer.publishRegisterEvent(request);
         return userRepository.save(
-                User.builder()
-                        .username(info.getEmail())
-                        .provider(AuthenticationProvider.GOOGLE.name())
-                        .providerId(info.getSub())
-                        .isVerified(true)
-                        .build());
+            User.builder()
+                .username(email)
+                .provider(AuthenticationProvider.GOOGLE.name())
+                .providerId(providerId)
+                .isVerified(true)
+                .build());
     }
 
 }

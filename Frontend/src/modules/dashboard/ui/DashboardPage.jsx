@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import CreatePublicProfile from "../../profile/ui/CreatePublicProfile";
 import { profileService } from "../../profile/services/profileService";
+import { useProfile } from "../../../state/ProfileContext";
 
 /**
  * DashboardPage - Main dashboard overview page
@@ -9,6 +10,7 @@ import { profileService } from "../../profile/services/profileService";
 function DashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { refreshProfile } = useProfile();
 
   useEffect(() => {
     // Check if user has completed their profile from backend
@@ -38,6 +40,7 @@ function DashboardPage() {
 
   const handleProfileSuccess = () => {
     setShowProfileModal(false);
+    refreshProfile(); // Ensure profile state is updated after creation
   };
 
   const handleProfileClose = () => {

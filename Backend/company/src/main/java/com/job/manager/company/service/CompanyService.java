@@ -68,38 +68,34 @@ public class CompanyService {
             throw new BusinessException("Company with this email already exists");
         }
 
-        // Validate required fields
-        if (registerRequest.getCompanyName() == null || registerRequest.getCompanyName().trim().isEmpty()) {
-            throw new BusinessException("Company name is required");
-        }
-        if (registerRequest.getCity() == null || registerRequest.getCity().trim().isEmpty()) {
-            throw new BusinessException("City is required");
-        }
-        if (registerRequest.getCountry() == null || registerRequest.getCountry().trim().isEmpty()) {
-            throw new BusinessException("Country is required");
-        }
-        if (registerRequest.getAddress() == null || registerRequest.getAddress().trim().isEmpty()) {
-            throw new BusinessException("Address is required");
-        }
+        // Set defaults for required fields if blank/null (for Google or fallback)
+        String companyName = (registerRequest.getCompanyName() == null || registerRequest.getCompanyName().trim().isEmpty())
+            ? "Default Company" : registerRequest.getCompanyName();
+        String city = (registerRequest.getCity() == null || registerRequest.getCity().trim().isEmpty())
+            ? "UNKNOWN" : registerRequest.getCity();
+        String country = (registerRequest.getCountry() == null || registerRequest.getCountry().trim().isEmpty())
+            ? "UNKNOWN" : registerRequest.getCountry();
+        String address = (registerRequest.getAddress() == null || registerRequest.getAddress().trim().isEmpty())
+            ? "UNKNOWN" : registerRequest.getAddress();
 
         // Create Company entity only
         // PublicProfile will be created later when user completes onboarding
         Company newCompany = Company.builder()
-                .companyId(registerRequest.getCompanyId())
-                .companyName(registerRequest.getCompanyName())
-                .email(registerRequest.getEmail())
-                .phoneNumber(registerRequest.getPhoneNumber())
-                .streetAddress(registerRequest.getAddress())
-                .city(registerRequest.getCity())
-                .country(registerRequest.getCountry())
-                .shardKey(registerRequest.getCountry()) // Shard key = country
-                .isEmailVerified(false) // Will be verified via email
-                .isActive(true)
-                .ssoProvider(Company.SsoProvider.LOCAL)
-                .isPremium(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+            .companyId(registerRequest.getCompanyId())
+            .companyName(companyName)
+            .email(registerRequest.getEmail())
+            .phoneNumber(registerRequest.getPhoneNumber())
+            .streetAddress(address)
+            .city(city)
+            .country(country)
+            .shardKey(country) // Shard key = country
+            .isEmailVerified(false) // Will be verified via email
+            .isActive(true)
+            .ssoProvider(Company.SsoProvider.LOCAL)
+            .isPremium(false)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
 
         companyRepository.save(newCompany);
     }

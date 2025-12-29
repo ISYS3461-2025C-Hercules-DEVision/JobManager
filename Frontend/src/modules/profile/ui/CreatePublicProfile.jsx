@@ -43,7 +43,7 @@ function CreatePublicProfile({ onClose, onSuccess }) {
               Create Your Public Profile
             </h1>
             <p className="text-gray-600 font-semibold mt-2">
-              Complete your profile to get started!
+              Welcome! Please complete your company profile to continue. This step is required for all new users, including those who signed up with Google.
             </p>
           </div>
           <button
