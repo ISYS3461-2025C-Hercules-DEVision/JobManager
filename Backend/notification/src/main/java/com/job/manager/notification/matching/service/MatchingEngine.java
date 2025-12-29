@@ -1,7 +1,7 @@
-package com.job.manager.matching.service;
+package com.job.manager.notification.matching.service;
 
-import com.job.manager.matching.dto.ApplicantCreatedEvent;
-import com.job.manager.matching.dto.CompanySearchProfileDto;
+import com.job.manager.notification.matching.dto.ApplicantCreatedEvent;
+import com.job.manager.notification.matching.dto.CompanySearchProfileDto;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -13,7 +13,6 @@ import java.util.Set;
 public class MatchingEngine {
 
     public boolean matches(ApplicantCreatedEvent applicant, CompanySearchProfileDto profile) {
-        // 1. Country must match
         if (applicant.getCountry() == null || profile.getCountry() == null) {
             return false;
         }
@@ -21,7 +20,6 @@ public class MatchingEngine {
             return false;
         }
 
-        // 2. At least one technical tag overlaps
         if (applicant.getTechnicalTags() == null || profile.getTechnicalTags() == null) {
             return false;
         }
@@ -32,7 +30,6 @@ public class MatchingEngine {
             return false;
         }
 
-        // 3. Employment status overlap (if company specified any)
         if (profile.getEmploymentStatus() != null && !profile.getEmploymentStatus().isEmpty()) {
             Set<String> applicantStatuses =
                     applicant.getEmploymentStatus() != null ? applicant.getEmploymentStatus() : Set.of();
@@ -43,12 +40,10 @@ public class MatchingEngine {
             }
         }
 
-        // 4. Salary overlap
         BigDecimal profileMin = profile.getSalaryMin() != null ? profile.getSalaryMin() : BigDecimal.ZERO;
-        BigDecimal profileMax = profile.getSalaryMax(); // null = no upper bound
+        BigDecimal profileMax = profile.getSalaryMax();
 
         if (applicant.getExpectedSalaryMin() == null && applicant.getExpectedSalaryMax() == null) {
-            // no preference, accept
             return true;
         }
 
@@ -62,7 +57,6 @@ public class MatchingEngine {
             return false;
         }
 
-        // 5. Education (if company specified a minimum level; here we just do exact match)
         if (profile.getHighestEducationDegree() != null) {
             if (applicant.getHighestEducationDegree() == null) {
                 return false;
