@@ -1,6 +1,7 @@
-package com.job.manager.matching.service;
+package com.job.manager.notification.matching.service;
 
-import com.job.manager.matching.dto.CompanySearchProfileDto;
+import com.job.manager.notification.matching.dto.CompanySearchProfileDto;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,8 +13,11 @@ public class SubscriptionClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Value("${services.subscription.base-url:http://localhost:8083}")
+    private String subscriptionBaseUrl;
+
     public List<CompanySearchProfileDto> getAllSearchProfiles() {
-        String url = "http://localhost:8083/subscriptions/search-profiles";
+        String url = subscriptionBaseUrl + "/subscriptions/search-profiles";
         CompanySearchProfileDto[] profiles =
                 restTemplate.getForObject(url, CompanySearchProfileDto[].class);
 

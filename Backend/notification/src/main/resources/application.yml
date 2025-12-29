@@ -18,8 +18,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${SMTP_EMAIL}
-    password: ${SMTP_PASSWORD}
+    username: ${SMTP_EMAIL:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -30,6 +30,8 @@ spring:
 services:
   authentication:
     base-url: http://localhost:8000/auth
+  subscription:
+    base-url: http://localhost:8083
 
 eureka:
   client:

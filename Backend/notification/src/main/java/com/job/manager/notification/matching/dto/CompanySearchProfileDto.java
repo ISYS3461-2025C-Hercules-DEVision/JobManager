@@ -1,4 +1,4 @@
-package com.job.manager.matching.dto;
+package com.job.manager.notification.matching.dto;
 
 import lombok.Data;
 
@@ -7,17 +7,13 @@ import java.util.List;
 import java.util.Set;
 
 @Data
-public class ApplicantCreatedEvent {
+public class CompanySearchProfileDto {
 
-    private String applicantId;
-    private String name;
-
+    private String companyId;
     private List<String> technicalTags;
     private Set<String> employmentStatus;
     private String country;
-
-    private BigDecimal expectedSalaryMin;
-    private BigDecimal expectedSalaryMax;
-
+    private BigDecimal salaryMin;
+    private BigDecimal salaryMax;
     private String highestEducationDegree;
 }

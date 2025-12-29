@@ -1,6 +1,6 @@
 package com.job.manager.notification.kafka;
 
-import com.job.manager.notification.dto.ApplicantMatchedEvent;
+import com.job.manager.notification.dto.SubscriptionEventDTO;
 import com.job.manager.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,19 +13,19 @@ public class NotificationKafkaListener {
     private final NotificationService notificationService;
 
     @KafkaListener(
-            topics = "applicant.matches",
+            topics = {
+                "subscription.created",
+                "subscription.activated",
+                "subscription.expired",
+                "subscription.cancelled",
+                "subscription.expiring-soon"
+            },
             groupId = "notification-group",
-            containerFactory = "matchedKafkaListenerContainerFactory"
+            containerFactory = "subscriptionKafkaListenerContainerFactory"
     )
-    public void onApplicantMatched(ApplicantMatchedEvent event) {
-        System.out.println("NotificationKafkaListener: received matched event: " + event);
-        try {
-            notificationService.handleApplicantMatched(event);
-        } catch (Exception ex) {
-            System.out.println("NotificationKafkaListener: ERROR handling event: " + ex.getMessage());
-            ex.printStackTrace();
-            // Optionally rethrow, Kafka will still log it:
-            throw ex;
-        }
+    public void onSubscriptionEvent(SubscriptionEventDTO event) {
+        System.out.println("NotificationKafkaListener: received subscription event: " + event);
+        // You can add logic here to handle different event types if needed
+        // e.g., notificationService.handleSubscriptionEvent(event);
     }
 }
