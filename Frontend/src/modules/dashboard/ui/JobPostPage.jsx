@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { jobService } from '../services/jobService';
 
 /**
  * JobPostPage - Create and edit job posts
  * Features: Rich form with validation, preview mode
  */
 function JobPostPage() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     department: '',
@@ -21,6 +24,8 @@ function JobPostPage() {
   });
 
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,11 +47,20 @@ function JobPostPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log('Form submitted:', formData);
-      // Handle form submission (API call)
+      setSubmitError(null);
+      setSubmitting(true);
+      try {
+        await jobService.createJob(formData);
+        navigate('/dashboard/post-manager');
+      } catch (err) {
+        console.error('Create job failed:', err);
+        setSubmitError(err.message || 'Failed to publish job post');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -61,6 +75,9 @@ function JobPostPage() {
       <div className="mb-8">
         <h1 className="text-4xl font-black uppercase mb-2">Create Job Post</h1>
         <p className="text-gray-600">Fill in the details to create a new job posting</p>
+        {submitError && (
+          <p className="mt-3 text-primary font-bold">{submitError}</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -267,9 +284,10 @@ function JobPostPage() {
               <div className="space-y-3">
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="w-full px-4 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors"
                 >
-                  Publish Job Post
+                  {submitting ? 'Publishing...' : 'Publish Job Post'}
                 </button>
                 <button
                   type="button"

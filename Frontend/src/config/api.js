@@ -27,11 +27,9 @@ export const API_ENDPOINTS = {
 
   // Job
   JOB: {
-    BASE: '/job',
-    CREATE: '/job/create',
-    UPDATE: '/job/update',
-    DELETE: '/job/delete',
-    LIST: '/job/list',
+    BASE: '/jobs',
+    LIST: '/jobs',
+    CREATE: '/jobs',
   },
 
   // Subscription

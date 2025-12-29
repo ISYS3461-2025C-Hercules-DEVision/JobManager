@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "../modules/auth/services/authService";
 
@@ -6,11 +6,23 @@ function GoogleCallback() {
   const [searchParams] = useSearchParams();
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const didRunRef = useRef(false);
+
+  const code = searchParams.get("code");
+  const errorParam = searchParams.get("error");
 
   useEffect(() => {
     const handleCallback = async () => {
-      const code = searchParams.get("code");
-      const errorParam = searchParams.get("error");
+      if (didRunRef.current) return;
+      didRunRef.current = true;
+
+      // Immediately remove sensitive one-time code from the URL.
+      // This also prevents accidental re-processing on refresh.
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch {
+        // ignore
+      }
 
       if (errorParam) {
         setError("Google authentication was cancelled or failed");
@@ -42,7 +54,7 @@ function GoogleCallback() {
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [code, errorParam, navigate]);
 
   return (
     <div className="min-h-screen bg-light-gray flex items-center justify-center p-4">

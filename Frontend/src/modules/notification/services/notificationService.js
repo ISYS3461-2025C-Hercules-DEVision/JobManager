@@ -4,15 +4,9 @@
  */
 
 import { httpClient } from '../../../utils/HttpUtil';
+import { ENV } from '../../../config/env';
 
-const NOTIFICATION_BASE_URL = 'http://localhost:8085'; // Notification service port
-
-/**
- * Create a custom axios instance for notification service
- */
-const notificationClient = httpClient.create({
-  baseURL: NOTIFICATION_BASE_URL,
-});
+const NOTIFICATION_BASE_URL = ENV.NOTIFICATION_SERVICE_URL;
 
 /**
  * Get notifications for a specific company
@@ -21,7 +15,7 @@ const notificationClient = httpClient.create({
  */
 export const getNotifications = async (companyId) => {
   try {
-    const response = await notificationClient.get(`/notifications/${companyId}`);
+    const response = await httpClient.get(`${NOTIFICATION_BASE_URL}/notifications/${companyId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch notifications:', error);
@@ -36,7 +30,7 @@ export const getNotifications = async (companyId) => {
  */
 export const markAsRead = async (notificationId) => {
   try {
-    const response = await notificationClient.patch(`/notifications/${notificationId}/read`);
+    const response = await httpClient.patch(`${NOTIFICATION_BASE_URL}/notifications/${notificationId}/read`);
     return response.data;
   } catch (error) {
     console.error('Failed to mark notification as read:', error);
@@ -51,7 +45,7 @@ export const markAsRead = async (notificationId) => {
  */
 export const deleteNotification = async (notificationId) => {
   try {
-    await notificationClient.delete(`/notifications/${notificationId}`);
+    await httpClient.delete(`${NOTIFICATION_BASE_URL}/notifications/${notificationId}`);
   } catch (error) {
     console.error('Failed to delete notification:', error);
     throw error;

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import CreatePublicProfile from "../../profile/ui/CreatePublicProfile";
 import { profileService } from "../../profile/services/profileService";
 import { useProfile } from "../../../state/ProfileContext";
+import { jobService } from "../services/jobService";
 
 /**
  * DashboardPage - Main dashboard overview page
@@ -10,6 +11,7 @@ import { useProfile } from "../../../state/ProfileContext";
 function DashboardPage() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
   const { refreshProfile } = useProfile();
 
   useEffect(() => {
@@ -38,6 +40,20 @@ function DashboardPage() {
     checkProfileStatus();
   }, []);
 
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        const data = await jobService.listMyJobs();
+        setJobs(data);
+      } catch (error) {
+        console.error("Failed to load jobs:", error);
+        setJobs([]);
+      }
+    };
+
+    loadJobs();
+  }, []);
+
   const handleProfileSuccess = () => {
     setShowProfileModal(false);
     refreshProfile(); // Ensure profile state is updated after creation
@@ -47,52 +63,22 @@ function DashboardPage() {
     setShowProfileModal(false);
   };
 
-  // Mock data - replace with actual API calls
+  const activeJobsCount = jobs.filter((j) => j?.published).length;
+
   const stats = [
-    { label: "Active Jobs", value: 12, change: "+2 this week", trend: "up" },
-    {
-      label: "Total Applicants",
-      value: 234,
-      change: "+18 this week",
-      trend: "up",
-    },
-    {
-      label: "Pending Reviews",
-      value: 45,
-      change: "8 urgent",
-      trend: "neutral",
-    },
-    {
-      label: "Profile Views",
-      value: 1284,
-      change: "+124 this week",
-      trend: "up",
-    },
+    { label: "Active Jobs", value: activeJobsCount, change: "", trend: "neutral" },
+    { label: "Total Applicants", value: 0, change: "", trend: "neutral" },
+    { label: "Pending Reviews", value: 0, change: "", trend: "neutral" },
+    { label: "Profile Views", value: 0, change: "", trend: "neutral" },
   ];
 
-  const recentJobs = [
-    {
-      id: 1,
-      title: "Senior Frontend Developer",
-      applicants: 23,
-      status: "Active",
-      postedDate: "2025-12-10",
-    },
-    {
-      id: 2,
-      title: "Backend Engineer",
-      applicants: 34,
-      status: "Active",
-      postedDate: "2025-12-08",
-    },
-    {
-      id: 3,
-      title: "DevOps Specialist",
-      applicants: 12,
-      status: "Closed",
-      postedDate: "2025-12-05",
-    },
-  ];
+  const recentJobs = jobs.slice(0, 5).map((job) => ({
+    id: job.id,
+    title: job.title,
+    applicants: 0,
+    status: job.published ? "Active" : "Draft",
+    postedDate: job.postedDate || "-",
+  }));
 
   return (
     <div>
@@ -133,9 +119,11 @@ function DashboardPage() {
                 </div>
               )}
             </div>
-            <p className="text-xs font-semibold text-gray-500 mt-2">
-              {stat.change}
-            </p>
+            {stat.change ? (
+              <p className="text-xs font-semibold text-gray-500 mt-2">
+                {stat.change}
+              </p>
+            ) : null}
           </div>
         ))}
       </div>
@@ -167,32 +155,40 @@ function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recentJobs.map((job) => (
-                <tr
-                  key={job.id}
-                  className="border-b-2 border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="px-6 py-4 font-semibold">{job.title}</td>
-                  <td className="px-6 py-4">{job.applicants}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 text-xs font-bold uppercase ${
-                        job.status === "Active"
-                          ? "bg-green-100 text-green-800 border-2 border-green-800"
-                          : "bg-gray-100 text-gray-800 border-2 border-gray-800"
-                      }`}
-                    >
-                      {job.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">{job.postedDate}</td>
-                  <td className="px-6 py-4">
-                    <button className="px-4 py-2 text-xs font-bold uppercase border-2 border-black hover:bg-black hover:text-white transition-colors">
-                      View
-                    </button>
+              {recentJobs.length === 0 ? (
+                <tr className="border-b-2 border-gray-200">
+                  <td className="px-6 py-8 text-center font-bold" colSpan={5}>
+                    No job posts yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentJobs.map((job) => (
+                  <tr
+                    key={job.id}
+                    className="border-b-2 border-gray-200 hover:bg-gray-50"
+                  >
+                    <td className="px-6 py-4 font-semibold">{job.title}</td>
+                    <td className="px-6 py-4">{job.applicants}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 text-xs font-bold uppercase ${
+                          job.status === "Active"
+                            ? "bg-green-100 text-green-800 border-2 border-green-800"
+                            : "bg-gray-100 text-gray-800 border-2 border-gray-800"
+                        }`}
+                      >
+                        {job.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm">{job.postedDate}</td>
+                    <td className="px-6 py-4">
+                      <button className="px-4 py-2 text-xs font-bold uppercase border-2 border-black hover:bg-black hover:text-white transition-colors">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

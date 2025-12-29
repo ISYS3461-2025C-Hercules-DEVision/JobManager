@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useProfile } from '../../../state/ProfileContext';
 import { useApp } from '../../../state/AppContext';
+import { useSubscription } from '../hooks/useSubscription';
+import { usePayment } from '../../payment/hooks/usePayment';
 
 /**
  * SubscriptionSection Component
@@ -16,35 +18,49 @@ function SubscriptionSection() {
   const { profile } = useProfile();
   const { showSuccess, showError, showInfo } = useApp();
 
+  const companyId = useMemo(() => {
+    return profile?.companyId || profile?.id || profile?._id || null;
+  }, [profile]);
+
+  const companyEmail = useMemo(() => {
+    return profile?.email || profile?.companyEmail || null;
+  }, [profile]);
+
+  const { subscription, create, cancel, refetch } = useSubscription(companyId);
+  const { initiate: initiatePayment } = usePayment();
+
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  // Mock subscription data - will be replaced with API data
-  const currentSubscription = {
-    planType: profile?.isPremium ? 'Premium' : 'Free',
-    status: 'ACTIVE',
-    priceAmount: profile?.isPremium ? 99 : 0,
-    currency: 'USD',
-    startDate: new Date('2024-12-01'),
-    expiryDate: new Date('2026-01-15'),
-    features: profile?.isPremium
-      ? [
-          'Unlimited job posts',
-          'Advanced applicant search',
-          'AI-powered candidate matching',
-          'Priority support 24/7',
-          'Custom branding',
-          'Analytics dashboard',
-          'Export reports',
-          'API access',
-        ]
-      : [
-          'Up to 3 job posts',
-          'Basic applicant search',
-          'Standard support',
-        ],
-  };
+  const currentSubscription = useMemo(() => {
+    const isPremium = (subscription?.planType || '').toUpperCase() === 'PREMIUM' && subscription?.status === 'ACTIVE';
+
+    return {
+      planType: isPremium ? 'Premium' : 'Free',
+      status: subscription?.status || 'ACTIVE',
+      priceAmount: Number(subscription?.priceAmount ?? (isPremium ? 30 : 0)),
+      currency: subscription?.currency || 'USD',
+      startDate: subscription?.startDate ? new Date(subscription.startDate) : new Date(),
+      expiryDate: subscription?.expiryDate ? new Date(subscription.expiryDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      features: isPremium
+        ? [
+            'Unlimited job posts',
+            'Advanced applicant search',
+            'AI-powered candidate matching',
+            'Priority support 24/7',
+            'Custom branding',
+            'Analytics dashboard',
+            'Export reports',
+            'API access',
+          ]
+        : [
+            'Up to 3 job posts',
+            'Basic applicant search',
+            'Standard support',
+          ],
+    };
+  }, [subscription]);
 
   // Available plans for upgrade
   const plans = [
@@ -143,18 +159,86 @@ function SubscriptionSection() {
   };
 
   const handleCancelSubscription = () => {
-    // TODO: Implement API call to cancel subscription
-    console.log('Cancelling subscription');
-    setShowCancelModal(false);
-    showInfo('Subscription cancellation will be available after backend integration');
+    const run = async () => {
+      if (!subscription?.subscriptionId) {
+        showError('No subscription found to cancel');
+        return;
+      }
+
+      try {
+        await cancel(subscription.subscriptionId);
+        showSuccess('Subscription cancelled');
+        setShowCancelModal(false);
+        await refetch();
+      } catch (err) {
+        showError(err.message || 'Failed to cancel subscription');
+      }
+    };
+
+    run();
   };
 
   const handleUpgradePlan = (plan) => {
-    // TODO: Implement API call to upgrade/downgrade plan
-    console.log('Upgrading to plan:', plan);
-    setShowUpgradeModal(false);
-    setSelectedPlan(null);
-    showInfo('Plan upgrade will be available after backend integration');
+    const run = async () => {
+      if (!companyId) {
+        showError('Missing company profile. Please complete onboarding first.');
+        return;
+      }
+
+      if (!companyEmail) {
+        showError('Missing company email. Please update your profile email first.');
+        return;
+      }
+
+      const requestedPlan = plan?.id;
+      const planType = requestedPlan === 'free' ? 'FREE' : requestedPlan === 'premium' ? 'PREMIUM' : null;
+
+      if (!planType) {
+        showInfo('This plan is not supported yet');
+        return;
+      }
+
+      try {
+        // Backend currently disallows creating a new subscription when an ACTIVE/PENDING one exists.
+        // For plan changes, cancel existing first, then create the new one.
+        if (subscription?.subscriptionId && (subscription.status === 'ACTIVE' || subscription.status === 'PENDING')) {
+          await cancel(subscription.subscriptionId);
+        }
+
+        const newSub = await create({ companyId, planType });
+
+        setShowUpgradeModal(false);
+        setSelectedPlan(null);
+
+        if (planType === 'FREE') {
+          showSuccess('Switched to Free plan');
+          await refetch();
+          return;
+        }
+
+        // Premium: initiate Stripe checkout (payment service is inside Subscription backend).
+        sessionStorage.setItem('returnUrl', '/dashboard');
+
+        await initiatePayment(
+          {
+            subsystem: 'JOB_MANAGER',
+            paymentType: 'SUBSCRIPTION',
+            customerId: companyId,
+            email: companyEmail,
+            referenceId: newSub.subscriptionId,
+            amount: newSub.priceAmount,
+            currency: newSub.currency || 'USD',
+            gateway: 'STRIPE',
+            description: 'Premium subscription (monthly)',
+          },
+          { redirect: true }
+        );
+      } catch (err) {
+        showError(err.message || 'Failed to change plan');
+      }
+    };
+
+    run();
   };
 
   const getStatusColor = (status) => {

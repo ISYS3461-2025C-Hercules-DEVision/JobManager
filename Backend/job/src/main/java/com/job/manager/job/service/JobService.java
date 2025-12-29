@@ -6,6 +6,7 @@ import com.job.manager.job.repository.JobRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,6 +34,10 @@ public class JobService {
         }
         
         return saved;
+    }
+
+    public List<JobPost> getJobsForCompany(String companyId) {
+        return jobRepository.findByCompanyIdOrderByPostedDateDesc(companyId);
     }
 
 }
