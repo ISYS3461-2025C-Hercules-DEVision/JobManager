@@ -1,14 +1,14 @@
 spring:
-  application:
-    name: subscription
   data:
     mongodb:
-      host: localhost
-      port: 27020
+      host: ${DATABASE_HOST:localhost}
+      port: ${DATABASE_PORT:27020}
       database: mongodb-subscription
       username: admin
       password: admin
       authentication-database: admin
+  application:
+    name: subscription
   kafka:
     bootstrap-servers: localhost:29092
     producer:
@@ -17,15 +17,6 @@ spring:
 
 server:
   port: 8083
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    prefer-ip-address: true
 
 # Kafka Topics
 kafka:

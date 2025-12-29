@@ -5,19 +5,17 @@
 
 export const ENV = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://13.236.146.126/:8000',
 
   // Authentication endpoints
-  AUTH_SERVICE_URL:
-    import.meta.env.VITE_AUTH_SERVICE_URL || "http://localhost:8080",
+  AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://13.236.146.126:8000/authentication',
 
   // Company Service endpoints
-  COMPANY_SERVICE_URL:
-    import.meta.env.VITE_COMPANY_SERVICE_URL || "http://localhost:8082",
+  COMPANY_SERVICE_URL: import.meta.env.VITE_COMPANY_SERVICE_URL || 'http://13.236.146.126:8000/company',
 
   // Subscription Service endpoints
   SUBSCRIPTION_SERVICE_URL:
-    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://localhost:8083",
+    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://13.236.146.126:8000/subscription",
 
   // Job Service endpoints
   JOB_SERVICE_URL:
@@ -25,11 +23,10 @@ export const ENV = {
 
   // Payment Service endpoints
   PAYMENT_SERVICE_URL:
-    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:8083",
-
+    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://13.236.146.126:8000/payment",
   // Notification Service endpoints
   NOTIFICATION_SERVICE_URL:
-    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://localhost:8087",
+    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://13.236.146.126:8000/notification",
 
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
   MOCK_AUTH: import.meta.env.VITE_MOCK_AUTH === "true",
