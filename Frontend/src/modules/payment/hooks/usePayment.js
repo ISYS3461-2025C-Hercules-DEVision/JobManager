@@ -1,154 +1,121 @@
 /**
-export default usePayment;
-
-};
-  };
-    cancel,
-    getHistory,
-    getById,
-    complete,
-    initiate,
-    paymentHistory,
-    error,
-    loading,
-  return {
-
-  }, []);
-    }
-      setLoading(false);
-    } finally {
-      throw new Error(errorMessage);
-      console.error('Error cancelling payment:', err);
-      setError(errorMessage);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to cancel payment';
-    } catch (err) {
-      return response;
-      const response = await cancelPayment(sessionId);
-    try {
-
-    setError(null);
-    setLoading(true);
-  const cancel = useCallback(async (sessionId) => {
-   */
-   * @returns {Promise<Object>} Cancellation response
-   * @param {string} sessionId - Stripe session ID
-   * Cancel a payment
-  /**
-
-  }, []);
-    }
-      setLoading(false);
-    } finally {
-      throw new Error(errorMessage);
-      console.error('Error fetching payment history:', err);
-      setError(errorMessage);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch payment history';
-    } catch (err) {
-      return response;
-      setPaymentHistory(response);
-      const response = await getCustomerPayments(customerId);
-    try {
-
-    setError(null);
-    setLoading(true);
-  const getHistory = useCallback(async (customerId) => {
-   */
-   * @returns {Promise<Array>} Payment history
-   * @param {string} customerId - Customer ID (companyId)
-   * Get payment history for a customer
-  /**
-
-  }, []);
-    }
-      setLoading(false);
-    } finally {
-      throw new Error(errorMessage);
-      console.error('Error fetching payment:', err);
-      setError(errorMessage);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch payment';
-    } catch (err) {
-      return response;
-      const response = await getPaymentById(transactionId);
-    try {
-
-    setError(null);
-    setLoading(true);
-  const getById = useCallback(async (transactionId) => {
-   */
-   * @returns {Promise<Object>} Payment details
-   * @param {string} transactionId - Payment transaction ID
-   * Get payment by transaction ID
-  /**
-
-  }, []);
-    }
-      setLoading(false);
-    } finally {
-      throw new Error(errorMessage);
-      console.error('Error completing payment:', err);
-      setError(errorMessage);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to complete payment';
-    } catch (err) {
-      return response;
-      const response = await completePayment(sessionId);
-    try {
-
-    setError(null);
-    setLoading(true);
-  const complete = useCallback(async (sessionId) => {
-   */
-   * @returns {Promise<Object>} Completed payment details
-   * @param {string} sessionId - Stripe session ID
-   * Complete a payment after Stripe redirect
-  /**
-
-  }, []);
-    }
-      setLoading(false);
-    } finally {
-      throw new Error(errorMessage);
-      console.error('Error initiating payment:', err);
-      setError(errorMessage);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to initiate payment';
-    } catch (err) {
-      return response;
-
-      }
-        window.location.href = response.checkoutUrl;
-      if (response.checkoutUrl) {
-      // Redirect to Stripe Checkout
-
-      const response = await initiatePayment(paymentData);
-    try {
-
-    setError(null);
-    setLoading(true);
-  const initiate = useCallback(async (paymentData) => {
-   */
-   * @returns {Promise<Object>} Payment initiate response
-   * @param {Object} paymentData - Payment initiation details
-   * Initiate a payment and redirect to Stripe
-  /**
-
-  const [paymentHistory, setPaymentHistory] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-export const usePayment = () => {
+ * usePayment Hook
+ * Custom hook for managing payments
  */
- * @returns {Object} Payment state and actions
- * Custom hook for payments
-/**
 
-} from '../services/paymentService';
-  cancelPayment
+import { useCallback, useState } from 'react';
+import {
+  cancelPayment,
+  completePayment,
   getCustomerPayments,
   getPaymentById,
-  completePayment,
   initiatePayment,
-import {
-import { useState, useCallback } from 'react';
+} from '../services/paymentService';
 
- */
- * Custom hook for managing payments
- * usePayment Hook
+export const usePayment = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+
+  const initiate = useCallback(async (paymentData, { redirect = true } = {}) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await initiatePayment(paymentData);
+
+      if (redirect && response?.paymentUrl) {
+        window.location.href = response.paymentUrl;
+      }
+
+      return response;
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err?.message || 'Failed to initiate payment';
+      setError(errorMessage);
+      console.error('Error initiating payment:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const complete = useCallback(async (sessionId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      return await completePayment(sessionId);
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err?.message || 'Failed to complete payment';
+      setError(errorMessage);
+      console.error('Error completing payment:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getById = useCallback(async (transactionId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      return await getPaymentById(transactionId);
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err?.message || 'Failed to fetch payment';
+      setError(errorMessage);
+      console.error('Error fetching payment:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getHistory = useCallback(async (customerId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const payments = await getCustomerPayments(customerId);
+      setPaymentHistory(payments);
+      return payments;
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err?.message || 'Failed to fetch payment history';
+      setError(errorMessage);
+      console.error('Error fetching payment history:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const cancel = useCallback(async (sessionId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      return await cancelPayment(sessionId);
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err?.message || 'Failed to cancel payment';
+      setError(errorMessage);
+      console.error('Error cancelling payment:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    paymentHistory,
+    initiate,
+    complete,
+    getById,
+    getHistory,
+    cancel,
+  };
+};
+
+export default usePayment;
 

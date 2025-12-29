@@ -5,6 +5,8 @@ import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.service.JobService;
 import org.springframework.web.bind.annotation.*;
 import com.job.manager.job.annotation.CurrentUser;
+
+import java.util.List;
 @RestController
 @RequestMapping("")
 public class JobController {
@@ -22,6 +24,11 @@ public class JobController {
     ) {
         jobPost.setCompanyId(user.getUserId());
         return jobService.createJobPost(jobPost);
+    }
+
+    @GetMapping("/jobs")
+    public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
+        return jobService.getJobsForCompany(user.getUserId());
     }
 
 

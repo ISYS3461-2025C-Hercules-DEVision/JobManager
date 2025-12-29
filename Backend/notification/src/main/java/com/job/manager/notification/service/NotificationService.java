@@ -20,7 +20,7 @@ public class NotificationService {
     private final JavaMailSender mailSender;
     private final CompanyEmailClient companyEmailClient;
 
-    @Value("${spring.mail.username}")
+    @Value("${SMTP_EMAIL:}")
     private String from;
 
     private String resolveCompanyEmail(String companyId) {
@@ -46,6 +46,11 @@ public class NotificationService {
         String email = resolveCompanyEmail(event.getCompanyId());
         System.out.println("NotificationService: ABOUT TO SEND EMAIL to " + email);
         System.out.println("NotificationService: from = " + from);
+
+        if (from == null || from.isBlank()) {
+            System.out.println("NotificationService: SMTP not configured (SMTP_EMAIL missing). Skipping email send.");
+            return;
+        }
 
         try {
             SimpleMailMessage mail = new SimpleMailMessage();

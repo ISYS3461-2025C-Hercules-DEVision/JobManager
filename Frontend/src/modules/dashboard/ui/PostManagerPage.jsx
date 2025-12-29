@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { jobService } from '../services/jobService';
 
 /**
  * PostManagerPage - Manage all job posts
@@ -7,66 +8,50 @@ import { useState } from 'react';
 function PostManagerPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedPosts, setSelectedPosts] = useState([]);
+  const [jobPosts, setJobPosts] = useState([]);
 
-  // Mock job posts data
-  const jobPosts = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      status: 'Active',
-      applicants: 23,
-      views: 456,
-      postedDate: '2025-12-10',
-      expiryDate: '2026-01-10',
-    },
-    {
-      id: 2,
-      title: 'Backend Engineer',
-      department: 'Engineering',
-      location: 'New York, NY',
-      type: 'Full-time',
-      status: 'Active',
-      applicants: 34,
-      views: 678,
-      postedDate: '2025-12-08',
-      expiryDate: '2026-01-08',
-    },
-    {
-      id: 3,
-      title: 'DevOps Specialist',
-      department: 'Operations',
-      location: 'San Francisco, CA',
-      type: 'Contract',
-      status: 'Closed',
-      applicants: 12,
-      views: 234,
-      postedDate: '2025-12-05',
-      expiryDate: '2025-12-20',
-    },
-    {
-      id: 4,
-      title: 'UX Designer',
-      department: 'Design',
-      location: 'Remote',
-      type: 'Full-time',
-      status: 'Draft',
-      applicants: 0,
-      views: 0,
-      postedDate: null,
-      expiryDate: null,
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await jobService.listMyJobs();
+        const today = new Date();
 
-  const filteredPosts = jobPosts.filter((post) => {
+        const mapped = data.map((j) => {
+          const expiry = j.expiryDate ? new Date(j.expiryDate) : null;
+          let status = j.published ? 'Active' : 'Draft';
+          if (j.published && expiry && expiry < today) status = 'Closed';
+
+          return {
+            id: j.id,
+            title: j.title,
+            department: '-',
+            location: j.location || '-',
+            type: j.employmentType || '-',
+            status,
+            applicants: 0,
+            views: 0,
+            postedDate: j.postedDate || null,
+            expiryDate: j.expiryDate || null,
+          };
+        });
+
+        setJobPosts(mapped);
+      } catch (error) {
+        console.error('Failed to load job posts:', error);
+        setJobPosts([]);
+      }
+    };
+
+    load();
+  }, []);
+
+  const filteredPosts = useMemo(() => jobPosts.filter((post) => {
     if (activeTab === 'all') return true;
     if (activeTab === 'active') return post.status === 'Active';
     if (activeTab === 'closed') return post.status === 'Closed';
     if (activeTab === 'draft') return post.status === 'Draft';
     return true;
-  });
+  }), [jobPosts, activeTab]);
 
   const toggleSelectPost = (postId) => {
     setSelectedPosts((prev) =>

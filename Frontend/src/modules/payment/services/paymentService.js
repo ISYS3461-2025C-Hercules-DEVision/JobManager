@@ -4,15 +4,12 @@
  */
 
 import { httpClient } from '../../../utils/HttpUtil';
+import { ENV } from '../../../config/env';
+import { API_ENDPOINTS } from '../../../config/api';
 
-const PAYMENT_BASE_URL = 'http://localhost:8084'; // Payment service port
-
-/**
- * Create a custom axios instance for payment service
- */
-const paymentClient = httpClient.create({
-  baseURL: PAYMENT_BASE_URL,
-});
+// Payment is implemented inside the Subscription backend in this repo.
+// Keep this configurable via ENV in case you route through a gateway.
+const PAYMENT_BASE_URL = ENV.PAYMENT_SERVICE_URL;
 
 /**
  * Initiate a payment
@@ -31,7 +28,7 @@ const paymentClient = httpClient.create({
  */
 export const initiatePayment = async (paymentData) => {
   try {
-    const response = await paymentClient.post('/payments/initiate', paymentData);
+    const response = await httpClient.post(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.INITIATE}`, paymentData);
     return response.data;
   } catch (error) {
     console.error('Failed to initiate payment:', error);
@@ -46,7 +43,7 @@ export const initiatePayment = async (paymentData) => {
  */
 export const completePayment = async (sessionId) => {
   try {
-    const response = await paymentClient.get('/payments/complete', {
+    const response = await httpClient.get(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.COMPLETE}`, {
       params: { sessionId }
     });
     return response.data;
@@ -63,7 +60,7 @@ export const completePayment = async (sessionId) => {
  */
 export const getPaymentById = async (transactionId) => {
   try {
-    const response = await paymentClient.get(`/payments/${transactionId}`);
+    const response = await httpClient.get(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.GET_BY_ID}/${transactionId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch payment:', error);
@@ -78,7 +75,7 @@ export const getPaymentById = async (transactionId) => {
  */
 export const getCustomerPayments = async (customerId) => {
   try {
-    const response = await paymentClient.get(`/payments/customer/${customerId}`);
+    const response = await httpClient.get(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.GET_CUSTOMER_PAYMENTS}/${customerId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch customer payments:', error);
@@ -92,7 +89,7 @@ export const getCustomerPayments = async (customerId) => {
  */
 export const getAllPayments = async () => {
   try {
-    const response = await paymentClient.get('/payments');
+    const response = await httpClient.get(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.GET_ALL}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch all payments:', error);
@@ -107,7 +104,7 @@ export const getAllPayments = async () => {
  */
 export const cancelPayment = async (sessionId) => {
   try {
-    const response = await paymentClient.get('/payments/cancel', {
+    const response = await httpClient.get(`${PAYMENT_BASE_URL}${API_ENDPOINTS.PAYMENT.CANCEL}`, {
       params: { sessionId }
     });
     return response.data;

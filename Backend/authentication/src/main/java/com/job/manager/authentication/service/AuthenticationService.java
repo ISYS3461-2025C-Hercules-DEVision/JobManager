@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -199,7 +200,15 @@ public class AuthenticationService {
     }
 
     private GoogleTokenResponse exchangeCodeForToken(String code) {
-        System.out.println("[DEBUG] Google OAuth code: " + code);
+        String maskedCode;
+        if (code == null || code.isBlank()) {
+            maskedCode = "<empty>";
+        } else if (code.length() <= 12) {
+            maskedCode = "***";
+        } else {
+            maskedCode = code.substring(0, 6) + "..." + code.substring(code.length() - 4);
+        }
+        System.out.println("[DEBUG] Google OAuth code: " + maskedCode);
         System.out.println("[DEBUG] Google OAuth redirect_uri: " + redirectUri);
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("code", code);
@@ -213,7 +222,15 @@ public class AuthenticationService {
 
         HttpEntity<?> entity = new HttpEntity<>(form, headers);
 
-        return restTemplate.postForObject(tokenUri, entity, GoogleTokenResponse.class);
+        try {
+            return restTemplate.postForObject(tokenUri, entity, GoogleTokenResponse.class);
+        } catch (HttpClientErrorException.BadRequest ex) {
+            String body = ex.getResponseBodyAsString();
+            if (body != null && body.contains("invalid_grant")) {
+                throw new BusinessException("Google login failed: authorization code was already used or expired. Please try signing in again.");
+            }
+            throw ex;
+        }
     }
 
     private GoogleUserInfo fetchUserInfo(String accessToken) {

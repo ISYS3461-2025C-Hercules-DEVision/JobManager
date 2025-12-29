@@ -1,138 +1,65 @@
-import { http } from '../../../utils/HttpUtil';
-import { API_ENDPOINTS } from '../../../config/api';
-
 /**
  * Subscription Service
- * Handles all subscription-related API calls
+ * Handles subscription-related API calls (Subscription backend service)
  */
 
-/**
- * Get current subscription details
- * @returns {Promise<Object>} Current subscription data
- */
-export const getCurrentSubscription = async () => {
-  try {
-    const response = await http.get(API_ENDPOINTS.SUBSCRIPTION.CURRENT);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch current subscription:', error);
-    throw error;
-  }
+import { httpClient } from '../../../utils/HttpUtil';
+import { ENV } from '../../../config/env';
+import { API_ENDPOINTS } from '../../../config/api';
+
+const baseUrl = ENV.SUBSCRIPTION_SERVICE_URL;
+
+export const createSubscription = async ({ companyId, planType }) => {
+  const response = await httpClient.post(
+    `${baseUrl}${API_ENDPOINTS.SUBSCRIPTION.CREATE}`,
+    { companyId, planType }
+  );
+  return response.data;
 };
 
-/**
- * Get subscription by ID
- * @param {string} subscriptionId - Subscription ID
- * @returns {Promise<Object>} Subscription details
- */
+export const getSubscriptionByCompanyId = async (companyId) => {
+  const response = await httpClient.get(
+    `${baseUrl}${API_ENDPOINTS.SUBSCRIPTION.GET_BY_COMPANY}/${companyId}`
+  );
+  return response.data;
+};
+
 export const getSubscriptionById = async (subscriptionId) => {
-  try {
-    const response = await subscriptionClient.get(`/subscriptions/${subscriptionId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch subscription:', error);
-    throw error;
-  }
+  const response = await httpClient.get(
+    `${baseUrl}${API_ENDPOINTS.SUBSCRIPTION.GET_BY_ID}/${subscriptionId}`
+  );
+  return response.data;
 };
 
-/**
- * Get all subscriptions (admin)
- * @returns {Promise<Array>} List of all subscriptions
- */
-export const getAllSubscriptions = async () => {
-  try {
-    const response = await subscriptionClient.get('/subscriptions');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch all subscriptions:', error);
-    throw error;
-  }
-};
-
-/**
- * Activate a subscription with payment
- * @param {string} subscriptionId - Subscription ID
- * @param {string} paymentId - Payment transaction ID
- * @returns {Promise<Object>} Activated subscription data
- */
 export const activateSubscription = async (subscriptionId, paymentId) => {
-  try {
-    const response = await subscriptionClient.put(`/subscriptions/${subscriptionId}/activate`, null, {
-      params: { paymentId }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to activate subscription:', error);
-    throw error;
-  }
+  const response = await httpClient.put(
+    `${baseUrl}/subscriptions/${subscriptionId}/activate`,
+    null,
+    { params: { paymentId } }
+  );
+  return response.data;
 };
 
-/**
- * Cancel subscription
- * @param {string} subscriptionId - Subscription ID
- * @returns {Promise<Object>} Cancelled subscription data
- */
 export const cancelSubscription = async (subscriptionId) => {
-  try {
-    const response = await subscriptionClient.put(`/subscriptions/${subscriptionId}/cancel`);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to cancel subscription:', error);
-    throw error;
-  }
+  const response = await httpClient.put(
+    `${baseUrl}/subscriptions/${subscriptionId}/cancel`
+  );
+  return response.data;
 };
 
-/**
- * Check for expired subscriptions (admin)
- * @returns {Promise<Array>} List of expired subscriptions
- */
 export const checkExpiredSubscriptions = async () => {
-  try {
-    const response = await subscriptionClient.post('/subscriptions/check-expired');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to check expired subscriptions:', error);
-    throw error;
-  }
+  const response = await httpClient.post(
+    `${baseUrl}${API_ENDPOINTS.SUBSCRIPTION.CHECK_EXPIRED}`
+  );
+  return response.data;
 };
 
 export default {
   createSubscription,
   getSubscriptionByCompanyId,
-  getCurrentSubscription,
   getSubscriptionById,
-  getAllSubscriptions,
   activateSubscription,
   cancelSubscription,
   checkExpiredSubscriptions,
-};
-  } catch (error) {
-    console.error('Failed to download invoice:', error);
-    throw error;
-  }
-};
-
-/**
- * Reactivate cancelled subscription
- * @returns {Promise<Object>} Reactivation confirmation
- */
-export const reactivateSubscription = async () => {
-  try {
-    const response = await http.post(`${API_ENDPOINTS.SUBSCRIPTION.BASE}/reactivate`);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to reactivate subscription:', error);
-    throw error;
-  }
-};
-
-export const subscriptionService = {
-  getCurrentSubscription,
-  getSubscriptionPlans,
-  upgradePlan,
-  cancelSubscription,
-  getBillingHistory,
-  downloadInvoice,
-  reactivateSubscription,
 };
 
