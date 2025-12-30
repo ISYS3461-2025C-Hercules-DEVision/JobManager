@@ -31,9 +31,9 @@ kafka:
 # Service URLs - Company Service for validation
 company:
   service:
-    url: http://localhost:8082
+    url: ${COMPANY_URL:http://localhost:8081}
 
 services:
   subscription:
-    url: http://localhost:8083
+    url: ${SUBSCRIPTION_URL:http://localhost:8083}
     activate-endpoint: /subscriptions/{subscriptionId}/activate

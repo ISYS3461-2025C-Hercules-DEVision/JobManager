@@ -29,9 +29,9 @@ spring:
 
 services:
   authentication:
-    base-url: http://localhost:8000/auth
+    base-url: ${AUTH_URL:http://localhost:8080/auth}
   subscription:
-    base-url: http://localhost:8083
+    base-url: ${SUBSCRIPTION_URL:http://localhost:8083}
   
 
 kafka:
