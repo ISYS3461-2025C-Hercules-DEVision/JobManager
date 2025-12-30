@@ -67,7 +67,7 @@ function HomePage() {
           </div>
           
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-black mb-6 leading-none uppercase">
-            TEST DEPLOYMENT.
+            NO MIDDLEMAN.
             <br />
             <span className="text-primary">{displayText}<span className="animate-pulse">|</span></span>
           </h1>
