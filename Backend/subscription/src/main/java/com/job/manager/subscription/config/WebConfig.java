@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.Duration;
@@ -34,4 +35,15 @@ public class WebConfig implements WebMvcConfigurer {
                 .setReadTimeout(Duration.ofSeconds(10))
                 .build();
     }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        // Allow requests from frontend dev server and any origin in local development
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
+    }
+
 }
