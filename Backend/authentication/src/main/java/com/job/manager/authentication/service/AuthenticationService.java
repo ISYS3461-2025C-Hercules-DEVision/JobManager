@@ -102,16 +102,21 @@ public class AuthenticationService {
         // 2. Generate token
         String otp = OtpGenerator.generate();
 
-        // 3. Store in Redis
+        // 3. Store OTP in Redis
         otpService.store(user.getId(), otp);
 
-        // 4. Send email
-        emailService.sendVerificationEmail(user.getUsername(), otp);
-
+        // IMPORTANT: store registration data BEFORE attempting to send email.
+        // Email sending can fail in local/dev (missing SMTP), but verification must still
+        // be able to publish the Kafka registration event.
         registerRequest.setCompanyId(newUser.getId());
-
-        // Store registration request in Redis (to be used after email verification)
         emailOtpService.storeRegistrationData(newUser.getId(), registerRequest);
+
+        // 4. Send email (best-effort)
+        try {
+            emailService.sendVerificationEmail(user.getUsername(), otp);
+        } catch (Exception ex) {
+            System.out.println("[WARN] Failed to send verification email to " + user.getUsername() + ". Continuing registration. Error: " + ex.getMessage());
+        }
 
         // NOTE: removed immediate Kafka publishing. It will be published after email
         // verification.

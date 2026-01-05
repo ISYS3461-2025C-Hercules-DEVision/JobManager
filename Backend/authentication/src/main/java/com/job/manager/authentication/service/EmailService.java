@@ -16,6 +16,13 @@ public class EmailService {
 
     public void sendVerificationEmail(String to, String code) {
 
+        // Local/dev convenience: allow running without SMTP configured.
+        // If SMTP is not set up, log the OTP so developers can continue the flow.
+        if (from == null || from.isBlank()) {
+            System.out.println("[WARN] SMTP not configured (spring.mail.username is empty). OTP for " + to + ": " + code);
+            return;
+        }
+
         String subject = "Your verification code";
 
         String body = """
@@ -34,6 +41,11 @@ public class EmailService {
         message.setSubject(subject);
         message.setText(body);
 
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            // Don't fail registration due to SMTP issues in local/dev.
+            System.out.println("[WARN] Failed to send email via SMTP. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());
+        }
     }
 }

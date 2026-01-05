@@ -12,6 +12,26 @@ for dir in authentication company job notification subscription; do
 
     cd "$SERVICE_PATH"
 
+    # Load environment variables from .env if present.
+    # Note: We parse KEY=VALUE lines ourselves so values with spaces don't break (unlike `source`).
+    if [ -f "$SERVICE_PATH/.env" ]; then
+      while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        case "$line" in
+          ''|'#'*) continue ;;
+        esac
+        # Only process KEY=VALUE lines
+        if [[ "$line" == *"="* ]]; then
+          key="${line%%=*}"
+          value="${line#*=}"
+          # Trim whitespace around key
+          key="${key//[[:space:]]/}"
+          # Export as a single argument to preserve spaces in value
+          export "$key=$value"
+        fi
+      done < "$SERVICE_PATH/.env"
+    fi
+
     # Build service
     if [ -f "./mvnw" ]; then
       ./mvnw clean package -DskipTests
@@ -23,8 +43,8 @@ for dir in authentication company job notification subscription; do
       continue
     fi
 
-    # Find jar
-    JAR_FILE=$(find target build/libs -name "*.jar" 2>/dev/null | head -n 1)
+    # Find executable Spring Boot jar (avoid Gradle's *-plain.jar)
+    JAR_FILE=$(find target build/libs -name "*.jar" ! -name "*-plain.jar" 2>/dev/null | head -n 1)
 
     if [ -z "$JAR_FILE" ]; then
       echo "❌ No JAR file found for $dir"
