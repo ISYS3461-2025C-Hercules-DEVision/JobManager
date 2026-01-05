@@ -1,10 +1,10 @@
-package com.job.manager.payment.controller;
+package com.job.manager.subscription.controller;
 
-import com.job.manager.payment.dto.PaymentInitiateRequestDTO;
-import com.job.manager.payment.dto.PaymentInitiateResponseDTO;
-import com.job.manager.payment.dto.PaymentResponseDTO;
-import com.job.manager.payment.service.PaymentService;
-import com.job.manager.payment.util.JwtUtil;
+import com.job.manager.subscription.dto.PaymentInitiateRequestDTO;
+import com.job.manager.subscription.dto.PaymentInitiateResponseDTO;
+import com.job.manager.subscription.dto.PaymentResponseDTO;
+import com.job.manager.subscription.service.PaymentService;
+import com.job.manager.subscription.util.JwtUtil;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

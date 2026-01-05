@@ -27,13 +27,19 @@ kafka:
     subscription-cancelled: subscription-cancelled
     payment-failed: payment-failed
     subscription-expiring-soon: subscription-expiring-soon
+    payment-initiated: payment-initiated
+    payment-success: payment-success
 
 # Service URLs - Company Service for validation
 company:
   service:
-    url: http://localhost:8082
+    url: http://localhost:8081
 
 services:
   subscription:
     url: http://localhost:8083
     activate-endpoint: /subscriptions/{subscriptionId}/activate
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_51ShMhN2UgZNlBDYO2uNWluKmRoYCLZa11ZKzVSMPeRvBvxmN9IoRwnDGibvTULN83WwQFHFIfaSAm4GUTBRyWAo00JY98AwiZ}
+  success-url: 

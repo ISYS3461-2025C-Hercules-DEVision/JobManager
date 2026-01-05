@@ -1,4 +1,4 @@
-package com.job.manager.payment.config;
+package com.job.manager.subscription.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;

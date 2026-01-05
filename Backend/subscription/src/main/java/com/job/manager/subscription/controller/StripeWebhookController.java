@@ -1,10 +1,8 @@
-package com.job.manager.payment.controller;
+package com.job.manager.subscription.controller;
 
-import com.job.manager.payment.service.StripePaymentService;
+import com.job.manager.subscription.service.StripePaymentService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
-import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import org.slf4j.Logger;
