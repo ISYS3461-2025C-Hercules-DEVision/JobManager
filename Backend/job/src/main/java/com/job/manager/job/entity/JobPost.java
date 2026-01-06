@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Document(collection = "job-posts")
@@ -23,13 +24,13 @@ public class JobPost {
 
     private String description;
 
-    private String employmentType; // Full-time, Part-time, Internship, Contract
+    private Set<String> employmentTypes; // Full-time, Part-time, Internship, Contract
 
     private LocalDate postedDate;
 
     private LocalDate expiryDate;
 
-    private String salary; // e.g., "1000-1500 USD", "About 1000 USD", "Negotiable"
+    private Salary salary; // Structured salary with type, range, etc.
 
     private String location;
 
