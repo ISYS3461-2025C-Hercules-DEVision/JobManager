@@ -1,9 +1,12 @@
 package com.job.manager.applicant.service;
 
-import com.job.manager.applicant.dto.ApplicantCreatedEvent;   // <-- add this
+import com.job.manager.applicant.dto.ApplicantCreatedEvent;
 import com.job.manager.applicant.dto.ApplicantCreateRequest;
 import com.job.manager.applicant.dto.ApplicantResponse;
+import com.job.manager.applicant.dto.ApplicantSearchRequest;
+import com.job.manager.applicant.dto.ApplicantSearchResponse;
 import com.job.manager.applicant.entity.Applicant;
+import com.job.manager.applicant.entity.WorkExperience;
 import com.job.manager.applicant.kafka.ApplicantKafkaProducer;
 import com.job.manager.applicant.repository.ApplicantRepository;
 
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,24 +34,30 @@ public class ApplicantService {
         // Save to MongoDB
         Applicant applicant = new Applicant();
         applicant.setApplicantId(id);
-        applicant.setName(request.getName());
-        applicant.setTechnicalTags(request.getTechnicalTags());
-        applicant.setEmploymentStatus(request.getEmploymentStatus());
+        applicant.setFirstName(request.getFirstName());
+        applicant.setLastName(request.getLastName());
+        applicant.setEmail(request.getEmail());
+        applicant.setCity(request.getCity());
         applicant.setCountry(request.getCountry());
+        applicant.setObjectiveSummary(request.getObjectiveSummary());
+        applicant.setEducation(request.getEducation());
+        applicant.setWorkExperience(request.getWorkExperience());
+        applicant.setHighestEducationDegree(request.getHighestEducationDegree());
+        applicant.setTechnicalTags(request.getTechnicalTags());
+        applicant.setEmploymentTypes(request.getEmploymentTypes());
         applicant.setExpectedSalaryMin(request.getExpectedSalaryMin());
         applicant.setExpectedSalaryMax(request.getExpectedSalaryMax());
-        applicant.setHighestEducationDegree(request.getHighestEducationDegree());
         applicant.setCreatedAt(LocalDateTime.now());
         applicant.setUpdatedAt(LocalDateTime.now());
 
         repository.save(applicant);
 
-        // Publish Kafka event
+        // Publish Kafka event (keeping backward compatibility)
         ApplicantCreatedEvent event = new ApplicantCreatedEvent();
         event.setApplicantId(id);
-        event.setName(request.getName());
+        event.setName(request.getFirstName() + " " + request.getLastName());
         event.setTechnicalTags(request.getTechnicalTags());
-        event.setEmploymentStatus(request.getEmploymentStatus());
+        event.setEmploymentStatus(request.getEmploymentTypes());
         event.setCountry(request.getCountry());
         event.setExpectedSalaryMin(request.getExpectedSalaryMin());
         event.setExpectedSalaryMax(request.getExpectedSalaryMax());
@@ -66,15 +76,116 @@ public class ApplicantService {
     private ApplicantResponse toResponse(Applicant applicant) {
         ApplicantResponse response = new ApplicantResponse();
         response.setApplicantId(applicant.getApplicantId());
-        response.setName(applicant.getName());
-        response.setTechnicalTags(applicant.getTechnicalTags());
-        response.setEmploymentStatus(applicant.getEmploymentStatus());
+        response.setFirstName(applicant.getFirstName());
+        response.setLastName(applicant.getLastName());
+        response.setEmail(applicant.getEmail());
+        response.setCity(applicant.getCity());
         response.setCountry(applicant.getCountry());
+        response.setObjectiveSummary(applicant.getObjectiveSummary());
+        response.setEducation(applicant.getEducation());
+        response.setWorkExperience(applicant.getWorkExperience());
+        response.setHighestEducationDegree(applicant.getHighestEducationDegree());
+        response.setTechnicalTags(applicant.getTechnicalTags());
+        response.setEmploymentTypes(applicant.getEmploymentTypes());
         response.setExpectedSalaryMin(applicant.getExpectedSalaryMin());
         response.setExpectedSalaryMax(applicant.getExpectedSalaryMax());
-        response.setHighestEducationDegree(applicant.getHighestEducationDegree());
         response.setCreatedAt(applicant.getCreatedAt());
         response.setUpdatedAt(applicant.getUpdatedAt());
         return response;
+    }
+
+    // Get applicant by ID for detail view (Requirement 5.1.4)
+    public Optional<ApplicantResponse> getApplicantById(String applicantId) {
+        return repository.findByApplicantId(applicantId)
+                .map(this::toResponse);
+    }
+
+    /**
+     * Search applicants with filters (Requirements 5.1.1, 5.1.2, 5.1.3)
+     * - Location: City OR Country (only one value)
+     * - Education: Bachelor, Master, Doctorate
+     * - Work Experience: Case-insensitive keyword search
+     * - Employment Types: Multiple selection
+     */
+    public List<ApplicantSearchResponse> searchApplicants(ApplicantSearchRequest request) {
+        List<Applicant> applicants = repository.findAll();
+
+        // Filter by location (city OR country, not both - Requirement 5.1.3)
+        if (request.getCity() != null && !request.getCity().isBlank()) {
+            applicants = applicants.stream()
+                    .filter(a -> a.getCity() != null && 
+                           a.getCity().equalsIgnoreCase(request.getCity()))
+                    .collect(Collectors.toList());
+        } else if (request.getCountry() != null && !request.getCountry().isBlank()) {
+            applicants = applicants.stream()
+                    .filter(a -> a.getCountry() != null && 
+                           a.getCountry().equalsIgnoreCase(request.getCountry()))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by education
+        if (request.getEducation() != null && !request.getEducation().isBlank()) {
+            applicants = applicants.stream()
+                    .filter(a -> a.getHighestEducationDegree() != null &&
+                           a.getHighestEducationDegree().equalsIgnoreCase(request.getEducation()))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by work experience (Requirement 5.1.2 - case-insensitive)
+        if (request.getHasWorkExperience() != null) {
+            if ("None".equalsIgnoreCase(request.getHasWorkExperience())) {
+                applicants = applicants.stream()
+                        .filter(a -> a.getWorkExperience() == null || a.getWorkExperience().isEmpty())
+                        .collect(Collectors.toList());
+            } else if ("Any".equalsIgnoreCase(request.getHasWorkExperience())) {
+                applicants = applicants.stream()
+                        .filter(a -> a.getWorkExperience() != null && !a.getWorkExperience().isEmpty())
+                        .collect(Collectors.toList());
+            }
+        }
+
+        // Filter by work experience keyword (case-insensitive - Requirement 5.1.2)
+        if (request.getWorkExperienceKeyword() != null && !request.getWorkExperienceKeyword().isBlank()) {
+            String keyword = request.getWorkExperienceKeyword().toLowerCase();
+            applicants = applicants.stream()
+                    .filter(a -> a.getWorkExperience() != null && 
+                           a.getWorkExperience().stream()
+                                   .anyMatch(we -> containsKeyword(we, keyword)))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by employment types (Requirement 5.1.1 - multiple selection)
+        if (request.getEmploymentTypes() != null && !request.getEmploymentTypes().isEmpty()) {
+            applicants = applicants.stream()
+                    .filter(a -> a.getEmploymentTypes() != null &&
+                           a.getEmploymentTypes().stream()
+                                   .anyMatch(request.getEmploymentTypes()::contains))
+                    .collect(Collectors.toList());
+        }
+
+        // Return search results with required fields (Requirement 5.1.4)
+        return applicants.stream()
+                .map(this::toSearchResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Case-insensitive keyword search in work experience (Requirement 5.1.2)
+    private boolean containsKeyword(WorkExperience we, String keyword) {
+        return (we.getJobTitle() != null && we.getJobTitle().toLowerCase().contains(keyword)) ||
+               (we.getCompany() != null && we.getCompany().toLowerCase().contains(keyword)) ||
+               (we.getDescription() != null && we.getDescription().toLowerCase().contains(keyword));
+    }
+
+    // Map to search response (Requirement 5.1.4 - display specified fields)
+    private ApplicantSearchResponse toSearchResponse(Applicant applicant) {
+        return ApplicantSearchResponse.builder()
+                .applicantId(applicant.getApplicantId())
+                .firstName(applicant.getFirstName())
+                .lastName(applicant.getLastName())
+                .email(applicant.getEmail())
+                .city(applicant.getCity())
+                .country(applicant.getCountry())
+                .highestEducationDegree(applicant.getHighestEducationDegree())
+                .build();
     }
 }

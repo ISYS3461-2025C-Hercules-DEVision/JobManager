@@ -20,17 +20,29 @@ public class Applicant {
     @Id
     private String id;
     private String applicantId;
-    private String name;
-
-    private List<String> technicalTags;
-    private Set<String> employmentStatus;
+    
+    // Personal Information
+    private String firstName;
+    private String lastName;
+    private String email;
+    
+    // Location
+    private String city;
     private String country;
-
+    
+    // Professional Information
+    private String objectiveSummary;
+    private List<Education> education;
+    private List<WorkExperience> workExperience;
+    private String highestEducationDegree;  // Bachelor, Master, Doctorate
+    
+    // Job Preferences
+    private List<String> technicalTags;
+    private Set<String> employmentTypes;  // Renamed from employmentStatus for clarity
     private BigDecimal expectedSalaryMin;
     private BigDecimal expectedSalaryMax;
 
-    private String highestEducationDegree;
-
+    // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
