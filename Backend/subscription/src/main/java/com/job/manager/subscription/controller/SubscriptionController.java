@@ -210,6 +210,35 @@ public class SubscriptionController {
         }
     }
 
+    /**
+     * Check if a company has active premium subscription.
+     * Can be used by other services for premium feature gating.
+     */
+    @GetMapping("/premium-status/{companyId}")
+    public ResponseEntity<java.util.Map<String, Object>> checkPremiumStatus(
+            @PathVariable String companyId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+
+        log.info("Checking premium status for company: {}", companyId);
+
+        // Allow both authenticated calls and internal service calls
+        if (token != null && !token.isEmpty()) {
+            try {
+                String jwt = token.replace("Bearer ", "");
+                jwtUtil.validateToken(jwt);
+            } catch (Exception e) {
+                log.warn("Invalid JWT token for premium status check");
+            }
+        }
+
+        boolean isPremium = subscriptionService.isPremiumActive(companyId);
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "companyId", companyId,
+                "isPremium", isPremium,
+                "checkedAt", java.time.LocalDateTime.now().toString()));
+    }
+
     @PutMapping("/{subscriptionId}/plan")
     public ResponseEntity<SubscriptionResponseDTO> changePlan(
             @PathVariable String subscriptionId,
