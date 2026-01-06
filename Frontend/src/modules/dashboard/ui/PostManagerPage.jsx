@@ -42,7 +42,7 @@ function PostManagerPage() {
           return {
             id: j.id,
             title: j.title,
-            department: "-",
+            department: j.department || "-",
             location: j.location || "-",
             type: j.employmentType || "-",
             status,

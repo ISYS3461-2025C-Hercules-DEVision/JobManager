@@ -56,6 +56,7 @@ public class JobService {
         
         // Update fields
         existingJob.setTitle(updatedJob.getTitle());
+        existingJob.setDepartment(updatedJob.getDepartment());
         existingJob.setDescription(updatedJob.getDescription());
         existingJob.setEmploymentType(updatedJob.getEmploymentType());
         existingJob.setLocation(updatedJob.getLocation());

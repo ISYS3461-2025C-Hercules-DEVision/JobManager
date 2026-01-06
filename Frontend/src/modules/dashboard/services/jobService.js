@@ -34,6 +34,7 @@ export const jobService = {
   async createJob(formData) {
     const payload = {
       title: formData.title,
+      department: formData.department || '',
       description: formData.description,
       employmentType: formData.type,
       location: formData.location,
@@ -52,6 +53,7 @@ export const jobService = {
   async saveDraft(formData, jobId = null) {
     const payload = {
       title: formData.title || "Untitled Draft",
+      department: formData.department || "",
       description: formData.description || "",
       employmentType: formData.type || "Full-time",
       location: formData.location || "",
@@ -86,6 +88,7 @@ export const jobService = {
   async updateJob(jobId, formData) {
     const payload = {
       title: formData.title,
+      department: formData.department || '',
       description: formData.description,
       employmentType: formData.type,
       location: formData.location,

@@ -50,7 +50,7 @@ function JobPostPage() {
 
           setFormData({
             title: job.title || "",
-            department: "-",
+            department: job.department || "",
             location: job.location || "",
             type: job.employmentType || "Full-time",
             salaryMin,
