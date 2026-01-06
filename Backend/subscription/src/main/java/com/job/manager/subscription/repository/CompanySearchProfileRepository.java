@@ -10,6 +10,8 @@ public interface CompanySearchProfileRepository extends MongoRepository<CompanyS
 
     Optional<CompanySearchProfile> findByCompanyId(String companyId);
 
+    void deleteByCompanyId(String companyId);
+
     // Later, if you want all active premium profiles:
     List<CompanySearchProfile> findAll();
 }

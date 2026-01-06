@@ -5,6 +5,7 @@ import com.job.manager.subscription.dto.SubscriptionEventDTO;
 import com.job.manager.subscription.dto.SubscriptionResponseDTO;
 import com.job.manager.subscription.entity.Subscription;
 import com.job.manager.subscription.kafka.SubscriptionEventProducer;
+import com.job.manager.subscription.repository.CompanySearchProfileRepository;
 import com.job.manager.subscription.repository.SubscriptionRepository;
 import com.job.manager.subscription.validator.SubscriptionValidator;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionEventProducer eventProducer;
     private final SubscriptionValidator subscriptionValidator;
+    private final CompanySearchProfileRepository companySearchProfileRepository;
 
     public boolean isPremiumActive(String companyId) {
         return subscriptionRepository.findByCompanyId(companyId)
@@ -206,6 +208,16 @@ public class SubscriptionService {
             subscription.setStatus(Subscription.SubscriptionStatus.EXPIRED);
             subscription.setUpdatedAt(LocalDateTime.now());
             Subscription saved = subscriptionRepository.save(subscription);
+
+            // Deactivate search profile for expired subscription
+            try {
+                companySearchProfileRepository.deleteByCompanyId(subscription.getCompanyId());
+                log.info(">>> [SUBSCRIPTION] Deactivated search profile for expired company: {}",
+                        subscription.getCompanyId());
+            } catch (Exception e) {
+                log.warn("Could not delete search profile for company: {} - {}",
+                        subscription.getCompanyId(), e.getMessage());
+            }
 
             // Send EXPIRED event
             eventProducer.sendSubscriptionExpiredEvent(mapToEventDTO(saved));
