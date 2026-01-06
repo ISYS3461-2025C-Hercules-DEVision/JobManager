@@ -31,9 +31,16 @@ kafka:
 # Service URLs - Company Service for validation
 company:
   service:
-    url: ${COMPANY_URL:http://localhost:8081}
+    url: http://localhost:8082
 
 services:
   subscription:
-    url: ${SUBSCRIPTION_URL:http://localhost:8083}
+    url: http://localhost:8083
     activate-endpoint: /subscriptions/{subscriptionId}/activate
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_51ShMhN2UgzNIbDYO2uNw1uKmRoYCLZa1lZKvzSMpeRvBvxmN9IoRwnDGibvTULN83WwQfHFEIfaSAm4GUTBRyWAo00JY98AwiZ}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/payment/success%7D
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/payment/cancel%7D
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_2484a92d3bb3c85ca12d8accccf6888fc9306d237a910cc0643ca03e9f980dd7} 
+  #stripe listen --forward-to localhost:8083/webhook/stripe
