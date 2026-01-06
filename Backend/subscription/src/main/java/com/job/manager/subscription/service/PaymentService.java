@@ -126,6 +126,20 @@ public class PaymentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Get paginated payment history for a customer (billing history)
+     */
+    public org.springframework.data.domain.Page<PaymentResponseDTO> getPaymentHistory(
+            String customerId, org.springframework.data.domain.Pageable pageable) {
+        log.info("Getting payment history for customer: {}, page: {}, size: {}",
+                customerId, pageable.getPageNumber(), pageable.getPageSize());
+
+        org.springframework.data.domain.Page<PaymentTransaction> page = paymentRepository
+                .findByCustomerIdOrderByCreatedAtDesc(customerId, pageable);
+
+        return page.map(this::mapToResponseDTO);
+    }
+
     private PaymentResponseDTO mapToResponseDTO(PaymentTransaction transaction) {
         return new PaymentResponseDTO(
                 transaction.getTransactionId(),

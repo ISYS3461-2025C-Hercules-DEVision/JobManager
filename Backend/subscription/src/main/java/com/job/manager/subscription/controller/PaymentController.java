@@ -44,16 +44,16 @@ public class PaymentController {
      * - customerId, email, referenceId, amount, currency
      * 
      * @param request Payment initiation details
-     * @param token JWT token from Authorization header
+     * @param token   JWT token from Authorization header
      * @return Payment initiate response with Stripe checkout URL
      */
     @PostMapping("/initiate")
     public ResponseEntity<?> initiatePayment(
             @Valid @RequestBody PaymentInitiateRequestDTO request,
             @RequestHeader("Authorization") String token) {
-        
+
         try {
-            logger.info("Payment initiation request for subsystem: {}, type: {}, customer: {}", 
+            logger.info("Payment initiation request for subsystem: {}, type: {}, customer: {}",
                     request.getSubsystem(), request.getPaymentType(), request.getCustomerId());
 
             // Validate JWT token
@@ -68,8 +68,8 @@ public class PaymentController {
 
             // Initiate payment
             PaymentInitiateResponseDTO response = paymentService.initiatePayment(request);
-            
-            logger.info("Payment initiated successfully. Transaction ID: {}, Session ID: {}", 
+
+            logger.info("Payment initiated successfully. Transaction ID: {}, Session ID: {}",
                     response.getTransactionId(), response.getSessionId());
 
             return ResponseEntity.ok(response);
@@ -91,14 +91,14 @@ public class PaymentController {
      * Updates transaction status and triggers callbacks to appropriate service.
      * 
      * @param sessionId Stripe session ID from success URL
-     * @param token JWT token from Authorization header
+     * @param token     JWT token from Authorization header
      * @return Completed payment details
      */
     @GetMapping("/complete")
     public ResponseEntity<?> completePayment(
             @RequestParam String sessionId,
             @RequestHeader("Authorization") String token) {
-        
+
         try {
             logger.info("Payment completion request for session: {}", sessionId);
 
@@ -114,8 +114,8 @@ public class PaymentController {
 
             // Complete payment and trigger callbacks
             PaymentResponseDTO response = paymentService.completePayment(sessionId, jwtToken);
-            
-            logger.info("Payment completed successfully. Transaction ID: {}, Status: {}", 
+
+            logger.info("Payment completed successfully. Transaction ID: {}, Status: {}",
                     response.getTransactionId(), response.getStatus());
 
             return ResponseEntity.ok(response);
@@ -135,14 +135,14 @@ public class PaymentController {
      * Get payment details by transaction ID.
      * 
      * @param transactionId Payment transaction ID
-     * @param token JWT token from Authorization header
+     * @param token         JWT token from Authorization header
      * @return Payment details
      */
     @GetMapping("/{transactionId}")
     public ResponseEntity<?> getPaymentById(
             @PathVariable String transactionId,
             @RequestHeader("Authorization") String token) {
-        
+
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
@@ -154,7 +154,7 @@ public class PaymentController {
             }
 
             PaymentResponseDTO payment = paymentService.getPaymentById(transactionId);
-            
+
             if (payment == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -172,14 +172,14 @@ public class PaymentController {
      * Get payment history for a specific customer.
      * 
      * @param customerId Customer ID (companyId or applicantId)
-     * @param token JWT token from Authorization header
+     * @param token      JWT token from Authorization header
      * @return List of customer payments
      */
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<?> getCustomerPayments(
             @PathVariable String customerId,
             @RequestHeader("Authorization") String token) {
-        
+
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
@@ -191,7 +191,7 @@ public class PaymentController {
             }
 
             List<PaymentResponseDTO> payments = paymentService.getPaymentsByCustomerId(customerId, null);
-            
+
             logger.info("Retrieved {} payments for customer: {}", payments.size(), customerId);
 
             return ResponseEntity.ok(payments);
@@ -212,7 +212,7 @@ public class PaymentController {
     @GetMapping
     public ResponseEntity<?> getAllPayments(
             @RequestHeader("Authorization") String token) {
-        
+
         try {
             // Validate JWT token
             String jwtToken = token.replace("Bearer ", "");
@@ -224,9 +224,9 @@ public class PaymentController {
             }
 
             // TODO: Add role-based authorization check (admin only)
-            
+
             List<PaymentResponseDTO> payments = paymentService.getAllPayments();
-            
+
             logger.info("Retrieved {} total payments", payments.size());
 
             return ResponseEntity.ok(payments);
@@ -239,6 +239,50 @@ public class PaymentController {
     }
 
     /**
+     * Get paginated billing history for a customer.
+     * 
+     * @param customerId Customer ID (companyId or applicantId)
+     * @param page       Page number (0-indexed)
+     * @param size       Page size (default 10)
+     * @param token      JWT token from Authorization header
+     * @return Paginated payment history
+     */
+    @GetMapping("/history")
+    public ResponseEntity<?> getPaymentHistory(
+            @RequestParam String customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader("Authorization") String token) {
+
+        try {
+            // Validate JWT token
+            String jwtToken = token.replace("Bearer ", "");
+            try {
+                jwtUtil.validateToken(jwtToken);
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Invalid or expired token"));
+            }
+
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page,
+                    size);
+            org.springframework.data.domain.Page<PaymentResponseDTO> paymentPage = paymentService
+                    .getPaymentHistory(customerId, pageable);
+
+            logger.info("Retrieved {} payments for customer: {} (page {} of {})",
+                    paymentPage.getNumberOfElements(), customerId,
+                    paymentPage.getNumber(), paymentPage.getTotalPages());
+
+            return ResponseEntity.ok(paymentPage);
+
+        } catch (Exception e) {
+            logger.error("Error retrieving payment history: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to retrieve payment history"));
+        }
+    }
+
+    /**
      * Cancel URL handler.
      * Called when user cancels payment on Stripe.
      * 
@@ -247,20 +291,20 @@ public class PaymentController {
      */
     @GetMapping("/cancel")
     public ResponseEntity<?> handlePaymentCancellation(@RequestParam String sessionId) {
-        
+
         try {
             logger.info("Payment cancelled for session: {}", sessionId);
 
             // Update payment status to CANCELLED
             PaymentResponseDTO payment = paymentService.getPaymentBySessionId(sessionId);
-            
+
             if (payment != null) {
                 // Payment exists, could update status here
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "Payment cancelled");
                 response.put("transactionId", payment.getTransactionId());
                 response.put("status", "CANCELLED");
-                
+
                 return ResponseEntity.ok(response);
             }
 
