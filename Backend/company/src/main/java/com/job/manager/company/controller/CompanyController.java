@@ -185,6 +185,52 @@ public class CompanyController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * Search applicants with filters (Requirements 5.1.1, 5.1.2, 5.1.3)
+     * Allows companies to search for job applicants using multiple criteria
+     */
+    @PostMapping("/applicants/search")
+    public ResponseEntity<List<ApplicantSearchResultDTO>> searchApplicants(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody ApplicantSearchRequestDTO searchRequest) {
+        try {
+            // Verify company exists and is authenticated
+            Company company = companyService.getCompanyByEmail(user.getEmail());
+            
+            // Search applicants from applicant service
+            List<ApplicantSearchResultDTO> results = applicantClient.searchApplicants(searchRequest);
+            
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get applicant detail by ID (Requirement 5.1.4)
+     * Shows full information including Education, Work Experience, and Objective Summary
+     */
+    @GetMapping("/applicants/{applicantId}")
+    public ResponseEntity<ApplicantDTO> getApplicantDetail(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String applicantId) {
+        try {
+            // Verify company exists and is authenticated
+            Company company = companyService.getCompanyByEmail(user.getEmail());
+            
+            // Fetch applicant detail from applicant service
+            ApplicantDTO applicant = applicantClient.getApplicantById(applicantId);
+            
+            if (applicant == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            return ResponseEntity.ok(applicant);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
 
 @Data
