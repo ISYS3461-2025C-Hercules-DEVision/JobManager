@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import { jobService } from '../services/jobService';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { jobService } from "../services/jobService";
 
 /**
  * PostManagerPage - Manage all job posts
  * Features: List view, status filters, edit/delete actions
  */
 function PostManagerPage() {
-  const [activeTab, setActiveTab] = useState('all');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("all");
   const [selectedPosts, setSelectedPosts] = useState([]);
   const [jobPosts, setJobPosts] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -18,15 +23,15 @@ function PostManagerPage() {
 
         const mapped = data.map((j) => {
           const expiry = j.expiryDate ? new Date(j.expiryDate) : null;
-          let status = j.published ? 'Active' : 'Draft';
-          if (j.published && expiry && expiry < today) status = 'Closed';
+          let status = j.published ? "Active" : "Draft";
+          if (j.published && expiry && expiry < today) status = "Closed";
 
           return {
             id: j.id,
             title: j.title,
-            department: '-',
-            location: j.location || '-',
-            type: j.employmentType || '-',
+            department: "-",
+            location: j.location || "-",
+            type: j.employmentType || "-",
             status,
             applicants: 0,
             views: 0,
@@ -37,7 +42,7 @@ function PostManagerPage() {
 
         setJobPosts(mapped);
       } catch (error) {
-        console.error('Failed to load job posts:', error);
+        console.error("Failed to load job posts:", error);
         setJobPosts([]);
       }
     };
@@ -45,13 +50,43 @@ function PostManagerPage() {
     load();
   }, []);
 
-  const filteredPosts = useMemo(() => jobPosts.filter((post) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'active') return post.status === 'Active';
-    if (activeTab === 'closed') return post.status === 'Closed';
-    if (activeTab === 'draft') return post.status === 'Draft';
-    return true;
-  }), [jobPosts, activeTab]);
+  const handleEdit = (jobId) => {
+    navigate(`/dashboard/job-post?id=${jobId}`);
+  };
+
+  const confirmDelete = (jobId) => {
+    setDeleteJobId(jobId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteJobId) return;
+
+    setIsDeleting(true);
+    try {
+      await jobService.deleteJob(deleteJobId);
+      setJobPosts((prev) => prev.filter((job) => job.id !== deleteJobId));
+      setShowDeleteDialog(false);
+      setDeleteJobId(null);
+    } catch (error) {
+      console.error("Failed to delete job:", error);
+      alert("Failed to delete job post. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredPosts = useMemo(
+    () =>
+      jobPosts.filter((post) => {
+        if (activeTab === "all") return true;
+        if (activeTab === "active") return post.status === "Active";
+        if (activeTab === "closed") return post.status === "Closed";
+        if (activeTab === "draft") return post.status === "Draft";
+        return true;
+      }),
+    [jobPosts, activeTab]
+  );
 
   const toggleSelectPost = (postId) => {
     setSelectedPosts((prev) =>
@@ -78,18 +113,18 @@ function PostManagerPage() {
       <div className="border-b-4 border-black mb-6">
         <div className="flex space-x-2">
           {[
-            { key: 'all', label: 'All Posts' },
-            { key: 'active', label: 'Active' },
-            { key: 'closed', label: 'Closed' },
-            { key: 'draft', label: 'Drafts' },
+            { key: "all", label: "All Posts" },
+            { key: "active", label: "Active" },
+            { key: "closed", label: "Closed" },
+            { key: "draft", label: "Drafts" },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-6 py-3 font-black uppercase text-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-black text-white'
-                  : 'bg-white text-black hover:bg-gray-100'
+                  ? "bg-black text-white"
+                  : "bg-white text-black hover:bg-gray-100"
               }`}
             >
               {tab.label}
@@ -102,23 +137,24 @@ function PostManagerPage() {
       {selectedPosts.length > 0 && (
         <div className="bg-primary text-white border-4 border-black p-4 mb-6 flex items-center justify-between">
           <span className="font-bold">
-            {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+            {selectedPosts.length} post{selectedPosts.length > 1 ? "s" : ""}{" "}
+            selected
           </span>
           <div className="flex gap-2">
             <button
-              onClick={() => handleBulkAction('activate')}
+              onClick={() => handleBulkAction("activate")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Activate
             </button>
             <button
-              onClick={() => handleBulkAction('close')}
+              onClick={() => handleBulkAction("close")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Close
             </button>
             <button
-              onClick={() => handleBulkAction('delete')}
+              onClick={() => handleBulkAction("delete")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Delete
@@ -146,19 +182,38 @@ function PostManagerPage() {
                     }}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Job Title</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Department</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Type</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Applicants</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Views</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Posted</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Job Title
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Department
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Type
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Applicants
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Views
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Posted
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredPosts.map((post) => (
-                <tr key={post.id} className="border-b-2 border-gray-200 hover:bg-gray-50">
+                <tr
+                  key={post.id}
+                  className="border-b-2 border-gray-200 hover:bg-gray-50"
+                >
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
@@ -176,44 +231,61 @@ function PostManagerPage() {
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-bold uppercase border-2 ${
-                        post.status === 'Active'
-                          ? 'bg-green-100 text-green-800 border-green-800'
-                          : post.status === 'Closed'
-                          ? 'bg-red-100 text-red-800 border-red-800'
-                          : 'bg-yellow-100 text-yellow-800 border-yellow-800'
+                        post.status === "Active"
+                          ? "bg-green-100 text-green-800 border-green-800"
+                          : post.status === "Closed"
+                          ? "bg-red-100 text-red-800 border-red-800"
+                          : "bg-yellow-100 text-yellow-800 border-yellow-800"
                       }`}
                     >
                       {post.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-bold text-center">{post.applicants}</td>
+                  <td className="px-6 py-4 font-bold text-center">
+                    {post.applicants}
+                  </td>
                   <td className="px-6 py-4 text-center">{post.views}</td>
-                  <td className="px-6 py-4 text-sm">{post.postedDate || '-'}</td>
+                  <td className="px-6 py-4 text-sm">
+                    {post.postedDate || "-"}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleEdit(post.id)}
                         className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
                         title="Edit"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
                         </svg>
                       </button>
                       <button
-                        className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
-                        title="View"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button
+                        onClick={() => confirmDelete(post.id)}
                         className="p-2 border-2 border-black hover:bg-primary hover:border-primary hover:text-white transition-colors"
                         title="Delete"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -227,17 +299,64 @@ function PostManagerPage() {
         {/* Empty State */}
         {filteredPosts.length === 0 && (
           <div className="p-12 text-center">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
-            <h3 className="text-xl font-black uppercase mb-2">No posts found</h3>
-            <p className="text-gray-600">Create your first job post to get started</p>
+            <h3 className="text-xl font-black uppercase mb-2">
+              No posts found
+            </h3>
+            <p className="text-gray-600">
+              Create your first job post to get started
+            </p>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white border-4 border-black p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-black uppercase mb-4">
+              Delete Job Post?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this job post? This action cannot
+              be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 bg-primary text-white font-bold uppercase border-2 border-black hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeleteJobId(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 bg-white text-black font-bold uppercase border-2 border-black hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default PostManagerPage;
-
