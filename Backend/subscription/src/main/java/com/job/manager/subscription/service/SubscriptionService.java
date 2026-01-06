@@ -121,22 +121,44 @@ public class SubscriptionService {
         return mapToResponseDTO(saved);
     }
 
-    public SubscriptionResponseDTO cancelSubscription(String subscriptionId) {
-        log.info("Cancelling subscription: {}", subscriptionId);
+    public SubscriptionResponseDTO cancelSubscription(String subscriptionId, boolean immediate) {
+        log.info("Cancelling subscription: {}, immediate: {}", subscriptionId, immediate);
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
 
-        subscription.setStatus(Subscription.SubscriptionStatus.CANCELLED);
+        // Disable auto-renewal for all cancellations
+        subscription.setAutoRenew(false);
         subscription.setUpdatedAt(LocalDateTime.now());
+
+        if (immediate) {
+            // Immediate cancellation: End subscription now
+            subscription.setStatus(Subscription.SubscriptionStatus.CANCELLED);
+            subscription.setExpiryDate(LocalDateTime.now());
+            log.info("Subscription {} cancelled immediately", subscriptionId);
+        } else {
+            // End-of-period cancellation: Keep active until expiry, but won't renew
+            // Status remains ACTIVE, will naturally expire at expiryDate
+            log.info("Subscription {} marked for cancellation at end of period ({})",
+                    subscriptionId, subscription.getExpiryDate());
+        }
 
         Subscription saved = subscriptionRepository.save(subscription);
 
         // Publish Kafka event to notify company service
         SubscriptionEventDTO event = mapToEventDTO(saved);
-        eventProducer.sendSubscriptionCancelledEvent(event);
+        if (immediate) {
+            eventProducer.sendSubscriptionCancelledEvent(event);
+        }
         log.info(">>> [SUBSCRIPTION] Published cancellation event for company: {}", saved.getCompanyId());
 
         return mapToResponseDTO(saved);
+    }
+
+    /**
+     * Cancel subscription with immediate effect (backward compatible overload)
+     */
+    public SubscriptionResponseDTO cancelSubscription(String subscriptionId) {
+        return cancelSubscription(subscriptionId, true);
     }
 
     public List<SubscriptionResponseDTO> checkExpiredSubscriptions() {

@@ -161,9 +161,10 @@ public class SubscriptionController {
     @PutMapping("/{subscriptionId}/cancel")
     public ResponseEntity<SubscriptionResponseDTO> cancelSubscription(
             @PathVariable String subscriptionId,
+            @RequestParam(value = "immediate", defaultValue = "true") boolean immediate,
             @RequestHeader("Authorization") String token) {
 
-        log.info("Cancelling subscription: {}", subscriptionId);
+        log.info("Cancelling subscription: {}, immediate: {}", subscriptionId, immediate);
 
         // Validate JWT token
         try {
@@ -175,7 +176,7 @@ public class SubscriptionController {
         }
 
         try {
-            SubscriptionResponseDTO response = subscriptionService.cancelSubscription(subscriptionId);
+            SubscriptionResponseDTO response = subscriptionService.cancelSubscription(subscriptionId, immediate);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("Error cancelling subscription: {}", e.getMessage());
