@@ -31,6 +31,7 @@ function JobPostPage() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     if (isEditMode && jobId) {
@@ -138,6 +139,10 @@ function JobPostPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePreview = () => {
+    setShowPreview(true);
   };
 
   return (
@@ -422,6 +427,7 @@ function JobPostPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={handlePreview}
                     className="w-full px-4 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors"
                   >
                     Preview
@@ -483,6 +489,192 @@ function JobPostPage() {
             </div>
           </div>
         </form>
+      )}
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-4 border-black max-w-5xl w-full h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-primary text-white border-b-4 border-black p-6 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-2xl font-black uppercase">
+                Job Post Preview
+              </h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="p-2 hover:bg-black transition-colors rounded"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content - Preview with hidden scrollbar */}
+            <div
+              className="flex-1 overflow-y-auto scrollbar-hide"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              <div className="p-8 max-w-4xl mx-auto">
+                {/* Job Header Card */}
+                <div className="bg-gray-50 border-4 border-black p-8 mb-6">
+                  <h1 className="text-4xl font-black uppercase mb-4 text-primary">
+                    {formData.title || "Job Title"}
+                  </h1>
+                  <div className="grid grid-cols-2 gap-4">
+                    {formData.department && (
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">🏢</span>
+                        <div>
+                          <p className="text-xs font-bold uppercase text-gray-600">
+                            Department
+                          </p>
+                          <p className="font-bold">{formData.department}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">📍</span>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-gray-600">
+                          Location
+                        </p>
+                        <p className="font-bold">
+                          {formData.location || "Not specified"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">💼</span>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-gray-600">
+                          Employment Type
+                        </p>
+                        <p className="font-bold">{formData.type}</p>
+                      </div>
+                    </div>
+                    {(formData.salaryMin || formData.salaryMax) && (
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">💰</span>
+                        <div>
+                          <p className="text-xs font-bold uppercase text-gray-600">
+                            Salary
+                          </p>
+                          <p className="font-bold">
+                            {formData.salaryMin && formData.salaryMax
+                              ? `$${formData.salaryMin} - $${formData.salaryMax}`
+                              : formData.salaryMin
+                              ? `From $${formData.salaryMin}`
+                              : `Up to $${formData.salaryMax}`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Job Description */}
+                {formData.description && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      📋 Job Description
+                    </h2>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {formData.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requirements */}
+                {formData.requirements && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      ✅ Requirements
+                    </h2>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {formData.requirements}
+                    </div>
+                  </div>
+                )}
+
+                {/* Responsibilities */}
+                {formData.responsibilities && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      🎯 Responsibilities
+                    </h2>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {formData.responsibilities}
+                    </div>
+                  </div>
+                )}
+
+                {/* Benefits */}
+                {formData.benefits && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      🎁 Benefits
+                    </h2>
+                    <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {formData.benefits}
+                    </div>
+                  </div>
+                )}
+
+                {/* Skills */}
+                {formData.skills && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      🛠️ Required Skills
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                      {formData.skills.split(",").map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-4 py-2 bg-primary text-white font-bold border-2 border-black"
+                        >
+                          {skill.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Experience Level */}
+                {formData.experienceLevel && (
+                  <div className="bg-white border-4 border-black p-6 mb-6">
+                    <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
+                      📊 Experience Level
+                    </h2>
+                    <p className="text-lg font-bold">
+                      {formData.experienceLevel}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="border-t-4 border-black p-6 bg-gray-50 flex-shrink-0">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="w-full px-6 py-4 bg-black text-white font-black uppercase text-lg hover:bg-gray-800 transition-colors"
+              >
+                Continue Editing
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
