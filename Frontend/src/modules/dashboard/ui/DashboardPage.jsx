@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import CreatePublicProfile from "../../profile/ui/CreatePublicProfile";
 import { profileService } from "../../profile/services/profileService";
 import { useProfile } from "../../../state/ProfileContext";
@@ -9,6 +10,7 @@ import { jobService } from "../services/jobService";
  * Shows key metrics, recent activities, and quick actions
  */
 function DashboardPage() {
+  const navigate = useNavigate();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
@@ -73,8 +75,8 @@ function DashboardPage() {
       const job = await jobService.getJobById(jobId);
       setViewingJob(job);
     } catch (error) {
-      console.error('Failed to load job details:', error);
-      alert('Failed to load job details. Please try again.');
+      console.error("Failed to load job details:", error);
+      alert("Failed to load job details. Please try again.");
       setShowViewModal(false);
     } finally {
       setLoadingView(false);
@@ -84,7 +86,12 @@ function DashboardPage() {
   const activeJobsCount = jobs.filter((j) => j?.published).length;
 
   const stats = [
-    { label: "Active Jobs", value: activeJobsCount, change: "", trend: "neutral" },
+    {
+      label: "Active Jobs",
+      value: activeJobsCount,
+      change: "",
+      trend: "neutral",
+    },
     { label: "Total Applicants", value: 0, change: "", trend: "neutral" },
     { label: "Pending Reviews", value: 0, change: "", trend: "neutral" },
     { label: "Profile Views", value: 0, change: "", trend: "neutral" },
@@ -200,7 +207,7 @@ function DashboardPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">{job.postedDate}</td>
                     <td className="px-6 py-4">
-                      <button 
+                      <button
                         onClick={() => handleView(job.id)}
                         className="px-4 py-2 text-xs font-bold uppercase border-2 border-black hover:bg-black hover:text-white transition-colors"
                       >
@@ -217,7 +224,10 @@ function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <button className="bg-primary hover:bg-primary-hover text-white font-black uppercase p-6 border-4 border-black transition-colors">
+        <button
+          onClick={() => navigate("/dashboard/job-post")}
+          className="bg-primary hover:bg-primary-hover text-white font-black uppercase p-6 border-4 border-black transition-colors"
+        >
           <svg
             className="w-8 h-8 mx-auto mb-2"
             fill="none"
@@ -289,8 +299,18 @@ function DashboardPage() {
                 }}
                 className="p-2 hover:bg-gray-100 transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -306,41 +326,56 @@ function DashboardPage() {
                 <div className="space-y-6">
                   {/* Title */}
                   <div>
-                    <h3 className="text-3xl font-black uppercase mb-2">{viewingJob.title}</h3>
+                    <h3 className="text-3xl font-black uppercase mb-2">
+                      {viewingJob.title}
+                    </h3>
                     <div className="flex gap-4 text-sm text-gray-600">
-                      {viewingJob.department && <span>🏢 {viewingJob.department}</span>}
-                      <span>📍 {viewingJob.location || 'Not specified'}</span>
-                      <span>💼 {viewingJob.employmentType || 'Not specified'}</span>
+                      {viewingJob.department && (
+                        <span>🏢 {viewingJob.department}</span>
+                      )}
+                      <span>📍 {viewingJob.location || "Not specified"}</span>
+                      <span>
+                        💼 {viewingJob.employmentType || "Not specified"}
+                      </span>
                       {viewingJob.salary && <span>💰 {viewingJob.salary}</span>}
                     </div>
                   </div>
 
                   {/* Status Badge */}
                   <div>
-                    <span className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
-                      viewingJob.published 
-                        ? 'bg-green-100 text-green-800 border-green-800'
-                        : 'bg-yellow-100 text-yellow-800 border-yellow-800'
-                    }`}>
-                      {viewingJob.published ? '✓ Published' : '📝 Draft'}
+                    <span
+                      className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
+                        viewingJob.published
+                          ? "bg-green-100 text-green-800 border-green-800"
+                          : "bg-yellow-100 text-yellow-800 border-yellow-800"
+                      }`}
+                    >
+                      {viewingJob.published ? "✓ Published" : "📝 Draft"}
                     </span>
                   </div>
 
                   {/* Description */}
                   <div className="border-t-2 border-gray-200 pt-6">
-                    <h4 className="text-lg font-black uppercase mb-3">Job Description</h4>
+                    <h4 className="text-lg font-black uppercase mb-3">
+                      Job Description
+                    </h4>
                     <p className="text-gray-700 whitespace-pre-wrap">
-                      {viewingJob.description || 'No description provided'}
+                      {viewingJob.description || "No description provided"}
                     </p>
                   </div>
 
                   {/* Skills */}
                   {viewingJob.skills && viewingJob.skills.length > 0 && (
                     <div className="border-t-2 border-gray-200 pt-6">
-                      <h4 className="text-lg font-black uppercase mb-3">Required Skills</h4>
+                      <h4 className="text-lg font-black uppercase mb-3">
+                        Required Skills
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {viewingJob.skills.map((skill, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-gray-100 border-2 border-black text-sm font-semibold">
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-gray-100 border-2 border-black text-sm font-semibold"
+                          >
                             {skill}
                           </span>
                         ))}
@@ -350,15 +385,21 @@ function DashboardPage() {
 
                   {/* Dates */}
                   <div className="border-t-2 border-gray-200 pt-6">
-                    <h4 className="text-lg font-black uppercase mb-3">Posting Information</h4>
+                    <h4 className="text-lg font-black uppercase mb-3">
+                      Posting Information
+                    </h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="font-bold">Posted Date:</span>
-                        <p className="text-gray-700">{viewingJob.postedDate || 'Not specified'}</p>
+                        <p className="text-gray-700">
+                          {viewingJob.postedDate || "Not specified"}
+                        </p>
                       </div>
                       <div>
                         <span className="font-bold">Expiry Date:</span>
-                        <p className="text-gray-700">{viewingJob.expiryDate || 'No expiry set'}</p>
+                        <p className="text-gray-700">
+                          {viewingJob.expiryDate || "No expiry set"}
+                        </p>
                       </div>
                     </div>
                   </div>
