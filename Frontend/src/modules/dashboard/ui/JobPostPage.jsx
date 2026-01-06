@@ -493,7 +493,7 @@ function JobPostPage() {
 
       {/* Preview Modal */}
       {showPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white border-4 border-black max-w-5xl w-full h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="bg-primary text-white border-b-4 border-black p-6 flex justify-between items-center flex-shrink-0">

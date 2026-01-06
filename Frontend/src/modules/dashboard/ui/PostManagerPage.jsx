@@ -669,7 +669,7 @@ function PostManagerPage() {
 
       {/* Delete Confirmation Dialog */}
       {showDeleteDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
           <div className="bg-white border-4 border-black p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-black uppercase mb-4">
               Delete Job Post?
@@ -703,7 +703,7 @@ function PostManagerPage() {
 
       {/* View Job Modal */}
       {showViewModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white border-4 border-black max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b-4 border-black p-6 flex justify-between items-center">
