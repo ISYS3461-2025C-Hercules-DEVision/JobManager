@@ -21,14 +21,14 @@ server:
 # Kafka Topics
 kafka:
   topics:
-    subscription-created: subscription-created
-    subscription-activated: subscription-activated
-    subscription-expired: subscription-expired
-    subscription-cancelled: subscription-cancelled
-    payment-failed: payment-failed
-    subscription-expiring-soon: subscription-expiring-soon
-    payment-initiated: payment-initiated
-    payment-success: payment-success
+    subscription-created: subscription.created
+    subscription-activated: subscription.activated
+    subscription-expired: subscription.expired
+    subscription-cancelled: subscription.cancelled
+    subscription-expiring-soon: subscription.expiring-soon
+    payment-failed: payment.failed
+    payment-initiated: payment.initiated
+    payment-success: payment.success
 
 # Service URLs - Company Service for validation
 company:
