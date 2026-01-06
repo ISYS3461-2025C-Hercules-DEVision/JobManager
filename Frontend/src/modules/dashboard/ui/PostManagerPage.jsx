@@ -5,6 +5,16 @@ import { jobService } from "../services/jobService";
 /**
  * PostManagerPage - Manage all job posts
  * Features: List view, status filters, edit/delete actions
+ * 
+ * Job Post Statuses:
+ * - Active: Published job accepting applications
+ * - Closed: Job no longer accepting applications (expired or manually closed)
+ * - Draft: Job created but not yet published
+ * 
+ * Bulk Actions:
+ * - Activate: Publish and make jobs active (accepting applications)
+ * - Close: Stop accepting applications without deleting (keeps data for records)
+ * - Delete: Permanently remove job posts from database
  */
 function PostManagerPage() {
   const navigate = useNavigate();
@@ -96,9 +106,47 @@ function PostManagerPage() {
     );
   };
 
-  const handleBulkAction = (action) => {
-    console.log(`Performing ${action} on posts:`, selectedPosts);
-    // Implement bulk actions here
+  const handleBulkAction = async (action) => {
+    if (selectedPosts.length === 0) return;
+
+    const confirmMessage = 
+      action === 'delete' 
+        ? `Are you sure you want to delete ${selectedPosts.length} job post(s)?`
+        : action === 'activate'
+        ? `Activate ${selectedPosts.length} job post(s)?`
+        : `Close ${selectedPosts.length} job post(s)?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      if (action === 'activate') {
+        await jobService.bulkActivate(selectedPosts);
+        // Update local state
+        setJobPosts(prev => prev.map(job => 
+          selectedPosts.includes(job.id) 
+            ? { ...job, status: 'Active' }
+            : job
+        ));
+      } else if (action === 'close') {
+        await jobService.bulkClose(selectedPosts);
+        // Update local state
+        setJobPosts(prev => prev.map(job => 
+          selectedPosts.includes(job.id) 
+            ? { ...job, status: 'Closed' }
+            : job
+        ));
+      } else if (action === 'delete') {
+        await jobService.bulkDelete(selectedPosts);
+        // Remove deleted jobs from local state
+        setJobPosts(prev => prev.filter(job => !selectedPosts.includes(job.id)));
+      }
+      
+      setSelectedPosts([]);
+      alert(`Successfully ${action === 'activate' ? 'activated' : action === 'close' ? 'closed' : 'deleted'} ${selectedPosts.length} job post(s)`);
+    } catch (error) {
+      console.error(`Failed to ${action} jobs:`, error);
+      alert(`Failed to ${action} job posts. Please try again.`);
+    }
   };
 
   return (
@@ -173,6 +221,7 @@ function PostManagerPage() {
                   <input
                     type="checkbox"
                     className="w-4 h-4"
+                    checked={selectedPosts.length > 0 && selectedPosts.length === filteredPosts.length}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedPosts(filteredPosts.map((p) => p.id));
