@@ -40,4 +40,50 @@ public class JobService {
         return jobRepository.findByCompanyIdOrderByPostedDateDesc(companyId);
     }
 
+    public JobPost getJobById(String jobId, String companyId) {
+        JobPost job = jobRepository.findById(UUID.fromString(jobId))
+                .orElseThrow(() -> new RuntimeException("Job not found"));
+        
+        if (!job.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Unauthorized access to job post");
+        }
+        
+        return job;
+    }
+
+    public JobPost updateJobPost(String jobId, String companyId, JobPost updatedJob) {
+        JobPost existingJob = getJobById(jobId, companyId);
+        
+        // Update fields
+        existingJob.setTitle(updatedJob.getTitle());
+        existingJob.setDescription(updatedJob.getDescription());
+        existingJob.setEmploymentType(updatedJob.getEmploymentType());
+        existingJob.setLocation(updatedJob.getLocation());
+        existingJob.setSalary(updatedJob.getSalary());
+        existingJob.setSkills(updatedJob.getSkills());
+        existingJob.setPublished(updatedJob.isPublished());
+        existingJob.setExpiryDate(updatedJob.getExpiryDate());
+        
+        JobPost saved = jobRepository.save(existingJob);
+        
+        try {
+            kafkaProducer.sendJobUpdate(saved);
+        } catch (Exception e) {
+            System.err.println("Kafka publish failed: " + e.getMessage());
+        }
+        
+        return saved;
+    }
+
+    public void deleteJobPost(String jobId, String companyId) {
+        JobPost job = getJobById(jobId, companyId);
+        jobRepository.delete(job);
+        
+        try {
+            kafkaProducer.sendJobUpdate(job);
+        } catch (Exception e) {
+            System.err.println("Kafka publish failed: " + e.getMessage());
+        }
+    }
+
 }
