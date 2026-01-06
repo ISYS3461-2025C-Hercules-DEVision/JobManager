@@ -184,6 +184,32 @@ public class SubscriptionController {
         }
     }
 
+    @PutMapping("/{subscriptionId}/auto-renew")
+    public ResponseEntity<SubscriptionResponseDTO> updateAutoRenew(
+            @PathVariable String subscriptionId,
+            @RequestParam(value = "enabled") boolean enabled,
+            @RequestHeader("Authorization") String token) {
+
+        log.info("Updating auto-renew for subscription: {}, enabled: {}", subscriptionId, enabled);
+
+        // Validate JWT token
+        try {
+            String jwt = token.replace("Bearer ", "");
+            jwtUtil.validateToken(jwt);
+        } catch (Exception e) {
+            log.error("Invalid JWT token", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            SubscriptionResponseDTO response = subscriptionService.updateAutoRenew(subscriptionId, enabled);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("Error updating auto-renew: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/check-expired")
     public ResponseEntity<List<SubscriptionResponseDTO>> checkExpiredSubscriptions(
             @RequestHeader("Authorization") String token) {

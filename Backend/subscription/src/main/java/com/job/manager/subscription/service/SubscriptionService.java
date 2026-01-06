@@ -161,6 +161,28 @@ public class SubscriptionService {
         return cancelSubscription(subscriptionId, true);
     }
 
+    /**
+     * Update auto-renewal setting for a subscription
+     */
+    public SubscriptionResponseDTO updateAutoRenew(String subscriptionId, boolean enabled) {
+        log.info("Updating auto-renew for subscription: {}, enabled: {}", subscriptionId, enabled);
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
+
+        // Only allow auto-renew for ACTIVE subscriptions
+        if (enabled && subscription.getStatus() != Subscription.SubscriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Cannot enable auto-renew for non-active subscription");
+        }
+
+        subscription.setAutoRenew(enabled);
+        subscription.setUpdatedAt(LocalDateTime.now());
+
+        Subscription saved = subscriptionRepository.save(subscription);
+        log.info("Auto-renew updated for subscription: {}, new value: {}", subscriptionId, enabled);
+
+        return mapToResponseDTO(saved);
+    }
+
     public List<SubscriptionResponseDTO> checkExpiredSubscriptions() {
         return checkExpiredSubscriptions(false);
     }
