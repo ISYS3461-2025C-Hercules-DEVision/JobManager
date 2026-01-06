@@ -185,6 +185,55 @@ public class SubscriptionService {
         return mapToResponseDTO(saved);
     }
 
+    /**
+     * Change subscription plan (upgrade or downgrade)
+     * No proration - plan change takes effect immediately
+     */
+    public SubscriptionResponseDTO changePlan(String subscriptionId, String newPlanType) {
+        log.info("Changing plan for subscription: {} to: {}", subscriptionId, newPlanType);
+
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
+
+        Subscription.PlanType newPlan;
+        try {
+            newPlan = Subscription.PlanType.valueOf(newPlanType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid plan type: " + newPlanType);
+        }
+
+        // Check if already on the same plan
+        if (subscription.getPlanType() == newPlan) {
+            log.info("Subscription already on plan: {}", newPlan);
+            return mapToResponseDTO(subscription);
+        }
+
+        Subscription.PlanType oldPlan = subscription.getPlanType();
+        subscription.setPlanType(newPlan);
+        subscription.setUpdatedAt(LocalDateTime.now());
+
+        // Set price based on new plan
+        if (newPlan == Subscription.PlanType.PREMIUM) {
+            subscription.setPriceAmount(new BigDecimal("30.00"));
+            // Upgrading to premium - requires payment (but status unchanged until paid)
+            if (subscription.getStatus() != Subscription.SubscriptionStatus.ACTIVE) {
+                subscription.setStatus(Subscription.SubscriptionStatus.PENDING);
+            }
+            log.info("Upgraded from {} to PREMIUM - payment may be required", oldPlan);
+        } else {
+            subscription.setPriceAmount(BigDecimal.ZERO);
+            // Downgrading to free - immediate effect
+            subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
+            subscription.setExpiryDate(LocalDateTime.now().plusYears(100)); // Free = indefinite
+            log.info("Downgraded from {} to FREE - immediate effect", oldPlan);
+        }
+
+        Subscription saved = subscriptionRepository.save(subscription);
+        log.info("Plan changed for subscription: {} from {} to {}", subscriptionId, oldPlan, newPlan);
+
+        return mapToResponseDTO(saved);
+    }
+
     public List<SubscriptionResponseDTO> checkExpiredSubscriptions() {
         return checkExpiredSubscriptions(false);
     }

@@ -210,6 +210,32 @@ public class SubscriptionController {
         }
     }
 
+    @PutMapping("/{subscriptionId}/plan")
+    public ResponseEntity<SubscriptionResponseDTO> changePlan(
+            @PathVariable String subscriptionId,
+            @RequestParam(value = "newPlan") String newPlan,
+            @RequestHeader("Authorization") String token) {
+
+        log.info("Changing plan for subscription: {} to: {}", subscriptionId, newPlan);
+
+        // Validate JWT token
+        try {
+            String jwt = token.replace("Bearer ", "");
+            jwtUtil.validateToken(jwt);
+        } catch (Exception e) {
+            log.error("Invalid JWT token", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            SubscriptionResponseDTO response = subscriptionService.changePlan(subscriptionId, newPlan);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Error changing plan: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping("/check-expired")
     public ResponseEntity<List<SubscriptionResponseDTO>> checkExpiredSubscriptions(
             @RequestHeader("Authorization") String token) {
