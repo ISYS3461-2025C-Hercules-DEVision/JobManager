@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
@@ -30,14 +31,21 @@ public class Applicant {
     private String city;
     private String country;
     
-    // Professional Information
+    // Professional Information - Text Indexed for FTS (Requirement 5.2.1)
+    @TextIndexed(weight = 2)  // Higher weight for objective summary
     private String objectiveSummary;
+    
     private List<Education> education;
+    
+    @TextIndexed(weight = 3)  // Highest weight for work experience
     private List<WorkExperience> workExperience;
+    
     private String highestEducationDegree;  // Bachelor, Master, Doctorate
     
     // Job Preferences
+    @TextIndexed(weight = 3)  // Highest weight for technical skills
     private List<String> technicalTags;
+    
     private Set<String> employmentTypes;  // Renamed from employmentStatus for clarity
     private BigDecimal expectedSalaryMin;
     private BigDecimal expectedSalaryMax;

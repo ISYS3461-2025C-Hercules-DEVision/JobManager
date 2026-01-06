@@ -101,14 +101,43 @@ public class ApplicantService {
     }
 
     /**
-     * Search applicants with filters (Requirements 5.1.1, 5.1.2, 5.1.3)
+     * Search applicants with filters (Requirements 5.1.1, 5.1.2, 5.1.3, 5.2.1, 5.2.2)
+     * - Full-Text Search: workExperience, objectiveSummary, technicalTags (5.2.1)
+     * - Technical Tags: OR logic filtering (5.2.2)
      * - Location: City OR Country (only one value)
      * - Education: Bachelor, Master, Doctorate
      * - Work Experience: Case-insensitive keyword search
      * - Employment Types: Multiple selection
      */
     public List<ApplicantSearchResponse> searchApplicants(ApplicantSearchRequest request) {
-        List<Applicant> applicants = repository.findAll();
+        List<Applicant> applicants;
+
+        // Requirement 5.2.1: Full-Text Search across Work Experience, Objective Summary, and Technical Skills
+        if (request.getFullTextSearch() != null && !request.getFullTextSearch().isBlank()) {
+            try {
+                applicants = repository.searchByText(request.getFullTextSearch());
+            } catch (Exception e) {
+                // If text index not created yet, fallback to manual search
+                applicants = repository.findAll();
+                String searchLower = request.getFullTextSearch().toLowerCase();
+                applicants = applicants.stream()
+                        .filter(a -> matchesFullTextSearch(a, searchLower))
+                        .collect(Collectors.toList());
+            }
+        } else {
+            applicants = repository.findAll();
+        }
+
+        // Requirement 5.2.2: Technical Tags Filter with OR logic
+        // Applicants with ANY of the specified tags are included
+        if (request.getTechnicalTags() != null && !request.getTechnicalTags().isEmpty()) {
+            applicants = applicants.stream()
+                    .filter(a -> a.getTechnicalTags() != null &&
+                           a.getTechnicalTags().stream()
+                                   .anyMatch(tag -> request.getTechnicalTags().stream()
+                                           .anyMatch(searchTag -> searchTag.equalsIgnoreCase(tag))))
+                    .collect(Collectors.toList());
+        }
 
         // Filter by location (city OR country, not both - Requirement 5.1.3)
         if (request.getCity() != null && !request.getCity().isBlank()) {
@@ -176,7 +205,37 @@ public class ApplicantService {
                (we.getDescription() != null && we.getDescription().toLowerCase().contains(keyword));
     }
 
-    // Map to search response (Requirement 5.1.4 - display specified fields)
+    // Full-text search helper (Requirement 5.2.1)
+    // Searches across Work Experience, Objective Summary, and Technical Skills
+    private boolean matchesFullTextSearch(Applicant applicant, String searchLower) {
+        // Search in objective summary
+        if (applicant.getObjectiveSummary() != null && 
+            applicant.getObjectiveSummary().toLowerCase().contains(searchLower)) {
+            return true;
+        }
+        
+        // Search in technical tags
+        if (applicant.getTechnicalTags() != null && 
+            applicant.getTechnicalTags().stream()
+                    .anyMatch(tag -> tag.toLowerCase().contains(searchLower))) {
+            return true;
+        }
+        
+        // Search in work experience
+        if (applicant.getWorkExperience() != null) {
+            for (WorkExperience we : applicant.getWorkExperience()) {
+                if ((we.getJobTitle() != null && we.getJobTitle().toLowerCase().contains(searchLower)) ||
+                    (we.getCompany() != null && we.getCompany().toLowerCase().contains(searchLower)) ||
+                    (we.getDescription() != null && we.getDescription().toLowerCase().contains(searchLower))) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    // Map to search response (Requirement 5.1.4, 5.2.5 - display specified fields including skill tags)
     private ApplicantSearchResponse toSearchResponse(Applicant applicant) {
         return ApplicantSearchResponse.builder()
                 .applicantId(applicant.getApplicantId())
@@ -186,6 +245,7 @@ public class ApplicantService {
                 .city(applicant.getCity())
                 .country(applicant.getCountry())
                 .highestEducationDegree(applicant.getHighestEducationDegree())
+                .technicalTags(applicant.getTechnicalTags())  // Requirement 5.2.5
                 .build();
     }
 }

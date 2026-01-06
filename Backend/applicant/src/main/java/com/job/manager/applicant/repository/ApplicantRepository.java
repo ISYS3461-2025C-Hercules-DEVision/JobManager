@@ -14,6 +14,11 @@ public interface ApplicantRepository extends MongoRepository<Applicant, String> 
     
     Optional<Applicant> findByApplicantId(String applicantId);
     
+    // Full-Text Search (Requirement 5.2.1)
+    // Searches across workExperience, objectiveSummary, and technicalTags
+    @Query("{ $text: { $search: ?0 } }")
+    List<Applicant> searchByText(String searchText);
+    
     // Search by city (case-insensitive)
     @Query("{ 'city': { $regex: ?0, $options: 'i' } }")
     List<Applicant> findByCity(String city);
@@ -27,4 +32,9 @@ public interface ApplicantRepository extends MongoRepository<Applicant, String> 
     
     // Search by employment types
     List<Applicant> findByEmploymentTypesIn(Set<String> employmentTypes);
+    
+    // Search by technical tags with OR logic (Requirement 5.2.2)
+    // Returns applicants who have ANY of the specified tags
+    @Query("{ 'technicalTags': { $in: ?0 } }")
+    List<Applicant> findByTechnicalTagsIn(List<String> technicalTags);
 }

@@ -2,6 +2,7 @@ package com.job.manager.company.dto;
 
 import lombok.Data;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -9,6 +10,14 @@ import java.util.Set;
  */
 @Data
 public class ApplicantSearchRequestDTO {
+    
+    // Full-Text Search (Requirement 5.2.1)
+    // Searches across Work Experience, Objective Summary, and Technical Skills
+    private String fullTextSearch;
+    
+    // Technical Skills Tag Filter (Requirement 5.2.2)
+    // OR logic: applicant with ANY of these tags will be included
+    private List<String> technicalTags;
     
     // Location - only one value (city OR country)
     private String city;
