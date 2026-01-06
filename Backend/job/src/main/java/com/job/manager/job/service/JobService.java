@@ -86,4 +86,52 @@ public class JobService {
         }
     }
 
+    public void bulkActivate(List<String> jobIds, String companyId) {
+        for (String jobId : jobIds) {
+            try {
+                JobPost job = getJobById(jobId, companyId);
+                job.setPublished(true);
+                job.setExpiryDate(null); // Clear expiry when activating
+                jobRepository.save(job);
+                
+                try {
+                    kafkaProducer.sendJobUpdate(job);
+                } catch (Exception e) {
+                    System.err.println("Kafka publish failed: " + e.getMessage());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to activate job " + jobId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    public void bulkClose(List<String> jobIds, String companyId) {
+        for (String jobId : jobIds) {
+            try {
+                JobPost job = getJobById(jobId, companyId);
+                job.setPublished(false);
+                job.setExpiryDate(LocalDate.now()); // Set expiry to today
+                jobRepository.save(job);
+                
+                try {
+                    kafkaProducer.sendJobUpdate(job);
+                } catch (Exception e) {
+                    System.err.println("Kafka publish failed: " + e.getMessage());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to close job " + jobId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    public void bulkDelete(List<String> jobIds, String companyId) {
+        for (String jobId : jobIds) {
+            try {
+                deleteJobPost(jobId, companyId);
+            } catch (Exception e) {
+                System.err.println("Failed to delete job " + jobId + ": " + e.getMessage());
+            }
+        }
+    }
+
 }

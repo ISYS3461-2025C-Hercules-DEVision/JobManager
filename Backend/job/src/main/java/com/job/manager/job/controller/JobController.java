@@ -56,6 +56,30 @@ public class JobController {
         jobService.deleteJobPost(jobId, user.getUserId());
     }
 
+    @PostMapping("/jobs/bulk/activate")
+    public void bulkActivate(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkActivate(jobIds, user.getUserId());
+    }
+
+    @PostMapping("/jobs/bulk/close")
+    public void bulkClose(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkClose(jobIds, user.getUserId());
+    }
+
+    @DeleteMapping("/jobs/bulk/delete")
+    public void bulkDelete(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkDelete(jobIds, user.getUserId());
+    }
+
     @GetMapping("ping")
     public String ping() {
         return "pong";

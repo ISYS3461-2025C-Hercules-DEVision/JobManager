@@ -73,4 +73,16 @@ export const jobService = {
   async deleteJob(jobId) {
     await httpClient.delete(`${baseUrl}/jobs/${jobId}`);
   },
+
+  async bulkActivate(jobIds) {
+    await httpClient.post(`${baseUrl}/jobs/bulk/activate`, jobIds);
+  },
+
+  async bulkClose(jobIds) {
+    await httpClient.post(`${baseUrl}/jobs/bulk/close`, jobIds);
+  },
+
+  async bulkDelete(jobIds) {
+    await httpClient.delete(`${baseUrl}/jobs/bulk/delete`, { data: jobIds });
+  },
 };
