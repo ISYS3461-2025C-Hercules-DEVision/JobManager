@@ -34,7 +34,7 @@ export const jobService = {
   async createJob(formData) {
     const payload = {
       title: formData.title,
-      department: formData.department || '',
+      department: formData.department || "",
       description: formData.description,
       employmentType: formData.type,
       location: formData.location,
@@ -88,7 +88,7 @@ export const jobService = {
   async updateJob(jobId, formData) {
     const payload = {
       title: formData.title,
-      department: formData.department || '',
+      department: formData.department || "",
       description: formData.description,
       employmentType: formData.type,
       location: formData.location,
