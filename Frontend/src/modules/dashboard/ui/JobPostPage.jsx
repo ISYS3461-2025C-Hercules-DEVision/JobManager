@@ -119,9 +119,25 @@ function JobPostPage() {
     }
   };
 
-  const handleSaveDraft = () => {
-    console.log("Saving draft:", formData);
-    // Handle save draft
+  const handleSaveDraft = async () => {
+    // Basic validation - only title is required for draft
+    if (!formData.title.trim()) {
+      setSubmitError("Job title is required to save as draft");
+      return;
+    }
+
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      await jobService.saveDraft(formData, isEditMode ? jobId : null);
+      alert("Draft saved successfully!");
+      navigate("/dashboard/post-manager");
+    } catch (err) {
+      console.error("Save draft failed:", err);
+      setSubmitError(err.message || "Failed to save draft");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -399,9 +415,10 @@ function JobPostPage() {
                   <button
                     type="button"
                     onClick={handleSaveDraft}
-                    className="w-full px-4 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors"
+                    disabled={submitting}
+                    className="w-full px-4 py-3 bg-white hover:bg-gray-100 text-black font-bold uppercase border-2 border-black transition-colors disabled:opacity-50"
                   >
-                    Save as Draft
+                    {submitting ? "Saving..." : "Save as Draft"}
                   </button>
                   <button
                     type="button"

@@ -49,6 +49,35 @@ export const jobService = {
     return response.data;
   },
 
+  async saveDraft(formData, jobId = null) {
+    const payload = {
+      title: formData.title || "Untitled Draft",
+      description: formData.description || "",
+      employmentType: formData.type || "Full-time",
+      location: formData.location || "",
+      salary: buildSalaryString(formData.salaryMin, formData.salaryMax),
+      skills: toSkillsArray(formData.skills),
+      published: false, // Draft is unpublished
+      expiryDate: null,
+    };
+
+    if (jobId) {
+      // Update existing draft
+      const response = await httpClient.put(
+        `${baseUrl}/jobs/${jobId}`,
+        payload
+      );
+      return response.data;
+    } else {
+      // Create new draft
+      const response = await httpClient.post(
+        `${baseUrl}${API_ENDPOINTS.JOB.CREATE}`,
+        payload
+      );
+      return response.data;
+    }
+  },
+
   async getJobById(jobId) {
     const response = await httpClient.get(`${baseUrl}/jobs/${jobId}`);
     return response.data;
