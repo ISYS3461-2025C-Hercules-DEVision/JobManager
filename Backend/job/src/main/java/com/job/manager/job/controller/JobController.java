@@ -31,6 +31,30 @@ public class JobController {
         return jobService.getJobsForCompany(user.getUserId());
     }
 
+    @GetMapping("/jobs/{jobId}")
+    public JobPost getJobById(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId
+    ) {
+        return jobService.getJobById(jobId, user.getUserId());
+    }
+
+    @PutMapping("/jobs/{jobId}")
+    public JobPost updateJob(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId,
+            @RequestBody JobPost jobPost
+    ) {
+        return jobService.updateJobPost(jobId, user.getUserId(), jobPost);
+    }
+
+    @DeleteMapping("/jobs/{jobId}")
+    public void deleteJob(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId
+    ) {
+        jobService.deleteJobPost(jobId, user.getUserId());
+    }
 
     @GetMapping("ping")
     public String ping() {
