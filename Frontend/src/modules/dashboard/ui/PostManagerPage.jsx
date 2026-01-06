@@ -27,6 +27,16 @@ function PostManagerPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState(null);
   const [loadingView, setLoadingView] = useState(false);
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  
+  // Sort states
+  const [sortBy, setSortBy] = useState("postedDate"); // default sort by posted date
+  const [sortOrder, setSortOrder] = useState("desc"); // desc = newest first
 
   useEffect(() => {
     const load = async () => {
@@ -104,17 +114,120 @@ function PostManagerPage() {
     }
   };
 
-  const filteredPosts = useMemo(
-    () =>
-      jobPosts.filter((post) => {
-        if (activeTab === "all") return true;
-        if (activeTab === "active") return post.status === "Active";
-        if (activeTab === "closed") return post.status === "Closed";
-        if (activeTab === "draft") return post.status === "Draft";
-        return true;
-      }),
-    [jobPosts, activeTab]
+  const filteredPosts = useMemo(() => {
+    let posts = jobPosts;
+
+    // Filter by status tab
+    if (activeTab === "active") posts = posts.filter((post) => post.status === "Active");
+    else if (activeTab === "closed") posts = posts.filter((post) => post.status === "Closed");
+    else if (activeTab === "draft") posts = posts.filter((post) => post.status === "Draft");
+
+    // Filter by search query (title or location)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      posts = posts.filter(
+        (post) =>
+          post.title.toLowerCase().includes(query) ||
+          post.location.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by department
+    if (filterDepartment) {
+      posts = posts.filter((post) => post.department === filterDepartment);
+    }
+
+    // Filter by employment type
+    if (filterType) {
+      posts = posts.filter((post) => post.type === filterType);
+    }
+
+    // Filter by location
+    if (filterLocation) {
+      posts = posts.filter((post) => post.location === filterLocation);
+    }
+
+    // Sort posts
+    posts.sort((a, b) => {
+      let compareA, compareB;
+
+      switch (sortBy) {
+        case "title":
+          compareA = a.title.toLowerCase();
+          compareB = b.title.toLowerCase();
+          break;
+        case "department":
+          compareA = a.department.toLowerCase();
+          compareB = b.department.toLowerCase();
+          break;
+        case "status":
+          compareA = a.status;
+          compareB = b.status;
+          break;
+        case "applicants":
+          compareA = a.applicants;
+          compareB = b.applicants;
+          break;
+        case "views":
+          compareA = a.views;
+          compareB = b.views;
+          break;
+        case "postedDate":
+          compareA = a.postedDate ? new Date(a.postedDate).getTime() : 0;
+          compareB = b.postedDate ? new Date(b.postedDate).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (compareA < compareB) return sortOrder === "asc" ? -1 : 1;
+      if (compareA > compareB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return posts;
+  }, [jobPosts, activeTab, searchQuery, filterDepartment, filterType, filterLocation, sortBy, sortOrder]);
+
+  // Get unique values for filters
+  const uniqueDepartments = useMemo(
+    () => [...new Set(jobPosts.map((j) => j.department).filter((d) => d !== "-"))],
+    [jobPosts]
   );
+  const uniqueTypes = useMemo(
+    () => [...new Set(jobPosts.map((j) => j.type).filter((t) => t !== "-"))],
+    [jobPosts]
+  );
+  const uniqueLocations = useMemo(
+    () => [...new Set(jobPosts.map((j) => j.location).filter((l) => l !== "-"))],
+    [jobPosts]
+  );
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterDepartment("");
+    setFilterType("");
+    setFilterLocation("");
+  };
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      // Toggle sort order if clicking same column
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // New column, default to ascending
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ column }) => {
+    if (sortBy !== column) return null;
+    return (
+      <span className="ml-1 inline-block">
+        {sortOrder === "asc" ? "↑" : "↓"}
+      </span>
+    );
+  };
 
   const toggleSelectPost = (postId) => {
     setSelectedPosts((prev) =>
@@ -209,6 +322,99 @@ function PostManagerPage() {
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="bg-white border-4 border-black p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-bold uppercase mb-2">
+              Search
+            </label>
+            <input
+              type="text"
+              placeholder="Search by title or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          {/* Department Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Department
+            </label>
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Departments</option>
+              {uniqueDepartments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Type
+            </label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Types</option>
+              {uniqueTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Location Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Location
+            </label>
+            <select
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Locations</option>
+              {uniqueLocations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Clear Filters Button */}
+        {(searchQuery || filterDepartment || filterType || filterLocation) && (
+          <div className="mt-4">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-200 border-2 border-black font-bold uppercase text-sm hover:bg-gray-300 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4 text-sm font-bold text-gray-600">
+        Showing {filteredPosts.length} of {jobPosts.length} job posts
+      </div>
+
       {/* Bulk Actions */}
       {selectedPosts.length > 0 && (
         <div className="bg-primary text-white border-4 border-black p-4 mb-6 flex items-center justify-between">
@@ -262,26 +468,44 @@ function PostManagerPage() {
                     }}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Job Title
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("title")}
+                >
+                  Job Title <SortIcon column="title" />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Department
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("department")}
+                >
+                  Department <SortIcon column="department" />
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-black uppercase">
                   Type
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Status
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("status")}
+                >
+                  Status <SortIcon column="status" />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Applicants
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("applicants")}
+                >
+                  Applicants <SortIcon column="applicants" />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Views
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("views")}
+                >
+                  Views <SortIcon column="views" />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">
-                  Posted
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("postedDate")}
+                >
+                  Posted <SortIcon column="postedDate" />
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-black uppercase">
                   Actions
