@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,10 @@ public class NotificationService {
 
     private String resolveCompanyEmail(String companyId) {
         return companyEmailClient.getCompanyEmail(companyId);
+    }
+
+    public List<Notification> getNotificationsByCompanyId(String companyId) {
+        return notificationRepository.findByCompanyIdOrderByCreatedAtDesc(companyId);
     }
 
     public void handleApplicantMatched(ApplicantMatchedEvent event) {
