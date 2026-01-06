@@ -27,13 +27,13 @@ function PostManagerPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingJob, setViewingJob] = useState(null);
   const [loadingView, setLoadingView] = useState(false);
-  
+
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
-  
+
   // Sort states
   const [sortBy, setSortBy] = useState("postedDate"); // default sort by posted date
   const [sortOrder, setSortOrder] = useState("desc"); // desc = newest first
@@ -118,9 +118,12 @@ function PostManagerPage() {
     let posts = jobPosts;
 
     // Filter by status tab
-    if (activeTab === "active") posts = posts.filter((post) => post.status === "Active");
-    else if (activeTab === "closed") posts = posts.filter((post) => post.status === "Closed");
-    else if (activeTab === "draft") posts = posts.filter((post) => post.status === "Draft");
+    if (activeTab === "active")
+      posts = posts.filter((post) => post.status === "Active");
+    else if (activeTab === "closed")
+      posts = posts.filter((post) => post.status === "Closed");
+    else if (activeTab === "draft")
+      posts = posts.filter((post) => post.status === "Draft");
 
     // Filter by search query (title or location)
     if (searchQuery) {
@@ -186,11 +189,22 @@ function PostManagerPage() {
     });
 
     return posts;
-  }, [jobPosts, activeTab, searchQuery, filterDepartment, filterType, filterLocation, sortBy, sortOrder]);
+  }, [
+    jobPosts,
+    activeTab,
+    searchQuery,
+    filterDepartment,
+    filterType,
+    filterLocation,
+    sortBy,
+    sortOrder,
+  ]);
 
   // Get unique values for filters
   const uniqueDepartments = useMemo(
-    () => [...new Set(jobPosts.map((j) => j.department).filter((d) => d !== "-"))],
+    () => [
+      ...new Set(jobPosts.map((j) => j.department).filter((d) => d !== "-")),
+    ],
     [jobPosts]
   );
   const uniqueTypes = useMemo(
@@ -198,7 +212,9 @@ function PostManagerPage() {
     [jobPosts]
   );
   const uniqueLocations = useMemo(
-    () => [...new Set(jobPosts.map((j) => j.location).filter((l) => l !== "-"))],
+    () => [
+      ...new Set(jobPosts.map((j) => j.location).filter((l) => l !== "-")),
+    ],
     [jobPosts]
   );
 
