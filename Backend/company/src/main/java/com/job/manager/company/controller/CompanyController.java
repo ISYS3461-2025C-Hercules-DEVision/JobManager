@@ -1,6 +1,7 @@
 package com.job.manager.company.controller;
 
 import com.job.manager.company.annotation.CurrentUser;
+import com.job.manager.company.client.ApplicantClient;
 import com.job.manager.company.dto.*;
 import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.PublicProfile;
@@ -15,12 +16,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/")
 public class CompanyController {
 
     @Autowired
     private CompanyService companyService;
+
+    @Autowired
+    private ApplicantClient applicantClient;
 
     // Internal endpoint for service-to-service calls (e.g., subscription service
     // validation)
@@ -162,6 +168,22 @@ public class CompanyController {
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
+    }
+
+    // Get list of all applicants
+    @GetMapping("/applicants")
+    public ResponseEntity<List<ApplicantDTO>> getApplicants(@CurrentUser AuthenticatedUser user) {
+        try {
+            // Verify company exists and is authenticated
+            Company company = companyService.getCompanyByEmail(user.getEmail());
+            
+            // Fetch applicants from applicant service
+            List<ApplicantDTO> applicants = applicantClient.getAllApplicants();
+            
+            return ResponseEntity.ok(applicants);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
 
