@@ -41,7 +41,9 @@ services:
     activate-endpoint: /subscriptions/{subscriptionId}/activate
 
 stripe:
-  api-key: ${STRIPE_API_KEY:sk_test_51ShMhN2UgZNlBDYO2uNWluKmRoYCLZa11ZKzVSMPeRvBvxmN9IoRwnDGibvTULN83WwQFHFIfaSAm4GUTBRyWAo00JY98AwiZ}
+  api-key: ${STRIPE_API_KEY:sk_test_51ShMhN2UgzNIbDYO2uNw1uKmRoYCLZa1lZKvzSMpeRvBvxmN9IoRwnDGibvTULN83WwQfHFEIfaSAm4GUTBRyWAo00JY98AwiZ}
   success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/payment/success}
   cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/payment/cancel}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_test}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_2484a92d3bb3c85ca12d8accccf6888fc9306d237a910cc0643ca03e9f980dd7}
+
+# Run stripe listen --forward-to localhost:8083/webhook/stripe
