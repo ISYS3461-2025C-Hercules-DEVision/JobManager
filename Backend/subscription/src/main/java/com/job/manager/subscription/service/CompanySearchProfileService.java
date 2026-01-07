@@ -19,7 +19,10 @@ public class CompanySearchProfileService {
 
     public void upsertProfile(String companyId, CompanySearchProfileRequest request) {
         // 1. Ensure company is premium
-        if (!subscriptionService.isPremiumActive(companyId)) {
+        System.out.println(">>> [DEBUG] Checking premium status for companyId: " + companyId);
+        boolean isPremium = subscriptionService.isPremiumActive(companyId);
+        System.out.println(">>> [DEBUG] isPremiumActive returned: " + isPremium);
+        if (!isPremium) {
             throw new IllegalStateException("Company is not premium, cannot create search profile");
         }
 

@@ -16,8 +16,7 @@ import java.time.LocalDateTime;
 public class Company {
 
     @Id
-    @org.springframework.data.mongodb.core.mapping.Field(targetType = org.springframework.data.mongodb.core.mapping.FieldType.OBJECT_ID)
-    private String companyId; // UUID
+    private String companyId; // MongoDB will store this as _id
 
     private String companyName;
 

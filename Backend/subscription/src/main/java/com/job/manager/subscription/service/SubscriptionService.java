@@ -28,11 +28,21 @@ public class SubscriptionService {
     private final CompanySearchProfileRepository companySearchProfileRepository;
 
     public boolean isPremiumActive(String companyId) {
+        log.info(">>> [DEBUG] Checking isPremiumActive for companyId: {}", companyId);
         return subscriptionRepository.findByCompanyId(companyId)
-                .map(sub -> sub.getStatus() == Subscription.SubscriptionStatus.ACTIVE &&
-                        sub.getExpiryDate() != null &&
-                        sub.getExpiryDate().isAfter(LocalDateTime.now()))
-                .orElse(false);
+                .map(sub -> {
+                    log.info(">>> [DEBUG] Found subscription - status: {}, expiryDate: {}", 
+                        sub.getStatus(), sub.getExpiryDate());
+                    boolean isActive = sub.getStatus() == Subscription.SubscriptionStatus.ACTIVE &&
+                            sub.getExpiryDate() != null &&
+                            sub.getExpiryDate().isAfter(LocalDateTime.now());
+                    log.info(">>> [DEBUG] isPremiumActive result: {}", isActive);
+                    return isActive;
+                })
+                .orElseGet(() -> {
+                    log.warn(">>> [DEBUG] No subscription found for companyId: {}", companyId);
+                    return false;
+                });
     }
 
     public SubscriptionResponseDTO createSubscription(SubscriptionCreateDTO dto) {

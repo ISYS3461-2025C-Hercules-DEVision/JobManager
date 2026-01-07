@@ -30,10 +30,25 @@ public class MatchingEngine {
             return false;
         }
 
+        // SRS 6.2.3: If neither Full-time nor Part-time is specified, 
+        // the matching logic must include both Full-time and Part-time jobs
         if (profile.getEmploymentStatus() != null && !profile.getEmploymentStatus().isEmpty()) {
             Set<String> applicantStatuses =
                     applicant.getEmploymentStatus() != null ? applicant.getEmploymentStatus() : Set.of();
             Set<String> profileStatuses = new HashSet<>(profile.getEmploymentStatus());
+            
+            // Check if profile contains neither FULL_TIME nor PART_TIME
+            boolean hasFullTime = profileStatuses.stream()
+                    .anyMatch(s -> s.equalsIgnoreCase("FULL_TIME"));
+            boolean hasPartTime = profileStatuses.stream()
+                    .anyMatch(s -> s.equalsIgnoreCase("PART_TIME"));
+            
+            // If neither is specified, default to including both
+            if (!hasFullTime && !hasPartTime) {
+                profileStatuses.add("FULL_TIME");
+                profileStatuses.add("PART_TIME");
+            }
+            
             boolean statusOverlap = applicantStatuses.stream().anyMatch(profileStatuses::contains);
             if (!statusOverlap) {
                 return false;
