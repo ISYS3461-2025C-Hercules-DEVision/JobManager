@@ -179,7 +179,7 @@ export const authService = {
   async signupWithGoogle() {
     try {
       // Get Google Client ID from environment
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const googleClientId = "34789659364-001rbq54i0jb3ge69kqes55pgcoklek9.apps.googleusercontent.com";
 
       if (!googleClientId) {
         throw new Error(
