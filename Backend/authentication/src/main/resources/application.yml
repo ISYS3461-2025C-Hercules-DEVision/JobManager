@@ -41,3 +41,8 @@ oauth:
     redirect-uri: ${GOOGLE_LOGIN_REDIRECT_URL:http://localhost:5175/login/oauth2/code/google}
     token-uri: https://oauth2.googleapis.com/token
     user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY:}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:10}
+  refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:30}
