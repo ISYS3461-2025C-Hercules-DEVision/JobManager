@@ -11,10 +11,13 @@ spring:
     mongodb:
       host: ${DATABASE_HOST:localhost}
       port: ${DATABASE_PORT:27022}
-      database: mongodb-company
-      username: admin
-      password: admin
-      authentication-database: admin
+      database: ${DATABASE_NAME:mongodb-job}
+      username: ${DATABASE_USERNAME:admin}
+      password: ${DATABASE_PASSWORD:admin}
+      authentication-database: ${AUTHENTICATION_DATABASE:admin}
+
+server:
+  port: 8082
 
 kafka:
   topic:

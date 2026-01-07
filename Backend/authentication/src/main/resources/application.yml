@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${SMTP_EMAIL}
-    password: ${SMTP_PASSWORD}
+    username: ${SMTP_EMAIL:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -37,8 +37,13 @@ kafka:
 
 oauth:
   google:
-    client-id: ${GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
     redirect-uri: ${GOOGLE_LOGIN_REDIRECT_URL:http://localhost:5175/login/oauth2/code/google}
     token-uri: https://oauth2.googleapis.com/token
     user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY:}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:10}
+  refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:30}

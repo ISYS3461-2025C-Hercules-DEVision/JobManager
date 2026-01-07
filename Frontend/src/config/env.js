@@ -5,7 +5,7 @@
 
 export const ENV = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://13.236.146.126/:8000',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://13.236.146.126:8000',
 
   // Authentication endpoints
   AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://13.236.146.126:8000/authentication',
