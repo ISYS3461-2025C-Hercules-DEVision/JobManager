@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import { useProfile } from '../../../state/ProfileContext';
 import { useApp } from '../../../state/AppContext';
 import SubscriptionSection from './SubscriptionSection';
+import { profileService } from '../../profile/services/profileService';
 
 /**
  * SettingsPage - Company and account settings
  * Features: Profile settings, subscription management, preferences
  */
 function SettingsPage() {
-  const { profile, publicProfile, updateProfile, updatePublicProfile, loading } = useProfile();
+  const { profile, publicProfile, updateProfile, updatePublicProfile, loading, refreshProfile } = useProfile();
   const { showSuccess, showError, showInfo } = useApp();
 
   const [activeSection, setActiveSection] = useState('company');
+  const [activeTab, setActiveTab] = useState('basic'); // For company section tabs
   const [companyData, setCompanyData] = useState({
     companyName: '',
     email: '',
@@ -44,6 +46,10 @@ function SettingsPage() {
     weeklyReport: false,
     marketingEmails: false,
   });
+
+  const [uploading, setUploading] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
 
   // Load profile data when component mounts or profile changes
   useEffect(() => {
@@ -124,6 +130,62 @@ function SettingsPage() {
     showInfo('Password change feature coming soon');
   };
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Logo file size must be less than 2MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await profileService.uploadProfileLogo(file);
+      setPublicData(prev => ({ ...prev, logoUrl: result.imageUrl }));
+      await refreshProfile();
+      showSuccess('Logo uploaded successfully!');
+    } catch (error) {
+      console.error('Logo upload failed:', error);
+      showError(error.message || 'Failed to upload logo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Banner file size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await profileService.uploadProfileBanner(file);
+      setPublicData(prev => ({ ...prev, bannerUrl: result.imageUrl }));
+      await refreshProfile();
+      showSuccess('Banner uploaded successfully!');
+    } catch (error) {
+      console.error('Banner upload failed:', error);
+      showError(error.message || 'Failed to upload banner');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const sections = [
     { key: 'company', label: 'Company Profile', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
     { key: 'account', label: 'Account Settings', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
@@ -168,189 +230,299 @@ function SettingsPage() {
         <div className="lg:col-span-3">
           {/* Company Profile Section */}
           {activeSection === 'company' && (
-            <div className="bg-white border-4 border-black p-6">
-              <h2 className="text-2xl font-black uppercase mb-6">Company Profile</h2>
-              <form onSubmit={handleSaveCompany} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Company Name</label>
-                    <input
-                      type="text"
-                      name="companyName"
-                      value={companyData.companyName}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={companyData.email}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                </div>
+            <div className="bg-white border-4 border-black">
+              {/* Tabs Header */}
+              <div className="flex border-b-4 border-black">
+                <button
+                  onClick={() => setActiveTab('basic')}
+                  className={`flex-1 px-6 py-4 font-bold uppercase text-sm transition-colors ${
+                    activeTab === 'basic'
+                      ? 'bg-black text-white'
+                      : 'bg-white text-black hover:bg-gray-100'
+                  }`}
+                >
+                  Basic Info
+                </button>
+                <button
+                  onClick={() => setActiveTab('public')}
+                  className={`flex-1 px-6 py-4 font-bold uppercase text-sm transition-colors border-l-4 border-black ${
+                    activeTab === 'public'
+                      ? 'bg-black text-white'
+                      : 'bg-white text-black hover:bg-gray-100'
+                  }`}
+                >
+                  Public Profile
+                </button>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={companyData.phoneNumber}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Country</label>
-                    <input
-                      type="text"
-                      name="country"
-                      value={companyData.country}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">City</label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={companyData.city}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Street Address</label>
-                    <input
-                      type="text"
-                      name="streetAddress"
-                      value={companyData.streetAddress}
-                      onChange={handleCompanyChange}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-
-              {/* Public Profile Section */}
-              <div className="mt-8 pt-8 border-t-4 border-black">
-                <h2 className="text-2xl font-black uppercase mb-6">Public Profile</h2>
-                <form onSubmit={handleSavePublicProfile} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">Display Name</label>
-                      <input
-                        type="text"
-                        name="displayName"
-                        value={publicData.displayName}
-                        onChange={handlePublicProfileChange}
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
+              {/* Tab Content */}
+              <div className="p-6">
+                {/* Basic Info Tab */}
+                {activeTab === 'basic' && (
+                  <form onSubmit={handleSaveCompany} className="space-y-4">
+                    <h2 className="text-2xl font-black uppercase mb-6">Company Information</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Company Name</label>
+                        <input
+                          type="text"
+                          name="companyName"
+                          value={companyData.companyName}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Email</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={companyData.email}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">Industry Domain</label>
-                      <input
-                        type="text"
-                        name="industryDomain"
-                        value={publicData.industryDomain}
-                        onChange={handlePublicProfileChange}
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Phone Number</label>
+                        <input
+                          type="tel"
+                          name="phoneNumber"
+                          value={companyData.phoneNumber}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Website URL</label>
-                    <input
-                      type="url"
-                      name="websiteUrl"
-                      value={publicData.websiteUrl}
-                      onChange={handlePublicProfileChange}
-                      placeholder="https://example.com"
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">About Us</label>
-                    <textarea
-                      name="aboutUs"
-                      value={publicData.aboutUs}
-                      onChange={handlePublicProfileChange}
-                      rows={4}
-                      maxLength={2000}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
-                    />
-                    <p className="text-xs text-gray-600 mt-1">{publicData.aboutUs.length}/2000 characters</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">Who We Are Looking For</label>
-                    <textarea
-                      name="whoWeAreLookingFor"
-                      value={publicData.whoWeAreLookingFor}
-                      onChange={handlePublicProfileChange}
-                      rows={4}
-                      maxLength={1000}
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
-                    />
-                    <p className="text-xs text-gray-600 mt-1">{publicData.whoWeAreLookingFor.length}/1000 characters</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">Logo URL</label>
-                      <input
-                        type="url"
-                        name="logoUrl"
-                        value={publicData.logoUrl}
-                        onChange={handlePublicProfileChange}
-                        placeholder="https://example.com/logo.png"
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Country</label>
+                        <input
+                          type="text"
+                          name="country"
+                          value={companyData.country}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">City</label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={companyData.city}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Street Address</label>
+                        <input
+                          type="text"
+                          name="streetAddress"
+                          value={companyData.streetAddress}
+                          onChange={handleCompanyChange}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">Banner URL</label>
-                      <input
-                        type="url"
-                        name="bannerUrl"
-                        value={publicData.bannerUrl}
-                        onChange={handlePublicProfileChange}
-                        placeholder="https://example.com/banner.jpg"
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex justify-end space-x-4">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Saving...' : 'Save Public Profile'}
-                    </button>
-                  </div>
-                </form>
+                    <div className="flex justify-end space-x-4 pt-4">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Public Profile Tab */}
+                {activeTab === 'public' && (
+                  <form onSubmit={handleSavePublicProfile} className="space-y-6">
+                    <h2 className="text-2xl font-black uppercase mb-6">Public Profile</h2>
+                    
+                    {/* Image Uploads Section */}
+                    <div className="space-y-6 pb-6 border-b-4 border-black">
+                      <h3 className="text-lg font-bold uppercase">Company Images</h3>
+                      
+                      {/* Logo Upload */}
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-3">Company Logo</label>
+                        <div className="flex flex-col md:flex-row gap-4 items-start">
+                          {/* Logo Preview */}
+                          <div className="w-full md:w-48 h-48 border-4 border-black bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {publicData.logoUrl ? (
+                              <img 
+                                src={publicData.logoUrl} 
+                                alt="Company Logo" 
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            ) : (
+                              <div className="text-center p-4">
+                                <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-xs font-bold uppercase">No Logo</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Upload Button */}
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              id="logoUpload"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                              disabled={uploading}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="logoUpload"
+                              className={`inline-block px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors cursor-pointer ${
+                                uploading ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                            >
+                              {uploading ? 'Uploading...' : 'Upload Logo'}
+                            </label>
+                            <p className="text-xs text-gray-600 mt-2">
+                              <strong>Recommended:</strong> Square (1:1), 200x200 to 1000x1000px, PNG/JPEG, max 2MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Banner Upload */}
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-3">Company Banner</label>
+                        <div className="space-y-4">
+                          {/* Banner Preview */}
+                          <div className="w-full h-64 border-4 border-black bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {publicData.bannerUrl ? (
+                              <img 
+                                src={publicData.bannerUrl} 
+                                alt="Company Banner" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="text-center p-4">
+                                <svg className="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-xs font-bold uppercase">No Banner</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Upload Button */}
+                          <div>
+                            <input
+                              type="file"
+                              id="bannerUpload"
+                              accept="image/*"
+                              onChange={handleBannerUpload}
+                              disabled={uploading}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="bannerUpload"
+                              className={`inline-block px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors cursor-pointer ${
+                                uploading ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                            >
+                              {uploading ? 'Uploading...' : 'Upload Banner'}
+                            </label>
+                            <p className="text-xs text-gray-600 mt-2">
+                              <strong>Recommended:</strong> Wide (16:9), 1920x1080 to 3840x2160px, JPEG/PNG, max 5MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profile Information Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-bold uppercase">Profile Information</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold uppercase mb-2">Display Name</label>
+                          <input
+                            type="text"
+                            name="displayName"
+                            value={publicData.displayName}
+                            onChange={handlePublicProfileChange}
+                            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold uppercase mb-2">Industry Domain</label>
+                          <input
+                            type="text"
+                            name="industryDomain"
+                            value={publicData.industryDomain}
+                            onChange={handlePublicProfileChange}
+                            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Website URL</label>
+                        <input
+                          type="url"
+                          name="websiteUrl"
+                          value={publicData.websiteUrl}
+                          onChange={handlePublicProfileChange}
+                          placeholder="https://example.com"
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">About Us</label>
+                        <textarea
+                          name="aboutUs"
+                          value={publicData.aboutUs}
+                          onChange={handlePublicProfileChange}
+                          rows={4}
+                          maxLength={2000}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
+                        />
+                        <p className="text-xs text-gray-600 mt-1">{publicData.aboutUs.length}/2000 characters</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold uppercase mb-2">Who We Are Looking For</label>
+                        <textarea
+                          name="whoWeAreLookingFor"
+                          value={publicData.whoWeAreLookingFor}
+                          onChange={handlePublicProfileChange}
+                          rows={4}
+                          maxLength={1000}
+                          className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold resize-none"
+                        />
+                        <p className="text-xs text-gray-600 mt-1">{publicData.whoWeAreLookingFor.length}/1000 characters</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-4 pt-4">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Saving...' : 'Save Public Profile'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           )}

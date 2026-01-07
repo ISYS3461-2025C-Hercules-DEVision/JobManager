@@ -3,8 +3,10 @@ package com.job.manager.authentication.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -14,6 +16,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String from;   // ✅ PUT IT HERE (class field)
 
+    @Async
     public void sendVerificationEmail(String to, String code) {
 
         // Local/dev convenience: allow running without SMTP configured.
@@ -43,6 +46,7 @@ public class EmailService {
 
         try {
             mailSender.send(message);
+            System.out.println("[INFO] Verification email sent successfully to: " + to);
         } catch (Exception ex) {
             // Don't fail registration due to SMTP issues in local/dev.
             System.out.println("[WARN] Failed to send email via SMTP. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());

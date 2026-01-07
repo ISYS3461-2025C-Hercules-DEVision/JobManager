@@ -17,6 +17,8 @@ export const usePublicProfile = () => {
     logoUrl: "",
     bannerUrl: "",
   });
+  const [logoFile, setLogoFile] = useState(null); // Store actual file
+  const [bannerFile, setBannerFile] = useState(null); // Store actual file
   const [logoPreview, setLogoPreview] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,19 +34,11 @@ export const usePublicProfile = () => {
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
         if (name === "companyLogo") {
+          setLogoFile(file); // Store the actual file
           setLogoPreview(previewUrl);
-          // In a real implementation, you would upload the file to a storage service
-          // and set the URL in formData. For now, we'll use the preview URL
-          setFormData({
-            ...formData,
-            logoUrl: previewUrl,
-          });
         } else if (name === "companyBanner") {
+          setBannerFile(file); // Store the actual file
           setBannerPreview(previewUrl);
-          setFormData({
-            ...formData,
-            bannerUrl: previewUrl,
-          });
         }
       }
     } else {
@@ -61,7 +55,7 @@ export const usePublicProfile = () => {
     setError(null);
 
     try {
-      // Call backend API to create public profile
+      // Step 1: Create public profile with text data only
       await profileService.createPublicProfile({
         companyName: formData.companyName,
         aboutUs: formData.aboutUs,
@@ -70,14 +64,19 @@ export const usePublicProfile = () => {
         industryDomain: formData.industryDomain,
         country: formData.country,
         city: formData.city,
-        logoUrl: formData.logoUrl || undefined,
-        bannerUrl: formData.bannerUrl || undefined,
       });
 
-      // Profile is now saved in MongoDB - no need for localStorage
+      // Step 2: Upload logo if provided
+      if (logoFile) {
+        await profileService.uploadProfileLogo(logoFile);
+      }
+
+      // Step 3: Upload banner if provided
+      if (bannerFile) {
+        await profileService.uploadProfileBanner(bannerFile);
+      }
 
       setSuccess(true);
-
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || "Failed to create profile";
@@ -94,7 +93,7 @@ export const usePublicProfile = () => {
   };
 
   const removeLogo = () => {
-    setFormData({ ...formData, logoUrl: "" });
+    setLogoFile(null);
     if (logoPreview) {
       URL.revokeObjectURL(logoPreview);
       setLogoPreview(null);
@@ -102,7 +101,7 @@ export const usePublicProfile = () => {
   };
 
   const removeBanner = () => {
-    setFormData({ ...formData, bannerUrl: "" });
+    setBannerFile(null);
     if (bannerPreview) {
       URL.revokeObjectURL(bannerPreview);
       setBannerPreview(null);
