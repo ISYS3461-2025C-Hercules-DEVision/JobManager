@@ -231,6 +231,17 @@ public class CompanyController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // Admin endpoint: Manually sync email verification status
+    @PatchMapping("/admin/companies/sync-verification")
+    public ResponseEntity<?> syncEmailVerification(@RequestParam String email) {
+        try {
+            companyService.updateEmailVerificationStatus(email, true);
+            return ResponseEntity.ok("Email verification status updated for: " + email);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+        }
+    }
 }
 
 @Data

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class CompanySearchProfileService {
         return CompanySearchProfileResponse.builder()
                 .companyId(profile.getCompanyId())
                 .technicalTags(profile.getTechnicalTags())
-                .employmentStatus(profile.getEmploymentStatus())
+                .employmentStatus(profile.getEmploymentStatus())  // Return enum for company API
                 .country(profile.getCountry())
                 .salaryMin(profile.getSalaryMin())
                 .salaryMax(profile.getSalaryMax())
@@ -56,16 +57,25 @@ public class CompanySearchProfileService {
     // For matching service: return ALL company profiles
     public List<CompanySearchProfileResponse> getAllProfiles() {
         return profileRepository.findAll().stream()
-                .map(p -> CompanySearchProfileResponse.builder()
-                        .companyId(p.getCompanyId())   // assumes field exists in entity
-                        .technicalTags(p.getTechnicalTags())
-                        .employmentStatus(p.getEmploymentStatus())
-                        .country(p.getCountry())
-                        .salaryMin(p.getSalaryMin())
-                        .salaryMax(p.getSalaryMax())
-                        .highestEducationDegree(p.getHighestEducationDegree())
-                        .build()
-                )
+                .map(p -> {
+                    // Convert EmploymentStatus enum to Set<String> for cross-service compatibility
+                    Set<String> employmentStatusStrings = null;
+                    if (p.getEmploymentStatus() != null) {
+                        employmentStatusStrings = p.getEmploymentStatus().stream()
+                                .map(Enum::name)
+                                .collect(java.util.stream.Collectors.toSet());
+                    }
+                    
+                    return CompanySearchProfileResponse.builder()
+                            .companyId(p.getCompanyId())
+                            .technicalTags(p.getTechnicalTags())
+                            .employmentStatus(p.getEmploymentStatus())  // Return enum set for internal use
+                            .country(p.getCountry())
+                            .salaryMin(p.getSalaryMin())
+                            .salaryMax(p.getSalaryMax())
+                            .highestEducationDegree(p.getHighestEducationDegree())
+                            .build();
+                })
                 .toList();
     }
 }

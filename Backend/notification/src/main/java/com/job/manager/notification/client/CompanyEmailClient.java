@@ -10,21 +10,25 @@ public class CompanyEmailClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${services.authentication.base-url}")
-    private String authBaseUrl; // http://localhost:8000/auth
+    @Value("${services.company.base-url:http://localhost:8081}")
+    private String companyBaseUrl;
 
     public String getCompanyEmail(String companyId) {
-        String url = authBaseUrl + "/users/" + companyId;
-        UserDto user = restTemplate.getForObject(url, UserDto.class);
-        if (user == null || user.getUsername() == null) {
+        String url = companyBaseUrl + "/companies/" + companyId;
+        CompanyDto company = restTemplate.getForObject(url, CompanyDto.class);
+        if (company == null || company.getEmail() == null) {
             throw new IllegalStateException("Cannot resolve email for companyId=" + companyId);
         }
-        return user.getUsername();
+        return company.getEmail();
     }
 
     @Data
-    public static class UserDto {
-        private String id;
-        private String username;
+    public static class CompanyDto {
+        private String companyId;
+        private String companyName;
+        private String email;
+        private Boolean isPremium;
+        private Boolean isActive;
+        private Boolean isEmailVerified;
     }
 }

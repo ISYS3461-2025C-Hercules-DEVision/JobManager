@@ -147,6 +147,14 @@ public class AuthenticationService {
         if (registerRequest != null) {
             kafkaProducer.publishRegisterEvent(registerRequest);
         }
+
+        // Publish email verification event to update company service
+        com.job.manager.dto.EmailVerifiedEvent emailVerifiedEvent = com.job.manager.dto.EmailVerifiedEvent.builder()
+                .userId(user.getId())
+                .email(user.getUsername())
+                .isVerified(true)
+                .build();
+        kafkaProducer.publishEmailVerifiedEvent(emailVerifiedEvent);
     }
 
     private void markEmailVerified(String userId) {

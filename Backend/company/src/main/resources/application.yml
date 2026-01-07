@@ -27,6 +27,7 @@ spring:
 kafka:
   topic:
     register: company-registration
+    email-verified: email-verified
   topics:
     subscription-activated: subscription-activated
     subscription-cancelled: subscription-cancelled

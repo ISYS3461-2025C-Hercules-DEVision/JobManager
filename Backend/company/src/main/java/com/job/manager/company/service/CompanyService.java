@@ -100,6 +100,18 @@ public class CompanyService {
         companyRepository.save(newCompany);
     }
 
+    @Transactional
+    public void updateEmailVerificationStatus(String email, Boolean isVerified) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Company not found with email: " + email));
+        
+        company.setIsEmailVerified(isVerified);
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+        
+        System.out.println(">>> [COMPANY SERVICE] Updated email verification for: " + email + " to " + isVerified);
+    }
+
     public boolean hasPublicProfile(String companyId) {
         return publicProfileRepository.existsByCompanyId(companyId);
     }
