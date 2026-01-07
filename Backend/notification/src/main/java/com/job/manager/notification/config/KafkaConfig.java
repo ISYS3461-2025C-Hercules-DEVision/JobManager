@@ -62,7 +62,7 @@ KafkaConfig {
         deserializer.setUseTypeMapperForKey(false);
 
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-matching-group");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 
@@ -91,7 +91,7 @@ KafkaConfig {
                 deserializer.setUseTypeMapperForKey(false);
 
                 Map<String, Object> props = new HashMap<>();
-                props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
+                props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                 props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
                 props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
 

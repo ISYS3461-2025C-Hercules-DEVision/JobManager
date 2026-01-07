@@ -7,11 +7,3 @@ Username: admin
 Password: admin
 Kong admin URL: http://13.236.146.126:8002/
 Kong API URL: http://13.236.146.126:8000/
-
-
-aws ecs execute-command \
-  --cluster 
-job-management-cluster \
-  --task arn:aws:ecs:ap-southeast-2:732310112474:task/job-management-cluster/236af238577e4cc0b0b89256555ac465 \
-  --container company \
-  --command "/bin/sh"
