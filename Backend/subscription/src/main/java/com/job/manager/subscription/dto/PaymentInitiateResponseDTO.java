@@ -1,4 +1,4 @@
-package com.job.manager.payment.dto;
+package com.job.manager.subscription.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

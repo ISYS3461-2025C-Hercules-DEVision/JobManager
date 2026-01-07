@@ -1,4 +1,4 @@
-package com.job.manager.payment.dto;
+package com.job.manager.subscription.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

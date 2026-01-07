@@ -1,36 +1,33 @@
-package com.job.manager.payment.validator;
+package com.job.manager.subscription.validator;
 
-import com.job.manager.payment.client.CompanyServiceClient;
-import com.job.manager.payment.client.SubscriptionServiceClient;
-import com.job.manager.payment.dto.PaymentInitiateRequestDTO;
-import com.job.manager.payment.dto.SubscriptionDTO;
-import com.job.manager.payment.entity.PaymentTransaction;
-import com.job.manager.payment.exception.ValidationException;
-import com.job.manager.payment.repository.PaymentTransactionRepository;
+import com.job.manager.subscription.client.CompanyServiceClient;
+import com.job.manager.subscription.dto.PaymentInitiateRequestDTO;
+import com.job.manager.subscription.dto.SubscriptionDTO;
+import com.job.manager.subscription.dto.SubscriptionResponseDTO;
+import com.job.manager.subscription.entity.PaymentTransaction;
+import com.job.manager.subscription.entity.Subscription;
+import com.job.manager.subscription.exception.ValidationException;
+import com.job.manager.subscription.repository.PaymentTransactionRepository;
+import com.job.manager.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Centralized validation service for payment business rules.
- * Ensures data integrity and prevents invalid payment creation.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentValidator {
 
-    private final SubscriptionServiceClient subscriptionServiceClient;
+    private final SubscriptionService subscriptionService;
     private final CompanyServiceClient companyServiceClient;
     private final PaymentTransactionRepository paymentRepository;
 
     /**
      * Validate all business rules for payment initiation.
-     * 
+     *
      * @param request The payment initiation request
      * @throws ValidationException if any validation rule fails
      */
@@ -165,7 +162,7 @@ public class PaymentValidator {
         log.info("Validating subscription payment for subscription: {}", subscriptionId);
 
         // 1. Verify subscription exists
-        SubscriptionDTO subscription = subscriptionServiceClient.getSubscriptionById(subscriptionId);
+        SubscriptionResponseDTO subscription= subscriptionService.getSubscriptionById(subscriptionId);
 
         // 2. Verify subscription is in PENDING status (hasn't been paid yet)
         if (!"PENDING".equalsIgnoreCase(subscription.getStatus())) {
@@ -208,7 +205,7 @@ public class PaymentValidator {
         if (!existingPayments.isEmpty()) {
             throw new ValidationException(
                     String.format("A pending payment already exists for reference: %s. " +
-                            "Please wait for the existing payment to complete or cancel it first.",
+                                    "Please wait for the existing payment to complete or cancel it first.",
                             request.getReferenceId()));
         }
 

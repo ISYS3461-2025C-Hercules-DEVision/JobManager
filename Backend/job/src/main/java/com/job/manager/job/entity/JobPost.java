@@ -21,6 +21,8 @@ public class JobPost {
 
     private String title;
 
+    private String department;
+
     private String description;
 
     private String employmentType; // Full-time, Part-time, Internship, Contract

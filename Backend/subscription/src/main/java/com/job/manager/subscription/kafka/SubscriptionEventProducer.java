@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SubscriptionEventProducer {
 
-    private final KafkaTemplate<String, SubscriptionEventDTO> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Value("${kafka.topics.subscription-created}")
     private String subscriptionCreatedTopic;

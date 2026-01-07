@@ -1,4 +1,4 @@
-package com.job.manager.payment.entity;
+package com.job.manager.subscription.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

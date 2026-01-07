@@ -1,18 +1,14 @@
-package com.job.manager.payment.service;
+package com.job.manager.subscription.service;
 
-import com.job.manager.payment.dto.PaymentInitiateRequestDTO;
-import com.job.manager.payment.dto.PaymentInitiateResponseDTO;
-import com.job.manager.payment.dto.PaymentResponseDTO;
-import com.job.manager.payment.entity.PaymentTransaction;
-import com.job.manager.payment.entity.PaymentTransaction.PaymentStatus;
-import com.job.manager.payment.entity.PaymentTransaction.Subsystem;
-import com.job.manager.payment.repository.PaymentTransactionRepository;
-import com.job.manager.payment.validator.PaymentValidator;
+import com.job.manager.subscription.dto.PaymentInitiateRequestDTO;
+import com.job.manager.subscription.dto.PaymentInitiateResponseDTO;
+import com.job.manager.subscription.dto.PaymentResponseDTO;
+import com.job.manager.subscription.entity.PaymentTransaction;
+import com.job.manager.subscription.repository.PaymentTransactionRepository;
+import com.job.manager.subscription.validator.PaymentValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -113,7 +109,7 @@ public class PaymentService {
         if (subsystem != null) {
             transactions = paymentRepository.findByCustomerIdAndSubsystem(
                     customerId,
-                    Subsystem.valueOf(subsystem));
+                    PaymentTransaction.Subsystem.valueOf(subsystem));
         } else {
             transactions = paymentRepository.findByCustomerId(customerId);
         }

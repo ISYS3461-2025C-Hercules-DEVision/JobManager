@@ -1,17 +1,17 @@
-package com.job.manager.payment.service;
+package com.job.manager.subscription.service;
 
-import com.job.manager.payment.dto.PaymentEventDTO;
-import com.job.manager.payment.dto.PaymentInitiateRequestDTO;
-import com.job.manager.payment.dto.PaymentInitiateResponseDTO;
-import com.job.manager.payment.dto.PaymentResponseDTO;
-import com.job.manager.payment.entity.PaymentTransaction;
-import com.job.manager.payment.entity.PaymentTransaction.*;
-import com.job.manager.payment.kafka.PaymentEventProducer;
-import com.job.manager.payment.repository.PaymentTransactionRepository;
+import com.job.manager.subscription.dto.PaymentEventDTO;
+import com.job.manager.subscription.dto.PaymentInitiateRequestDTO;
+import com.job.manager.subscription.dto.PaymentInitiateResponseDTO;
+import com.job.manager.subscription.dto.PaymentResponseDTO;
+import com.job.manager.subscription.entity.PaymentTransaction;
+import com.job.manager.subscription.kafka.PaymentEventProducer;
+import com.job.manager.subscription.repository.PaymentTransactionRepository;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -60,15 +57,15 @@ public class StripePaymentService {
         try {
             // Create payment transaction record
             PaymentTransaction transaction = new PaymentTransaction();
-            transaction.setSubsystem(Subsystem.valueOf(request.getSubsystem()));
-            transaction.setPaymentType(PaymentType.valueOf(request.getPaymentType()));
+            transaction.setSubsystem(PaymentTransaction.Subsystem.valueOf(request.getSubsystem()));
+            transaction.setPaymentType(PaymentTransaction.PaymentType.valueOf(request.getPaymentType()));
             transaction.setCustomerId(request.getCustomerId());
             transaction.setEmail(request.getEmail());
             transaction.setReferenceId(request.getReferenceId());
             transaction.setAmount(request.getAmount());
             transaction.setCurrency(request.getCurrency().toUpperCase());
-            transaction.setGateway(PaymentGateway.STRIPE);
-            transaction.setStatus(PaymentStatus.PENDING);
+            transaction.setGateway(PaymentTransaction.PaymentGateway.STRIPE);
+            transaction.setStatus(PaymentTransaction.PaymentStatus.PENDING);
             transaction.setDescription(request.getDescription());
             transaction.setTimestamp(LocalDateTime.now());
             transaction.setCreatedAt(LocalDateTime.now());
@@ -138,12 +135,12 @@ public class StripePaymentService {
                     .findByStripeSessionId(sessionId)
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found for session: " + sessionId));
 
-            if (transaction.getStatus() == PaymentStatus.SUCCESS) {
+            if (transaction.getStatus() == PaymentTransaction.PaymentStatus.SUCCESS) {
                 log.warn("Payment already processed for session: {}", sessionId);
                 return mapToResponseDTO(transaction);
             }
 
-            transaction.setStatus(PaymentStatus.SUCCESS);
+            transaction.setStatus(PaymentTransaction.PaymentStatus.SUCCESS);
             transaction.setStripePaymentIntentId(session.getPaymentIntent());
             transaction.setTimestamp(LocalDateTime.now());
             transaction.setUpdatedAt(LocalDateTime.now());
@@ -155,8 +152,8 @@ public class StripePaymentService {
             eventProducer.sendPaymentSuccessEvent(event);
 
             // Activate subscription directly from webhook if payment type is SUBSCRIPTION
-            if (updatedTransaction.getPaymentType() == PaymentType.SUBSCRIPTION && 
-                updatedTransaction.getSubsystem() == Subsystem.JOB_MANAGER) {
+            if (updatedTransaction.getPaymentType() == PaymentTransaction.PaymentType.SUBSCRIPTION &&
+                    updatedTransaction.getSubsystem() == PaymentTransaction.Subsystem.JOB_MANAGER) {
                 try {
                     activateSubscriptionDirectly(updatedTransaction.getReferenceId(), updatedTransaction.getTransactionId());
                     log.info(">>> [WEBHOOK] Successfully activated subscription {} from webhook", updatedTransaction.getReferenceId());
@@ -175,7 +172,7 @@ public class StripePaymentService {
     }
 
     // REMOVED: activateSubscription() method
-    // Subscription activation is handled by PaymentService.completePayment() 
+    // Subscription activation is handled by PaymentService.completePayment()
     // which has access to the user's JWT token required for authentication
 
     public PaymentResponseDTO handleFailedPayment(String sessionId, String reason) {
@@ -185,7 +182,7 @@ public class StripePaymentService {
                 .findByStripeSessionId(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found for session: " + sessionId));
 
-        transaction.setStatus(PaymentStatus.FAILED);
+        transaction.setStatus(PaymentTransaction.PaymentStatus.FAILED);
         transaction.setDescription(transaction.getDescription() + " | Failure reason: " + reason);
         transaction.setTimestamp(LocalDateTime.now());
         transaction.setUpdatedAt(LocalDateTime.now());
@@ -258,4 +255,5 @@ public class StripePaymentService {
             log.error(">>> [WEBHOOK] Error calling subscription service: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to activate subscription: " + e.getMessage());
         }
-    }}
+    }
+}
