@@ -6,4 +6,4 @@ Jenkins URL: http://13.239.254.228:8080/
 Username: admin
 Password: admin
 Kong admin URL: http://13.236.146.126:8002/
-Kong API URL: http://13.236.146.126:8000/
+Kong API URL: http://13.236.146.126:8000/subscription/webhook/stripe

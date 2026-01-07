@@ -46,10 +46,10 @@ public class StripeWebhookController {
      * @param sigHeader Stripe signature header
      * @return Response acknowledging webhook receipt
      */
-        @PostMapping({"/webhook/stripe", "/payments/webhook"})
-        public ResponseEntity<?> handleWebhook(
-            @RequestBody String payload,
-            @RequestHeader("Stripe-Signature") String sigHeader) {
+    @PostMapping({"/webhook/stripe", "/payments/webhook"})
+    public ResponseEntity<?> handleWebhook(
+        @RequestBody String payload,
+        @RequestHeader("Stripe-Signature") String sigHeader) {
         
         logger.info("Received Stripe webhook event");
 
