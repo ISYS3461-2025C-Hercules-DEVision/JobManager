@@ -1,8 +1,6 @@
-package com.job.manager.payment.repository;
+package com.job.manager.subscription.repository;
 
-import com.job.manager.payment.entity.PaymentTransaction;
-import com.job.manager.payment.entity.PaymentTransaction.PaymentStatus;
-import com.job.manager.payment.entity.PaymentTransaction.Subsystem;
+import com.job.manager.subscription.entity.PaymentTransaction;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,11 +16,11 @@ public interface PaymentTransactionRepository extends MongoRepository<PaymentTra
     
     List<PaymentTransaction> findByCustomerId(String customerId);
     
-    List<PaymentTransaction> findByCustomerIdAndSubsystem(String customerId, Subsystem subsystem);
+    List<PaymentTransaction> findByCustomerIdAndSubsystem(String customerId, PaymentTransaction.Subsystem subsystem);
     
     List<PaymentTransaction> findByReferenceId(String referenceId);
     
-    List<PaymentTransaction> findByStatus(PaymentStatus status);
+    List<PaymentTransaction> findByStatus(PaymentTransaction.PaymentStatus status);
     
-    List<PaymentTransaction> findBySubsystemAndStatus(Subsystem subsystem, PaymentStatus status);
+    List<PaymentTransaction> findBySubsystemAndStatus(PaymentTransaction.Subsystem subsystem, PaymentTransaction.PaymentStatus status);
 }

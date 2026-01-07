@@ -31,6 +31,54 @@ public class JobController {
         return jobService.getJobsForCompany(user.getUserId());
     }
 
+    @GetMapping("/jobs/{jobId}")
+    public JobPost getJobById(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId
+    ) {
+        return jobService.getJobById(jobId, user.getUserId());
+    }
+
+    @PutMapping("/jobs/{jobId}")
+    public JobPost updateJob(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId,
+            @RequestBody JobPost jobPost
+    ) {
+        return jobService.updateJobPost(jobId, user.getUserId(), jobPost);
+    }
+
+    @DeleteMapping("/jobs/{jobId}")
+    public void deleteJob(
+            @CurrentUser AuthenticatedUser user,
+            @PathVariable String jobId
+    ) {
+        jobService.deleteJobPost(jobId, user.getUserId());
+    }
+
+    @PostMapping("/jobs/bulk/activate")
+    public void bulkActivate(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkActivate(jobIds, user.getUserId());
+    }
+
+    @PostMapping("/jobs/bulk/close")
+    public void bulkClose(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkClose(jobIds, user.getUserId());
+    }
+
+    @DeleteMapping("/jobs/bulk/delete")
+    public void bulkDelete(
+            @CurrentUser AuthenticatedUser user,
+            @RequestBody List<String> jobIds
+    ) {
+        jobService.bulkDelete(jobIds, user.getUserId());
+    }
 
     @GetMapping("ping")
     public String ping() {
