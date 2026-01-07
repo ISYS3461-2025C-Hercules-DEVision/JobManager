@@ -25,14 +25,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(
-                        "http://job-manager-483228148.ap-southeast-2.elb.amazonaws.com",
-                        "http://localhost:3000",  // For local development
-                        "http://localhost:8080"
-                )
+                .allowedOriginPatterns("*")  // Very permissive for development
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
-                .exposedHeaders("Authorization", "Content-Type")
+                .exposedHeaders("*")
                 .allowCredentials(true)
                 .maxAge(3600);
     }
