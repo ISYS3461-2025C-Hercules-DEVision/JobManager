@@ -10,8 +10,6 @@ public interface CompanyMediaRepository extends MongoRepository<CompanyMedia, St
     List<CompanyMedia> findByCompanyId(String companyId);
     
     List<CompanyMedia> findByCompanyIdAndIsActive(String companyId, Boolean isActive);
-
-    List<CompanyMedia> findByCompanyIdAndIsActiveOrderByOrderIndexAsc(String companyId, Boolean isActive);
     
     List<CompanyMedia> findByCompanyIdOrderByOrderIndexAsc(String companyId);
     

@@ -116,7 +116,7 @@ public class CompanyMediaService {
      * @return List of active media items sorted by display order
      */
     public List<CompanyMedia> getActiveMediaByCompany(String companyId) {
-        return mediaRepository.findByCompanyIdAndIsActiveOrderByOrderIndexAsc(companyId, true);
+        return mediaRepository.findByCompanyIdAndIsActive(companyId, true);
     }
 
     /**
