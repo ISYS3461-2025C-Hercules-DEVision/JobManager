@@ -128,6 +128,58 @@ export const profileService = {
   },
 
   /**
+   * Upload company logo image
+   * @param {File} file - Logo image file
+   * @returns {Promise<Object>} Upload response with image URL
+   */
+  async uploadProfileLogo(file) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await companyApi.post(
+        API_ENDPOINTS.COMPANY.UPLOAD_LOGO,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to upload logo:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Upload company banner image
+   * @param {File} file - Banner image file
+   * @returns {Promise<Object>} Upload response with image URL
+   */
+  async uploadProfileBanner(file) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await companyApi.post(
+        API_ENDPOINTS.COMPANY.UPLOAD_BANNER,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to upload banner:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get complete company profile (both basic and public profile)
    * @returns {Promise<{companyProfile: Object, publicProfile: Object, hasPublicProfile: boolean}>}
    */

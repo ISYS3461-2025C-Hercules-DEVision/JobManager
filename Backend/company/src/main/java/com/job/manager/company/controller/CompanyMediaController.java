@@ -6,11 +6,13 @@ import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.CompanyMedia;
 import com.job.manager.company.service.CompanyMediaService;
 import com.job.manager.company.service.CompanyService;
+import com.job.manager.company.service.SupabaseStorageService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,6 +53,9 @@ public class CompanyMediaController {
     @Autowired
     private CompanyService companyService;
 
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
+
     /**
      * Adds a new media item to the company's gallery.
      * 
@@ -84,6 +89,104 @@ public class CompanyMediaController {
         
         CompanyMediaResponseDto response = mapToMediaResponse(media);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Uploads a file directly to Supabase Storage and creates a media record.
+     * 
+     * This is an all-in-one endpoint that:
+     * 1. Validates the uploaded file
+     * 2. Uploads it to Supabase Storage
+     * 3. Creates a database record with the resulting URL
+     * 
+     * Unlike the /media POST endpoint which requires pre-uploading to storage,
+     * this endpoint handles the entire upload process in one request.
+     * 
+     * File upload constraints:
+     * - Maximum file size: 10MB
+     * - Allowed image types: JPEG, PNG, GIF, WebP
+     * - Allowed video types: MP4, WebM, MOV
+     * - Maximum 10 media items per company
+     * 
+     * Request format: multipart/form-data
+     * - file: The file to upload (required)
+     * - mediaType: IMAGE or VIDEO (required)
+     * - title: Optional title for the media
+     * - description: Optional description
+     * 
+     * Example using curl:
+     * curl -X POST http://localhost:8080/media/upload \
+     *   -H "Authorization: Bearer {jwt-token}" \
+     *   -F "file=@logo.png" \
+     *   -F "mediaType=IMAGE" \
+     *   -F "title=Company Logo"
+     * 
+     * Example using JavaScript fetch:
+     * const formData = new FormData();
+     * formData.append('file', fileInput.files[0]);
+     * formData.append('mediaType', 'IMAGE');
+     * formData.append('title', 'Company Logo');
+     * 
+     * fetch('/media/upload', {
+     *   method: 'POST',
+     *   headers: { 'Authorization': 'Bearer ' + token },
+     *   body: formData
+     * });
+     * 
+     * @param user The authenticated company user (extracted from JWT)
+     * @param file The file to upload (multipart file)
+     * @param mediaType The type of media (IMAGE or VIDEO)
+     * @param title Optional title for the media
+     * @param description Optional description
+     * @return HTTP 201 Created with upload details including public URL
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<ImageUploadResponseDto> uploadMedia(
+            @CurrentUser AuthenticatedUser user,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("mediaType") CompanyMedia.MediaType mediaType,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "description", required = false) String description) {
+        
+        Company company = companyService.getCompanyByEmail(user.getEmail());
+        
+        // Upload file to Supabase Storage
+        String publicUrl = supabaseStorageService.uploadFile(file, company.getCompanyId(), mediaType.name());
+        
+        // Create database record with the URL
+        CompanyMedia media = mediaService.addMedia(
+                company.getCompanyId(),
+                publicUrl,
+                mediaType,
+                title,
+                description,
+                null  // orderIndex will be auto-assigned
+        );
+        
+        // Build response with upload details
+        ImageUploadResponseDto response = ImageUploadResponseDto.builder()
+                .publicUrl(publicUrl)
+                .fileName(extractFileName(publicUrl))
+                .mediaType(mediaType)
+                .fileSize(file.getSize())
+                .originalFileName(file.getOriginalFilename())
+                .contentType(file.getContentType())
+                .mediaId(media.getMediaId())
+                .message("File uploaded successfully")
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Helper method to extract filename from Supabase public URL.
+     * 
+     * @param publicUrl The full public URL
+     * @return The filename portion
+     */
+    private String extractFileName(String publicUrl) {
+        int lastSlash = publicUrl.lastIndexOf('/');
+        return lastSlash >= 0 ? publicUrl.substring(lastSlash + 1) : publicUrl;
     }
 
     /**
