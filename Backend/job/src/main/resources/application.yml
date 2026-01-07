@@ -16,6 +16,9 @@ spring:
       password: admin
       authentication-database: admin
 
+server:
+  port: 8082
+
 kafka:
   topic:
     job-updates: job-post-updates

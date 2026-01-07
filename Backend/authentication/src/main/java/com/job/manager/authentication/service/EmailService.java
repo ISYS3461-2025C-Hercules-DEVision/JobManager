@@ -48,4 +48,37 @@ public class EmailService {
             System.out.println("[WARN] Failed to send email via SMTP. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());
         }
     }
+
+    public void sendPasswordResetEmail(String to, String code) {
+        if (from == null || from.isBlank()) {
+            System.out.println("[WARN] SMTP not configured. Password reset OTP for " + to + ": " + code);
+            return;
+        }
+
+        String subject = "Password Reset Code";
+
+        String body = """
+        Hi,
+
+        You requested to reset your password. Your reset code is:
+
+        %s
+
+        This code expires in 10 minutes.
+
+        If you didn't request this, please ignore this email.
+        """.formatted(code);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body);
+
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            System.out.println("[WARN] Failed to send password reset email. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());
+        }
+    }
 }

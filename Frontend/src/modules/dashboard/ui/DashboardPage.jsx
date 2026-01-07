@@ -17,23 +17,38 @@ function DashboardPage() {
   useEffect(() => {
     // Check if user has completed their profile from backend
     const checkProfileStatus = async () => {
-      try {
-        const status = await profileService.checkProfileStatus();
-        console.log("🔍 Profile Status Check:", status); // DEBUG
-        console.log("  - hasPublicProfile:", status.hasPublicProfile); // DEBUG
-        console.log("  - Should show modal:", !status.hasPublicProfile); // DEBUG
+      // Retry logic for Google OAuth users (company might not be created yet via Kafka)
+      const maxRetries = 5;
+      const delays = [500, 1000, 1500, 2000, 2500]; // Progressive delays
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const status = await profileService.checkProfileStatus();
+          console.log("🔍 Profile Status Check:", status); // DEBUG
+          console.log("  - hasPublicProfile:", status.hasPublicProfile); // DEBUG
+          console.log("  - Should show modal:", !status.hasPublicProfile); // DEBUG
 
-        if (!status.hasPublicProfile) {
-          console.log("✅ Showing modal - user has no public profile"); // DEBUG
-          setShowProfileModal(true);
-        } else {
-          console.log("❌ Not showing modal - user already has profile"); // DEBUG
+          if (!status.hasPublicProfile) {
+            console.log("✅ Showing modal - user has no public profile"); // DEBUG
+            setShowProfileModal(true);
+          } else {
+            console.log("❌ Not showing modal - user already has profile"); // DEBUG
+          }
+          setLoading(false);
+          return; // Success, exit retry loop
+        } catch (error) {
+          console.error(`Profile status check attempt ${attempt + 1}/${maxRetries} failed:`, error);
+          
+          // If not the last attempt, wait before retry
+          if (attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+            console.log(`Retrying in ${delays[attempt]}ms...`);
+          } else {
+            // Final attempt failed, don't show modal to avoid annoying user
+            console.error("All profile status check attempts failed");
+            setLoading(false);
+          }
         }
-      } catch (error) {
-        console.error("Failed to check profile status:", error);
-        // If error, don't show modal to avoid annoying user
-      } finally {
-        setLoading(false);
       }
     };
 
