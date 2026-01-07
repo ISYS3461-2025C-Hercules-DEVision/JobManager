@@ -154,7 +154,8 @@ export const authService = {
       });
 
       if (response.data) {
-        const token = response.data;
+        console.log(response.data);
+        const token = response.data.accessToken;
         saveToken(token);
         return token;
       }
