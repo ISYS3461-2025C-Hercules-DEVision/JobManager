@@ -1,6 +1,21 @@
+server:
+  port: 8084
+
 spring:
+  application:
+    name: applicant-service
+  
+  data:
+    mongodb:
+      host: ${DATABASE_HOST:localhost}
+      port: ${DATABASE_PORT:27019}
+      database: ${DATABASE_NAME:mongodb-applicant}
+      username: ${DATABASE_USERNAME:admin}
+      password: ${DATABASE_PASSWORD:admin}
+      authentication-database: ${AUTHENTICATION_DATABASE:admin}
+  
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:29092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

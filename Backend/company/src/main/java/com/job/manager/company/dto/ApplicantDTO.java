@@ -1,15 +1,21 @@
-package com.job.manager.applicant.dto;
+package com.job.manager.company.dto;
 
-import com.job.manager.applicant.entity.Education;
-import com.job.manager.applicant.entity.WorkExperience;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Detailed applicant information (for clicking on applicant)
+ */
 @Data
-public class ApplicantCreateRequest {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApplicantDTO {
 
     private String applicantId;
     
@@ -24,8 +30,8 @@ public class ApplicantCreateRequest {
     
     // Professional Information
     private String objectiveSummary;
-    private List<Education> education;
-    private List<WorkExperience> workExperience;
+    private List<EducationDTO> education;
+    private List<WorkExperienceDTO> workExperience;
     private String highestEducationDegree;
     
     // Job Preferences
@@ -33,4 +39,8 @@ public class ApplicantCreateRequest {
     private Set<String> employmentTypes;
     private BigDecimal expectedSalaryMin;
     private BigDecimal expectedSalaryMax;
+
+    // Timestamps
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

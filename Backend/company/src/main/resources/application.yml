@@ -32,6 +32,10 @@ kafka:
     subscription-cancelled: subscription-cancelled
     subscription-expired: subscription-expired
 
+applicant:
+  service:
+    url: http://localhost:8084
+
 logging:
   level:
     com.job.manager.company: DEBUG
