@@ -25,6 +25,12 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        // Keep connections alive longer (30 minutes instead of 9)
+        configProps.put(ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, 1800000); // 30 minutes
+        
+        // Enable automatic reconnection
+        configProps.put(ProducerConfig.RECONNECT_BACKOFF_MS_CONFIG, 50);
+        configProps.put(ProducerConfig.RECONNECT_BACKOFF_MAX_MS_CONFIG, 1000);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
