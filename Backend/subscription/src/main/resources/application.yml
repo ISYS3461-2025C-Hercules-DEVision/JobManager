@@ -42,7 +42,7 @@ services:
 
 stripe:
   api-key: ${STRIPE_API_KEY:sk_test_51SmzduFCgVdZyBl6iK5srWDYysvJgNOfOWNeWTl4UQ0qwo2oVPwU2NWLuR4dioxX0f5QoCZ00Q1pnpIPxdpgyjPc00Ywi5eoBl}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/payment/success%7D}
-  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/payment/cancel%7D}
+  success-url: ${STRIPE_SUCCESS_URL:http://job-manager-483228148.ap-southeast-2.elb.amazonaws.com/payment/success%7D}
+  cancel-url: ${STRIPE_CANCEL_URL:http://job-manager-483228148.ap-southeast-2.elb.amazonaws.com//payment/cancel%7D}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_8ab956080a9dd0d8fa0b472d9fb7dce604abe3a26ac55e070d8e5145ff9a2f31}
   #stripe listen --forward-to localhost:8083/webhook/stripe
