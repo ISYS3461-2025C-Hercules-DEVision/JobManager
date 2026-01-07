@@ -1,6 +1,7 @@
 package com.job.manager.authentication.controller;
 
-import com.job.manager.authentication.service.UserService;
+import com.job.manager.authentication.model.User;
+import com.job.manager.authentication.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,11 +11,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+    private final UserRepository userRepository;
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
-        return userService.getUserById(id)
+        return userRepository.findById(id)
                 .map(user -> ResponseEntity.ok(
                         new UserResponse(user.getId(), user.getUsername())
                 ))
