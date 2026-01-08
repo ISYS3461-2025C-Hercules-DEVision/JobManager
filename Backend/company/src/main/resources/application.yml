@@ -40,9 +40,9 @@ kafka:
 # 4. Get your project URL and service_role key from Settings > API
 # 5. Set these values as environment variables or replace defaults below
 supabase:
-  url: ${SUPABASE_URL:https://{kzgvqzhosztgtjynzpfa}.supabase.co}
+  url: ${SUPABASE_URL:https://kzgvqzhosztgtjynzpfa.supabase.co}
   api-key: ${SUPABASE_API_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6Z3Zxemhvc3p0Z3RqeW56cGZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzg1MTMzMCwiZXhwIjoyMDgzNDI3MzMwfQ.-fwUSXnHlB-wapSt_-Pq846fM33Um_nTb4P0ij-6xxw}
-  bucket-name: ${SUPABASE_BUCKET_NAME:company-media}
+  bucket-name: ${SUPABASE_BUCKET_NAME:job-manager}
 
 logging:
   level:
