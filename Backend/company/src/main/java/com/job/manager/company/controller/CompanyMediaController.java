@@ -4,10 +4,12 @@ import com.job.manager.company.annotation.CurrentUser;
 import com.job.manager.company.dto.*;
 import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.CompanyMedia;
+import com.job.manager.company.exception.BusinessException;
 import com.job.manager.company.service.CompanyMediaService;
 import com.job.manager.company.service.CompanyService;
 import com.job.manager.company.service.SupabaseStorageService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
  * - PUT /media/reorder - Reorder gallery display sequence
  * - GET /media/count - Check current media count (for upload limits)
  */
+@Slf4j
 @RestController
 @RequestMapping("/media")
 public class CompanyMediaController {
@@ -150,32 +153,37 @@ public class CompanyMediaController {
         
         Company company = companyService.getCompanyByEmail(user.getEmail());
         
-        // Upload file to Supabase Storage
-        String publicUrl = supabaseStorageService.uploadFile(file, company.getCompanyId(), mediaType.name());
-        
-        // Create database record with the URL
-        CompanyMedia media = mediaService.addMedia(
-                company.getCompanyId(),
-                publicUrl,
-                mediaType,
-                title,
-                description,
-                null  // orderIndex will be auto-assigned
-        );
-        
-        // Build response with upload details
-        ImageUploadResponseDto response = ImageUploadResponseDto.builder()
-                .publicUrl(publicUrl)
-                .fileName(extractFileName(publicUrl))
-                .mediaType(mediaType)
-                .fileSize(file.getSize())
-                .originalFileName(file.getOriginalFilename())
-                .contentType(file.getContentType())
-                .mediaId(media.getMediaId())
-                .message("File uploaded successfully")
-                .build();
-        
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            // Upload file to Supabase Storage
+            String publicUrl = supabaseStorageService.uploadFile(file, company.getCompanyId(), mediaType.name());
+            
+            // Create database record with the URL
+            CompanyMedia media = mediaService.addMedia(
+                    company.getCompanyId(),
+                    publicUrl,
+                    mediaType,
+                    title,
+                    description,
+                    null  // orderIndex will be auto-assigned
+            );
+            
+            // Build response with upload details
+            ImageUploadResponseDto response = ImageUploadResponseDto.builder()
+                    .publicUrl(publicUrl)
+                    .fileName(extractFileName(publicUrl))
+                    .mediaType(mediaType)
+                    .fileSize(file.getSize())
+                    .originalFileName(file.getOriginalFilename())
+                    .contentType(file.getContentType())
+                    .mediaId(media.getMediaId())
+                    .message("File uploaded successfully")
+                    .build();
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            log.error("Failed to upload media: {}", e.getMessage(), e);
+            throw new BusinessException("Failed to upload media. Please ensure Supabase storage is configured properly: " + e.getMessage());
+        }
     }
 
     /**
