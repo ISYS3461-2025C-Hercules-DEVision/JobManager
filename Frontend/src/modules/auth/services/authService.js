@@ -31,7 +31,7 @@ export const authService = {
 
       // Backend returns token as plain string
       if (response.data) {
-        const token = response.data;
+        const token = response.data.accessToken;
         saveToken(token);
         return token;
       }
