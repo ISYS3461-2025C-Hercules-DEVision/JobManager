@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useAuth } from '../../../state/AuthContext';
 import { useProfile } from '../../../state/ProfileContext';
 import { useApp } from '../../../state/AppContext';
-import { useEffect } from "react";
 
 /**
  * Sidebar Component - Navigation sidebar for Job Manager Dashboard
@@ -15,7 +14,7 @@ import { useEffect } from "react";
 function Sidebar() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { profile, publicProfile, loadProfile } = useProfile();
+  const { profile, publicProfile, loading } = useProfile();
   const { showSuccess, showError } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -26,10 +25,6 @@ function Sidebar() {
     subscriptionPlan: profile?.isPremium ? 'Premium' : 'Free',
     subscriptionStatus: profile?.isActive ? 'Active' : 'Inactive',
   };
-
-  useEffect(()=>{
-    loadProfile();
-  }, []);
 
   const handleLogout = async () => {
     try {
