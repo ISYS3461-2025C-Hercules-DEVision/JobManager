@@ -32,7 +32,6 @@ export const ProfileProvider = ({ children }) => {
   const [hasPublicProfile, setHasPublicProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   /**
    * Load company profile and public profile
@@ -187,22 +186,8 @@ export const ProfileProvider = ({ children }) => {
       loadProfile();
     } else {
       clearProfile();
-      setRetryCount(0);
     }
   }, [isAuthenticated, loadProfile, clearProfile]);
-
-  // Retry loading profile if it failed to load initially (for new users)
-  useEffect(() => {
-    if (isAuthenticated && !profile && !loading && !error && retryCount < 3) {
-      const timer = setTimeout(() => {
-        console.log(`Retrying profile load (attempt ${retryCount + 1}/3)...`);
-        setRetryCount((prev) => prev + 1);
-        loadProfile();
-      }, 2000); // Retry every 2 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, profile, loading, error, retryCount, loadProfile]);
 
   const value = {
     // State
