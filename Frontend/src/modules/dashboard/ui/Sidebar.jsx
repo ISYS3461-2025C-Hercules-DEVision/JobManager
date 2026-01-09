@@ -14,13 +14,14 @@ import { useApp } from '../../../state/AppContext';
 function Sidebar() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { profile, publicProfile, loading } = useProfile();
+  const { profile, publicProfile, loading: profileLoading } = useProfile();
   const { showSuccess, showError } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Prepare company data from profile context
+  // Use loading state to prevent showing default/stale data
   const companyData = {
-    name: publicProfile?.displayName || profile?.companyName || 'Company',
+    name: profileLoading ? 'Loading...' : (publicProfile?.displayName || profile?.companyName || 'Company'),
     avatar: publicProfile?.logoUrl || null,
     subscriptionPlan: profile?.isPremium ? 'Premium' : 'Free',
     subscriptionStatus: profile?.isActive ? 'Active' : 'Inactive',
