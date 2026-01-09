@@ -34,8 +34,8 @@ function CreatePublicProfile({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white border-4 border-black p-10 w-full max-w-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center p-4 z-50 overflow-y-auto scrollbar-hide">
+      <div className="bg-white border-4 border-black p-10 w-full max-w-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] my-8">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
