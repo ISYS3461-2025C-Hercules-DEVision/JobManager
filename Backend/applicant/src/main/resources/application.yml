@@ -16,4 +16,4 @@ eureka:
 
 kafka:
   topic:
-    applicant-profile: applicant.profile
+    applicant-profile: applicant-profile-updates

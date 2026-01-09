@@ -27,6 +27,16 @@ export const API_ENDPOINTS = {
     UPLOAD_BANNER: "/public-profile/banner",
   },
 
+  // Company Media
+  COMPANY_MEDIA: {
+    BASE: "/media",
+    UPLOAD: "/media/upload",
+    ACTIVE: "/media/active",
+    BY_TYPE: "/media/type",
+    REORDER: "/media/reorder",
+    COUNT: "/media/count",
+  },
+
   // Job
   JOB: {
     BASE: "/jobs",
