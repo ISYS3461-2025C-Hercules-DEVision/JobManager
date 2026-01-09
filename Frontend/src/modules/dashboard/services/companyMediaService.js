@@ -33,6 +33,7 @@ export const uploadMedia = async (
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      timeout: 10000, // 60 seconds for file uploads
     }
   );
   return response.data;
