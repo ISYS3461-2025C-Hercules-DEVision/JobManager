@@ -23,7 +23,7 @@ public class ApplicantProfileKafkaListener {
     private final NotificationService notificationService;
 
     @KafkaListener(
-            topics = "applicant.profile",
+            topics = "applicant-profile-updates",
             groupId = "notification-matching-group",
             containerFactory = "applicantProfileKafkaListenerContainerFactory"
     )
