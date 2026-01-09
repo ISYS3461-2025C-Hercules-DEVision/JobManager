@@ -33,7 +33,7 @@ const PaymentSuccess = () => {
         setPayment(paymentData);
 
         setTimeout(() => {
-          const returnUrl = sessionStorage.getItem('returnUrl') || '/dashboard';
+          const returnUrl = sessionStorage.getItem('returnUrl') || '/dashboard/settings';
           sessionStorage.removeItem('returnUrl');
           navigate(returnUrl);
         }, 3000);
@@ -74,10 +74,10 @@ const PaymentSuccess = () => {
           <p className="text-gray-600 mb-6">{error}</p>
 
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/dashboard/settings')}
             className="w-full bg-gray-900 text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
           >
-            Return to Dashboard
+            Return to Settings
           </button>
         </div>
       </div>
@@ -117,13 +117,13 @@ const PaymentSuccess = () => {
           </div>
         )}
 
-        <p className="text-sm text-gray-500 mb-4">Redirecting you to dashboard in 3 seconds...</p>
+        <p className="text-sm text-gray-500 mb-4">Redirecting you to settings page in 3 seconds...</p>
 
         <button
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/dashboard/settings')}
         >
-          Go to Dashboard Now
+          Go to Settings Now
         </button>
       </div>
     </div>
