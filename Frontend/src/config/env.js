@@ -5,37 +5,37 @@
 
 export const ENV = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://13.236.146.126:8000',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
 
   // Authentication endpoints
-  AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://13.236.146.126:8000/authentication',
+  AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://localhost:8080',
 
   // Company Service endpoints
-  COMPANY_SERVICE_URL: import.meta.env.VITE_COMPANY_SERVICE_URL || 'http://13.236.146.126:8000/company',
+  COMPANY_SERVICE_URL: import.meta.env.VITE_COMPANY_SERVICE_URL || 'http://localhost:8081',
 
   // Subscription Service endpoints
   SUBSCRIPTION_SERVICE_URL:
-    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://13.236.146.126:8000/subscription",
+    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://localhost:8083",
 
   // Job Service endpoints
   JOB_SERVICE_URL:
-    import.meta.env.VITE_JOB_SERVICE_URL || "http://13.236.146.126:8000/job",
+    import.meta.env.VITE_JOB_SERVICE_URL || "http://localhost:8082",
 
   // Payment Service endpoints
   PAYMENT_SERVICE_URL:
-    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://13.236.146.126:8000/subscription",
+    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:8083",
   // Notification Service endpoints
   NOTIFICATION_SERVICE_URL:
-    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://13.236.146.126:8000/notification",
+    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://localhost:8000/notification",
 
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
-  MOCK_AUTH: "false",
+  MOCK_AUTH: import.meta.env.VITE_MOCK_AUTH === "true",
 
   // Google OAuth Configuration
-  GOOGLE_CLIENT_ID: "34789659364-001rbq54i0jb3ge69kqes55pgcoklek9.apps.googleusercontent.com",
+  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
 
   // Feature flags
-  ENABLE_GOOGLE_AUTH: "true",
+  ENABLE_GOOGLE_AUTH: import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true",
 
   // App configuration
   APP_NAME: "Job Manager",
