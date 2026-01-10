@@ -40,7 +40,8 @@ export const API_ENDPOINTS = {
   // Job
   JOB: {
     BASE: "/jobs",
-    LIST: "/jobs",
+    LIST: "/jobs/search",
+    MY_JOBS: "/jobs/my",
     CREATE: "/jobs",
   },
 

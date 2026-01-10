@@ -3,6 +3,7 @@ package com.job.manager.job.service;
 import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.kafka.JobKafkaProducer;
 import com.job.manager.job.repository.JobRepository;
+import com.job.manager.job.validator.JobPostValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -22,15 +23,22 @@ public class JobService {
     private final JobRepository jobRepository;
     private final JobKafkaProducer kafkaProducer;
     private final MongoTemplate mongoTemplate;
+    private final JobPostValidator validator;
 
     public JobService(JobRepository jobRepository,
-                      JobKafkaProducer kafkaProducer, MongoTemplate mongoTemplate) {
+                      JobKafkaProducer kafkaProducer, 
+                      MongoTemplate mongoTemplate,
+                      JobPostValidator validator) {
         this.jobRepository = jobRepository;
         this.kafkaProducer = kafkaProducer;
         this.mongoTemplate = mongoTemplate;
+        this.validator = validator;
     }
 
     public JobPost createJobPost(JobPost jobPost) {
+        // Validate employment types and salary before saving
+        validator.validate(jobPost);
+        
         jobPost.setId(UUID.randomUUID());
         jobPost.setPostedDate(LocalDate.now());
 
@@ -63,13 +71,19 @@ public class JobService {
             throw new RuntimeException("Unauthorized access to job post");
         }
 
+        // Validate employment types and salary before updating
+        validator.validate(updatedJob);
+
         // Update fields
         existingJob.setTitle(updatedJob.getTitle());
         existingJob.setDepartment(updatedJob.getDepartment());
         existingJob.setDescription(updatedJob.getDescription());
-        existingJob.setEmploymentType(updatedJob.getEmploymentType());
+        existingJob.setEmploymentTypes(updatedJob.getEmploymentTypes());
         existingJob.setLocation(updatedJob.getLocation());
-        existingJob.setSalary(updatedJob.getSalary());
+        existingJob.setSalaryType(updatedJob.getSalaryType());
+        existingJob.setSalaryMin(updatedJob.getSalaryMin());
+        existingJob.setSalaryMax(updatedJob.getSalaryMax());
+        existingJob.setSalaryCurrency(updatedJob.getSalaryCurrency());
         existingJob.setSkills(updatedJob.getSkills());
         existingJob.setPublished(updatedJob.isPublished());
         existingJob.setExpiryDate(updatedJob.getExpiryDate());
@@ -181,7 +195,7 @@ public class JobService {
 
         if (employmentType != null && !employmentType.isBlank()) {
             query.addCriteria(
-                    Criteria.where("employmentType").is(employmentType)
+                    Criteria.where("employmentTypes").in(employmentType)
             );
         }
 

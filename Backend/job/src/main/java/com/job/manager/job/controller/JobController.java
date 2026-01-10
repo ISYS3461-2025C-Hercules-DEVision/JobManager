@@ -27,15 +27,18 @@ public class JobController {
         return jobService.createJobPost(jobPost);
     }
 
-    @GetMapping("/jobs")
+    @GetMapping("/jobs/my")
     public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
         return jobService.getJobsForCompany(user.getUserId());
     }
 
-    @GetMapping("/jobs")
-    public Page<JobPost> getAllJobs(@RequestParam String title, @RequestParam String location,
-                                    @RequestParam String employmentType, @RequestParam String keyWord,
-                                    @RequestParam int page, @RequestParam int size) {
+    @GetMapping("/jobs/search")
+    public Page<JobPost> getAllJobs(@RequestParam(required = false) String title, 
+                                    @RequestParam(required = false) String location,
+                                    @RequestParam(required = false) String employmentType, 
+                                    @RequestParam(required = false) String keyWord,
+                                    @RequestParam(defaultValue = "0") int page, 
+                                    @RequestParam(defaultValue = "10") int size) {
         return jobService.getJobs(title, location, employmentType, keyWord, page, size);
     }
 
