@@ -4,6 +4,7 @@ import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.enums.SalaryType;
 import com.job.manager.job.exception.InvalidEmploymentTypeException;
 import com.job.manager.job.exception.InvalidSalaryException;
+import com.job.manager.job.exception.InvalidSkillsException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,12 +17,16 @@ import java.util.List;
 @Component
 public class JobPostValidator {
 
+    private static final int MAX_SKILLS_COUNT = 20;
+    private static final int MAX_SKILL_LENGTH = 50;
+
     /**
      * Validates all job post fields before saving
      */
     public void validate(JobPost jobPost) {
         validateEmploymentTypes(jobPost.getEmploymentTypes());
         validateSalary(jobPost);
+        validateSkills(jobPost.getSkills());
     }
 
     /**
@@ -118,6 +123,45 @@ public class JobPostValidator {
 
             default:
                 throw new InvalidSalaryException("Invalid salary type: " + salaryType);
+        }
+    }
+
+    /**
+     * Validates skills/competencies for the job post
+     * - Skills are optional but if provided, must follow rules
+     * - Maximum 20 skills per job post
+     * - Each skill tag max 50 characters
+     * - No duplicate skills
+     */
+    public void validateSkills(List<String> skills) {
+        if (skills == null || skills.isEmpty()) {
+            // Skills are optional
+            return;
+        }
+
+        if (skills.size() > MAX_SKILLS_COUNT) {
+            throw new InvalidSkillsException(
+                    "Maximum " + MAX_SKILLS_COUNT + " skills allowed per job post. Found: " + skills.size());
+        }
+
+        for (int i = 0; i < skills.size(); i++) {
+            String skill = skills.get(i);
+            if (skill == null || skill.isBlank()) {
+                throw new InvalidSkillsException("Skill at position " + (i + 1) + " cannot be empty");
+            }
+            if (skill.length() > MAX_SKILL_LENGTH) {
+                throw new InvalidSkillsException(
+                        "Skill '" + skill.substring(0, 20) + "...' exceeds maximum length of " + MAX_SKILL_LENGTH + " characters");
+            }
+        }
+
+        // Check for duplicates (case-insensitive)
+        long distinctCount = skills.stream()
+                .map(String::toLowerCase)
+                .distinct()
+                .count();
+        if (distinctCount < skills.size()) {
+            throw new InvalidSkillsException("Duplicate skills are not allowed");
         }
     }
 }
