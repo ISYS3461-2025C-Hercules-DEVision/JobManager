@@ -3,6 +3,7 @@ package com.job.manager.job.controller;
 import com.job.manager.job.dto.AuthenticatedUser;
 import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.service.JobService;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import com.job.manager.job.annotation.CurrentUser;
 
@@ -26,17 +27,25 @@ public class JobController {
         return jobService.createJobPost(jobPost);
     }
 
-    @GetMapping("/jobs")
+    @GetMapping("/jobs/my")
     public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
         return jobService.getJobsForCompany(user.getUserId());
     }
 
+    @GetMapping("/jobs/search")
+    public Page<JobPost> getAllJobs(@RequestParam(required = false) String title, 
+                                    @RequestParam(required = false) String location,
+                                    @RequestParam(required = false) String employmentType, 
+                                    @RequestParam(required = false) String keyWord,
+                                    @RequestParam(defaultValue = "0") int page, 
+                                    @RequestParam(defaultValue = "10") int size) {
+        return jobService.getJobs(title, location, employmentType, keyWord, page, size);
+    }
+
     @GetMapping("/jobs/{jobId}")
-    public JobPost getJobById(
-            @CurrentUser AuthenticatedUser user,
-            @PathVariable String jobId
+    public JobPost getJobById(@PathVariable String jobId
     ) {
-        return jobService.getJobById(jobId, user.getUserId());
+        return jobService.getJobById(jobId);
     }
 
     @PutMapping("/jobs/{jobId}")

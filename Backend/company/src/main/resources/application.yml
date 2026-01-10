@@ -5,6 +5,11 @@ spring:
   application:
     name: company-service
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:29092}
     consumer:
@@ -33,16 +38,12 @@ kafka:
     subscription-expired: subscription-expired
 
 # Supabase Storage Configuration
-# To set up Supabase:
-# 1. Create a project at https://supabase.com
-# 2. Go to Storage section and create a bucket (e.g., "company-media")
-# 3. Set bucket to "public" or configure RLS policies for access control
-# 4. Get your project URL and service_role key from Settings > API
-# 5. Set these values as environment variables or replace defaults below
+# Set these values in .env file (see .env.example) or as environment variables
+# Default values are provided for local development
 supabase:
-  url: ${SUPABASE_URL:https://kzgvqzhosztgtjynzpfa.supabase.co}
-  api-key: ${SUPABASE_API_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6Z3Zxemhvc3p0Z3RqeW56cGZhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzg1MTMzMCwiZXhwIjoyMDgzNDI3MzMwfQ.-fwUSXnHlB-wapSt_-Pq846fM33Um_nTb4P0ij-6xxw}
-  bucket-name: ${SUPABASE_BUCKET_NAME:job-manager}
+  url: ${SUPABASE_URL:}
+  api-key: ${SUPABASE_API_KEY:}
+  bucket-name: ${SUPABASE_BUCKET_NAME:}
 
 logging:
   level:

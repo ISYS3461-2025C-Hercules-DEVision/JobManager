@@ -49,12 +49,22 @@ function PostManagerPage() {
           let status = j.published ? "Active" : "Draft";
           if (j.published && expiry && expiry < today) status = "Closed";
 
+          // Handle both old (employmentType) and new (employmentTypes array) structures
+          let employmentType = "-";
+          if (Array.isArray(j.employmentTypes) && j.employmentTypes.length > 0) {
+            // New structure: array of types
+            employmentType = j.employmentTypes.join(", ");
+          } else if (j.employmentType) {
+            // Old structure: single string
+            employmentType = j.employmentType;
+          }
+
           return {
             id: j.id,
             title: j.title,
             department: j.department || "-",
             location: j.location || "-",
-            type: j.employmentType || "-",
+            type: employmentType,
             status,
             applicants: 0,
             views: 0,

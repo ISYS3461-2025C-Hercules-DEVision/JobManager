@@ -33,6 +33,9 @@ public class CompanyMediaService {
     @Autowired
     private CompanyRepository companyRepository;
 
+    @Autowired
+    private SupabaseStorageService supabaseStorageService;
+
     /**
      * Maximum number of media items allowed per company.
      * This limit prevents excessive storage usage and ensures reasonable page load times.
@@ -168,8 +171,8 @@ public class CompanyMediaService {
      * Security: This method verifies ownership before deletion to prevent
      * malicious users from deleting other companies' media.
      * 
-     * Note: This only removes the database record. The actual media file
-     * in cloud storage should be deleted separately via a cleanup job.
+     * This method also deletes the actual file from Supabase Storage
+     * to prevent orphaned files and save storage costs.
      * 
      * @param mediaId The unique identifier of the media to delete
      * @param companyId The company ID from the authenticated user's JWT token
@@ -185,6 +188,10 @@ public class CompanyMediaService {
             throw new BusinessException("Unauthorized: Media does not belong to this company");
         }
 
+        // Delete file from Supabase Storage
+        supabaseStorageService.deleteFile(media.getUrl());
+        
+        // Delete database record
         mediaRepository.deleteById(mediaId);
     }
 
@@ -193,10 +200,21 @@ public class CompanyMediaService {
      * This is typically called when a company account is deleted
      * to ensure proper cleanup and prevent orphaned media records.
      * 
+     * This method also deletes all files from Supabase Storage.
+     * 
      * @param companyId The company whose media should be deleted
      */
     @Transactional
     public void deleteAllMediaByCompany(String companyId) {
+        // Get all media to delete files from storage
+        List<CompanyMedia> mediaList = mediaRepository.findByCompanyId(companyId);
+        
+        // Delete each file from Supabase Storage
+        for (CompanyMedia media : mediaList) {
+            supabaseStorageService.deleteFile(media.getUrl());
+        }
+        
+        // Delete all database records
         mediaRepository.deleteByCompanyId(companyId);
     }
 

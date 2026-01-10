@@ -11,6 +11,7 @@ import {
   SettingsPage,
   ProtectedRoute,
 } from "../modules/dashboard";
+import ProfileView from "../modules/profile/ui/ProfileView";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="post-manager" element={<PostManagerPage />} />
           <Route path="job-post" element={<JobPostPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="profile" element={<ProfileView />} />
         </Route>
       </Routes>
     </Router>

@@ -73,11 +73,19 @@ public class SupabaseStorageService {
      * @throws BusinessException if upload fails or file is invalid
      */
     public String uploadFile(MultipartFile file, String companyId, String mediaType) {
+        // Check if Supabase is configured
+        if (supabaseConfig.getSupabaseUrl() == null || supabaseConfig.getSupabaseUrl().contains("{")) {
+            log.warn("Supabase storage is not configured. Using mock URL for development.");
+            // Return a mock URL for development
+            String mockFileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            return "https://mock-storage.example.com/company-media/" + companyId + "/" + mockFileName;
+        }
+        
         // Validate file
         validateFile(file, mediaType);
         
         // Generate unique filename
-        String fileName = generateFileName(companyId, file.getOriginalFilename());
+        String fileName = generateFileName(companyId, file.getOriginalFilename(), mediaType);
         
         // Upload to Supabase
         try {
@@ -143,20 +151,23 @@ public class SupabaseStorageService {
     /**
      * Generates a unique filename with company organization.
      * 
-     * Format: {companyId}/{timestamp}_{uuid}_{originalFileName}
+     * Format: {companyId}/{mediaType}/{timestamp}_{uuid}_{originalFileName}
      * 
      * @param companyId The company ID
      * @param originalFileName The original uploaded filename
      * @return A unique filename path
      */
-    private String generateFileName(String companyId, String originalFileName) {
+    private String generateFileName(String companyId, String originalFileName, String mediaType) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String uuid = UUID.randomUUID().toString().substring(0, 8);
         
         // Sanitize original filename (remove special characters)
         String sanitized = originalFileName.replaceAll("[^a-zA-Z0-9._-]", "_");
         
-        return String.format("%s/%s_%s_%s", companyId, timestamp, uuid, sanitized);
+        // Organize by media type folder (images/ or videos/)
+        String folder = mediaType.toLowerCase() + "s"; // IMAGE -> images, VIDEO -> videos
+        
+        return String.format("%s/%s/%s_%s_%s", companyId, folder, timestamp, uuid, sanitized);
     }
 
     /**

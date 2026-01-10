@@ -4,13 +4,10 @@ import com.job.manager.company.annotation.CurrentUser;
 import com.job.manager.company.dto.*;
 import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.PublicProfile;
+import com.job.manager.company.exception.BusinessException;
 import com.job.manager.company.service.CompanyService;
 import com.job.manager.company.service.SupabaseStorageService;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -123,20 +120,20 @@ public class CompanyController {
 
     /**
      * Create public profile with file uploads (combined endpoint).
-     * 
+     * <p>
      * This endpoint accepts both form data (text fields) AND file uploads
      * in a single multipart/form-data request.
-     * 
-     * @param user The authenticated company user
-     * @param companyName Company display name
-     * @param aboutUs About us description
+     *
+     * @param user               The authenticated company user
+     * @param companyName        Company display name
+     * @param aboutUs            About us description
      * @param whoWeAreLookingFor Who we are looking for description
-     * @param websiteUrl Company website URL
-     * @param industryDomain Industry/domain
-     * @param country Country
-     * @param city City
-     * @param logoFile Logo image file (optional)
-     * @param bannerFile Banner image file (optional)
+     * @param websiteUrl         Company website URL
+     * @param industryDomain     Industry/domain
+     * @param country            Country
+     * @param city               City
+     * @param logoFile           Logo image file (optional)
+     * @param bannerFile         Banner image file (optional)
      * @return Created public profile with uploaded image URLs
      */
     @PostMapping(value = "/public-profile/with-images", consumes = "multipart/form-data")
@@ -151,21 +148,21 @@ public class CompanyController {
             @RequestParam(value = "city", required = false) String city,
             @RequestParam(value = "logo", required = false) MultipartFile logoFile,
             @RequestParam(value = "banner", required = false) MultipartFile bannerFile) {
-        
+
         Company company = companyService.getCompanyByEmail(user.getEmail());
-        
+
         // Upload logo if provided
         String logoUrl = null;
         if (logoFile != null && !logoFile.isEmpty()) {
             logoUrl = supabaseStorageService.uploadFile(logoFile, company.getCompanyId() + "/profile", "IMAGE");
         }
-        
+
         // Upload banner if provided
         String bannerUrl = null;
         if (bannerFile != null && !bannerFile.isEmpty()) {
             bannerUrl = supabaseStorageService.uploadFile(bannerFile, company.getCompanyId() + "/profile", "IMAGE");
         }
-        
+
         // Create profile with uploaded URLs
         PublicProfile profile = companyService.createPublicProfile(
                 company.getCompanyId(),
@@ -194,6 +191,15 @@ public class CompanyController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/public-profile/{companyId}")
+    public ResponseEntity<PublicProfileResponseDto> getPublicProfile(@PathVariable String companyId) {
+        Company company = companyService.getCompanyById(companyId);
+        PublicProfile profile = companyService.getPublicProfile(companyId);
+
+        PublicProfileResponseDto response = mapToPublicProfileResponse(profile);
+        return ResponseEntity.ok(response);
+    }
+
     // Update public profile (from settings page)
     @PutMapping("/public-profile")
     public ResponseEntity<PublicProfileResponseDto> updatePublicProfile(
@@ -217,17 +223,17 @@ public class CompanyController {
 
     /**
      * Upload company logo image directly to Supabase Storage.
-     * 
+     * <p>
      * This endpoint handles logo uploads and automatically updates the public profile.
      * The logo is used throughout the platform (company profile, job listings, etc.).
-     * 
+     * <p>
      * Recommended logo specifications:
      * - Square aspect ratio (1:1)
      * - Minimum size: 200x200 pixels
      * - Maximum size: 1000x1000 pixels
      * - Formats: PNG (preferred for transparency), JPEG, WebP
      * - File size limit: 2MB
-     * 
+     *
      * @param user The authenticated company user
      * @param file The logo image file
      * @return The public URL of the uploaded logo and updated profile
@@ -236,26 +242,31 @@ public class CompanyController {
     public ResponseEntity<ProfileImageUploadResponseDto> uploadLogo(
             @CurrentUser AuthenticatedUser user,
             @RequestParam("file") MultipartFile file) {
-        
+
         Company company = companyService.getCompanyByEmail(user.getEmail());
-        
+
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading logo");
+        }
+
         // Upload logo to Supabase Storage
         String logoUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");
-        
+
         // Update the public profile with the new logo URL
         PublicProfile profile = companyService.getPublicProfile(company.getCompanyId());
         profile.setLogoUrl(logoUrl);
         companyService.updatePublicProfile(
-            company.getCompanyId(),
-            profile.getDisplayName(),
-            profile.getAboutUs(),
-            profile.getWhoWeAreLookingFor(),
-            profile.getWebsiteUrl(),
-            profile.getIndustryDomain(),
-            logoUrl,
-            profile.getBannerUrl()
+                company.getCompanyId(),
+                profile.getDisplayName(),
+                profile.getAboutUs(),
+                profile.getWhoWeAreLookingFor(),
+                profile.getWebsiteUrl(),
+                profile.getIndustryDomain(),
+                logoUrl,
+                profile.getBannerUrl()
         );
-        
+
         ProfileImageUploadResponseDto response = ProfileImageUploadResponseDto.builder()
                 .imageUrl(logoUrl)
                 .imageType("LOGO")
@@ -264,23 +275,23 @@ public class CompanyController {
                 .contentType(file.getContentType())
                 .message("Logo uploaded successfully")
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * Upload company banner image directly to Supabase Storage.
-     * 
+     * <p>
      * This endpoint handles banner uploads and automatically updates the public profile.
      * The banner is displayed prominently on the company profile page.
-     * 
+     * <p>
      * Recommended banner specifications:
      * - Wide aspect ratio (16:9 or 21:9)
      * - Minimum size: 1920x1080 pixels
      * - Maximum size: 3840x2160 pixels
      * - Formats: JPEG, PNG, WebP
      * - File size limit: 5MB
-     * 
+     *
      * @param user The authenticated company user
      * @param file The banner image file
      * @return The public URL of the uploaded banner and updated profile
@@ -289,26 +300,31 @@ public class CompanyController {
     public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(
             @CurrentUser AuthenticatedUser user,
             @RequestParam("file") MultipartFile file) {
-        
+
         Company company = companyService.getCompanyByEmail(user.getEmail());
-        
+
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading banner");
+        }
+
         // Upload banner to Supabase Storage
         String bannerUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");
-        
+
         // Update the public profile with the new banner URL
         PublicProfile profile = companyService.getPublicProfile(company.getCompanyId());
         profile.setBannerUrl(bannerUrl);
         companyService.updatePublicProfile(
-            company.getCompanyId(),
-            profile.getDisplayName(),
-            profile.getAboutUs(),
-            profile.getWhoWeAreLookingFor(),
-            profile.getWebsiteUrl(),
-            profile.getIndustryDomain(),
-            profile.getLogoUrl(),
-            bannerUrl
+                company.getCompanyId(),
+                profile.getDisplayName(),
+                profile.getAboutUs(),
+                profile.getWhoWeAreLookingFor(),
+                profile.getWebsiteUrl(),
+                profile.getIndustryDomain(),
+                profile.getLogoUrl(),
+                bannerUrl
         );
-        
+
         ProfileImageUploadResponseDto response = ProfileImageUploadResponseDto.builder()
                 .imageUrl(bannerUrl)
                 .imageType("BANNER")
@@ -317,7 +333,7 @@ public class CompanyController {
                 .contentType(file.getContentType())
                 .message("Banner uploaded successfully")
                 .build();
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -345,13 +361,4 @@ public class CompanyController {
                 .updatedAt(profile.getUpdatedAt())
                 .build();
     }
-}
-
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-class ProfileStatusDto {
-    private String companyId;
-    private boolean hasPublicProfile;  // Changed from Boolean to boolean primitive
 }
