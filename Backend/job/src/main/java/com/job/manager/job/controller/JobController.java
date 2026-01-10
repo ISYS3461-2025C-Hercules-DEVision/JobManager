@@ -18,7 +18,7 @@ public class JobController {
         this.jobService = jobService;
     }
 
-    @PostMapping("/jobs/my")
+    @PostMapping("/jobs")
     public JobPost createJob(
             @CurrentUser AuthenticatedUser user,
             @RequestBody JobPost jobPost
@@ -27,7 +27,7 @@ public class JobController {
         return jobService.createJobPost(jobPost);
     }
 
-    @GetMapping("/jobs")
+    @GetMapping("/jobs/my")
     public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
         return jobService.getJobsForCompany(user.getUserId());
     }
