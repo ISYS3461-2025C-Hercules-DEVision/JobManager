@@ -126,7 +126,8 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
 
-        subscription.setStatus(Subscription.SubscriptionStatus.CANCELLED);
+        subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
+        subscription.setPlanType(Subscription.PlanType.FREE);
         subscription.setUpdatedAt(LocalDateTime.now());
 
         Subscription saved = subscriptionRepository.save(subscription);
