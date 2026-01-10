@@ -25,4 +25,6 @@ public class User {
 
     private String provider;
     private String providerId;
+    
+    private Boolean hasPublicProfile; // true if user has completed public profile setup
 }

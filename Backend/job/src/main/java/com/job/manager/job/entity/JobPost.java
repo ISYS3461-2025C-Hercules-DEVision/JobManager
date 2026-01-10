@@ -17,7 +17,11 @@ public class JobPost {
     @Id
     private UUID id;
 
+    private String companyId; 
+
     private String title;
+
+    private String department;
 
     private String description;
 

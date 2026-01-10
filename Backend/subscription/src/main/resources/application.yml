@@ -1,8 +1,48 @@
 spring:
-  mongodb:
-    host: localhost
-    port: 27020
-    database: mongodb-subscription
-    username: admin
-    password: admin
-    authentication-database: admin
+  data:
+    mongodb:
+      host: ${DATABASE_HOST:localhost}
+      port: ${DATABASE_PORT:27020}
+      database: mongodb-subscription
+      username: admin
+      password: admin
+      authentication-database: admin
+  application:
+    name: subscription
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: 8083
+
+# Kafka Topics
+kafka:
+  topics:
+    subscription-created: subscription-created
+    subscription-activated: subscription-activated
+    subscription-expired: subscription-expired
+    subscription-cancelled: subscription-cancelled
+    payment-failed: payment-failed
+    subscription-expiring-soon: subscription-expiring-soon
+    payment-initiated: payment-initiated
+    payment-success: payment-success
+
+# Service URLs - Company Service for validation
+company:
+  service:
+    url: ${COMPANY_URL:http://localhost:8081}
+
+services:
+  subscription:
+    url: ${SUBSCRIPTION_URL:http://localhost:8083}
+    activate-endpoint: /subscriptions/{subscriptionId}/activate
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_51SmzduFCgVdZyBl6iK5srWDYysvJgNOfOWNeWTl4UQ0qwo2oVPwU2NWLuR4dioxX0f5QoCZ00Q1pnpIPxdpgyjPc00Ywi5eoBl}
+  success-url: ${STRIPE_SUCCESS_URL:http://job-manager-483228148.ap-southeast-2.elb.amazonaws.com/payment/success%7D}
+  cancel-url: ${STRIPE_CANCEL_URL:http://job-manager-483228148.ap-southeast-2.elb.amazonaws.com/payment/cancel%7D}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_9HQln5nIR7eJFhDDVqqM0CCV5qw47Moc}
+  #stripe listen --forward-to localhost:8083/webhook/stripe

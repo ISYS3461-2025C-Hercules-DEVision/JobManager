@@ -1,72 +1,249 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { jobService } from "../services/jobService";
 
 /**
  * PostManagerPage - Manage all job posts
  * Features: List view, status filters, edit/delete actions
+ *
+ * Job Post Statuses:
+ * - Active: Published job accepting applications
+ * - Closed: Job no longer accepting applications (expired or manually closed)
+ * - Draft: Job created but not yet published
+ *
+ * Bulk Actions:
+ * - Activate: Publish and make jobs active (accepting applications)
+ * - Close: Stop accepting applications without deleting (keeps data for records)
+ * - Delete: Permanently remove job posts from database
  */
 function PostManagerPage() {
-  const [activeTab, setActiveTab] = useState('all');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("all");
   const [selectedPosts, setSelectedPosts] = useState([]);
+  const [jobPosts, setJobPosts] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingJob, setViewingJob] = useState(null);
+  const [loadingView, setLoadingView] = useState(false);
 
-  // Mock job posts data
-  const jobPosts = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      status: 'Active',
-      applicants: 23,
-      views: 456,
-      postedDate: '2025-12-10',
-      expiryDate: '2026-01-10',
-    },
-    {
-      id: 2,
-      title: 'Backend Engineer',
-      department: 'Engineering',
-      location: 'New York, NY',
-      type: 'Full-time',
-      status: 'Active',
-      applicants: 34,
-      views: 678,
-      postedDate: '2025-12-08',
-      expiryDate: '2026-01-08',
-    },
-    {
-      id: 3,
-      title: 'DevOps Specialist',
-      department: 'Operations',
-      location: 'San Francisco, CA',
-      type: 'Contract',
-      status: 'Closed',
-      applicants: 12,
-      views: 234,
-      postedDate: '2025-12-05',
-      expiryDate: '2025-12-20',
-    },
-    {
-      id: 4,
-      title: 'UX Designer',
-      department: 'Design',
-      location: 'Remote',
-      type: 'Full-time',
-      status: 'Draft',
-      applicants: 0,
-      views: 0,
-      postedDate: null,
-      expiryDate: null,
-    },
-  ];
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
 
-  const filteredPosts = jobPosts.filter((post) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'active') return post.status === 'Active';
-    if (activeTab === 'closed') return post.status === 'Closed';
-    if (activeTab === 'draft') return post.status === 'Draft';
-    return true;
-  });
+  // Sort states
+  const [sortBy, setSortBy] = useState("postedDate"); // default sort by posted date
+  const [sortOrder, setSortOrder] = useState("desc"); // desc = newest first
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await jobService.listMyJobs();
+        const today = new Date();
+
+        const mapped = data.map((j) => {
+          const expiry = j.expiryDate ? new Date(j.expiryDate) : null;
+          let status = j.published ? "Active" : "Draft";
+          if (j.published && expiry && expiry < today) status = "Closed";
+
+          return {
+            id: j.id,
+            title: j.title,
+            department: j.department || "-",
+            location: j.location || "-",
+            type: j.employmentType || "-",
+            status,
+            applicants: 0,
+            views: 0,
+            postedDate: j.postedDate || null,
+            expiryDate: j.expiryDate || null,
+          };
+        });
+
+        setJobPosts(mapped);
+      } catch (error) {
+        console.error("Failed to load job posts:", error);
+        setJobPosts([]);
+      }
+    };
+
+    load();
+  }, []);
+
+  const handleEdit = (jobId) => {
+    navigate(`/dashboard/job-post?id=${jobId}`);
+  };
+
+  const handleView = async (jobId) => {
+    setShowViewModal(true);
+    setLoadingView(true);
+    try {
+      const job = await jobService.getJobById(jobId);
+      setViewingJob(job);
+    } catch (error) {
+      console.error("Failed to load job details:", error);
+      alert("Failed to load job details. Please try again.");
+      setShowViewModal(false);
+    } finally {
+      setLoadingView(false);
+    }
+  };
+
+  const confirmDelete = (jobId) => {
+    setDeleteJobId(jobId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteJobId) return;
+
+    setIsDeleting(true);
+    try {
+      await jobService.deleteJob(deleteJobId);
+      setJobPosts((prev) => prev.filter((job) => job.id !== deleteJobId));
+      setShowDeleteDialog(false);
+      setDeleteJobId(null);
+    } catch (error) {
+      console.error("Failed to delete job:", error);
+      alert("Failed to delete job post. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredPosts = useMemo(() => {
+    let posts = jobPosts;
+
+    // Filter by status tab
+    if (activeTab === "active")
+      posts = posts.filter((post) => post.status === "Active");
+    else if (activeTab === "closed")
+      posts = posts.filter((post) => post.status === "Closed");
+    else if (activeTab === "draft")
+      posts = posts.filter((post) => post.status === "Draft");
+
+    // Filter by search query (title or location)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      posts = posts.filter(
+        (post) =>
+          post.title.toLowerCase().includes(query) ||
+          post.location.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by department
+    if (filterDepartment) {
+      posts = posts.filter((post) => post.department === filterDepartment);
+    }
+
+    // Filter by employment type
+    if (filterType) {
+      posts = posts.filter((post) => post.type === filterType);
+    }
+
+    // Filter by location
+    if (filterLocation) {
+      posts = posts.filter((post) => post.location === filterLocation);
+    }
+
+    // Sort posts
+    posts.sort((a, b) => {
+      let compareA, compareB;
+
+      switch (sortBy) {
+        case "title":
+          compareA = a.title.toLowerCase();
+          compareB = b.title.toLowerCase();
+          break;
+        case "department":
+          compareA = a.department.toLowerCase();
+          compareB = b.department.toLowerCase();
+          break;
+        case "status":
+          compareA = a.status;
+          compareB = b.status;
+          break;
+        case "applicants":
+          compareA = a.applicants;
+          compareB = b.applicants;
+          break;
+        case "views":
+          compareA = a.views;
+          compareB = b.views;
+          break;
+        case "postedDate":
+          compareA = a.postedDate ? new Date(a.postedDate).getTime() : 0;
+          compareB = b.postedDate ? new Date(b.postedDate).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (compareA < compareB) return sortOrder === "asc" ? -1 : 1;
+      if (compareA > compareB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return posts;
+  }, [
+    jobPosts,
+    activeTab,
+    searchQuery,
+    filterDepartment,
+    filterType,
+    filterLocation,
+    sortBy,
+    sortOrder,
+  ]);
+
+  // Get unique values for filters
+  const uniqueDepartments = useMemo(
+    () => [
+      ...new Set(jobPosts.map((j) => j.department).filter((d) => d !== "-")),
+    ],
+    [jobPosts]
+  );
+  const uniqueTypes = useMemo(
+    () => [...new Set(jobPosts.map((j) => j.type).filter((t) => t !== "-"))],
+    [jobPosts]
+  );
+  const uniqueLocations = useMemo(
+    () => [
+      ...new Set(jobPosts.map((j) => j.location).filter((l) => l !== "-")),
+    ],
+    [jobPosts]
+  );
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterDepartment("");
+    setFilterType("");
+    setFilterLocation("");
+  };
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      // Toggle sort order if clicking same column
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // New column, default to ascending
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  const SortIcon = ({ column }) => {
+    if (sortBy !== column) return null;
+    return (
+      <span className="ml-1 inline-block">
+        {sortOrder === "asc" ? "↑" : "↓"}
+      </span>
+    );
+  };
 
   const toggleSelectPost = (postId) => {
     setSelectedPosts((prev) =>
@@ -76,9 +253,57 @@ function PostManagerPage() {
     );
   };
 
-  const handleBulkAction = (action) => {
-    console.log(`Performing ${action} on posts:`, selectedPosts);
-    // Implement bulk actions here
+  const handleBulkAction = async (action) => {
+    if (selectedPosts.length === 0) return;
+
+    const confirmMessage =
+      action === "delete"
+        ? `Are you sure you want to delete ${selectedPosts.length} job post(s)?`
+        : action === "activate"
+        ? `Activate ${selectedPosts.length} job post(s)?`
+        : `Close ${selectedPosts.length} job post(s)?`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      if (action === "activate") {
+        await jobService.bulkActivate(selectedPosts);
+        // Update local state
+        setJobPosts((prev) =>
+          prev.map((job) =>
+            selectedPosts.includes(job.id) ? { ...job, status: "Active" } : job
+          )
+        );
+      } else if (action === "close") {
+        await jobService.bulkClose(selectedPosts);
+        // Update local state
+        setJobPosts((prev) =>
+          prev.map((job) =>
+            selectedPosts.includes(job.id) ? { ...job, status: "Closed" } : job
+          )
+        );
+      } else if (action === "delete") {
+        await jobService.bulkDelete(selectedPosts);
+        // Remove deleted jobs from local state
+        setJobPosts((prev) =>
+          prev.filter((job) => !selectedPosts.includes(job.id))
+        );
+      }
+
+      setSelectedPosts([]);
+      alert(
+        `Successfully ${
+          action === "activate"
+            ? "activated"
+            : action === "close"
+            ? "closed"
+            : "deleted"
+        } ${selectedPosts.length} job post(s)`
+      );
+    } catch (error) {
+      console.error(`Failed to ${action} jobs:`, error);
+      alert(`Failed to ${action} job posts. Please try again.`);
+    }
   };
 
   return (
@@ -93,18 +318,18 @@ function PostManagerPage() {
       <div className="border-b-4 border-black mb-6">
         <div className="flex space-x-2">
           {[
-            { key: 'all', label: 'All Posts' },
-            { key: 'active', label: 'Active' },
-            { key: 'closed', label: 'Closed' },
-            { key: 'draft', label: 'Drafts' },
+            { key: "all", label: "All Posts" },
+            { key: "active", label: "Active" },
+            { key: "closed", label: "Closed" },
+            { key: "draft", label: "Drafts" },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-6 py-3 font-black uppercase text-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-black text-white'
-                  : 'bg-white text-black hover:bg-gray-100'
+                  ? "bg-black text-white"
+                  : "bg-white text-black hover:bg-gray-100"
               }`}
             >
               {tab.label}
@@ -113,27 +338,121 @@ function PostManagerPage() {
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="bg-white border-4 border-black p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search */}
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-bold uppercase mb-2">
+              Search
+            </label>
+            <input
+              type="text"
+              placeholder="Search by title or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          {/* Department Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Department
+            </label>
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Departments</option>
+              {uniqueDepartments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Type
+            </label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Types</option>
+              {uniqueTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Location Filter */}
+          <div>
+            <label className="block text-sm font-bold uppercase mb-2">
+              Location
+            </label>
+            <select
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-black focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+            >
+              <option value="">All Locations</option>
+              {uniqueLocations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Clear Filters Button */}
+        {(searchQuery || filterDepartment || filterType || filterLocation) && (
+          <div className="mt-4">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-200 border-2 border-black font-bold uppercase text-sm hover:bg-gray-300 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4 text-sm font-bold text-gray-600">
+        Showing {filteredPosts.length} of {jobPosts.length} job posts
+      </div>
+
       {/* Bulk Actions */}
       {selectedPosts.length > 0 && (
         <div className="bg-primary text-white border-4 border-black p-4 mb-6 flex items-center justify-between">
           <span className="font-bold">
-            {selectedPosts.length} post{selectedPosts.length > 1 ? 's' : ''} selected
+            {selectedPosts.length} post{selectedPosts.length > 1 ? "s" : ""}{" "}
+            selected
           </span>
           <div className="flex gap-2">
             <button
-              onClick={() => handleBulkAction('activate')}
+              onClick={() => handleBulkAction("activate")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Activate
             </button>
             <button
-              onClick={() => handleBulkAction('close')}
+              onClick={() => handleBulkAction("close")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Close
             </button>
             <button
-              onClick={() => handleBulkAction('delete')}
+              onClick={() => handleBulkAction("delete")}
               className="px-4 py-2 bg-white text-black font-bold uppercase text-sm border-2 border-black hover:bg-gray-100 transition-colors"
             >
               Delete
@@ -152,6 +471,10 @@ function PostManagerPage() {
                   <input
                     type="checkbox"
                     className="w-4 h-4"
+                    checked={
+                      selectedPosts.length > 0 &&
+                      selectedPosts.length === filteredPosts.length
+                    }
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedPosts(filteredPosts.map((p) => p.id));
@@ -161,19 +484,56 @@ function PostManagerPage() {
                     }}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Job Title</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Department</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Type</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Applicants</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Views</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Posted</th>
-                <th className="px-6 py-4 text-left text-sm font-black uppercase">Actions</th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("title")}
+                >
+                  Job Title <SortIcon column="title" />
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("department")}
+                >
+                  Department <SortIcon column="department" />
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Type
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("status")}
+                >
+                  Status <SortIcon column="status" />
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("applicants")}
+                >
+                  Applicants <SortIcon column="applicants" />
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("views")}
+                >
+                  Views <SortIcon column="views" />
+                </th>
+                <th
+                  className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
+                  onClick={() => handleSort("postedDate")}
+                >
+                  Posted <SortIcon column="postedDate" />
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredPosts.map((post) => (
-                <tr key={post.id} className="border-b-2 border-gray-200 hover:bg-gray-50">
+                <tr
+                  key={post.id}
+                  className="border-b-2 border-gray-200 hover:bg-gray-50"
+                >
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
@@ -191,44 +551,86 @@ function PostManagerPage() {
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-bold uppercase border-2 ${
-                        post.status === 'Active'
-                          ? 'bg-green-100 text-green-800 border-green-800'
-                          : post.status === 'Closed'
-                          ? 'bg-red-100 text-red-800 border-red-800'
-                          : 'bg-yellow-100 text-yellow-800 border-yellow-800'
+                        post.status === "Active"
+                          ? "bg-green-100 text-green-800 border-green-800"
+                          : post.status === "Closed"
+                          ? "bg-red-100 text-red-800 border-red-800"
+                          : "bg-yellow-100 text-yellow-800 border-yellow-800"
                       }`}
                     >
                       {post.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-bold text-center">{post.applicants}</td>
+                  <td className="px-6 py-4 font-bold text-center">
+                    {post.applicants}
+                  </td>
                   <td className="px-6 py-4 text-center">{post.views}</td>
-                  <td className="px-6 py-4 text-sm">{post.postedDate || '-'}</td>
+                  <td className="px-6 py-4 text-sm">
+                    {post.postedDate || "-"}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleEdit(post.id)}
                         className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
                         title="Edit"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
                         </svg>
                       </button>
                       <button
+                        onClick={() => handleView(post.id)}
                         className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
                         title="View"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
                         </svg>
                       </button>
                       <button
+                        onClick={() => confirmDelete(post.id)}
                         className="p-2 border-2 border-black hover:bg-primary hover:border-primary hover:text-white transition-colors"
                         title="Delete"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -242,17 +644,212 @@ function PostManagerPage() {
         {/* Empty State */}
         {filteredPosts.length === 0 && (
           <div className="p-12 text-center">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
-            <h3 className="text-xl font-black uppercase mb-2">No posts found</h3>
-            <p className="text-gray-600">Create your first job post to get started</p>
+            <h3 className="text-xl font-black uppercase mb-2">
+              No posts found
+            </h3>
+            <p className="text-gray-600">
+              Create your first job post to get started
+            </p>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+          <div className="bg-white border-4 border-black p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-black uppercase mb-4">
+              Delete Job Post?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this job post? This action cannot
+              be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 bg-primary text-white font-bold uppercase border-2 border-black hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeleteJobId(null);
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3 bg-white text-black font-bold uppercase border-2 border-black hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Job Modal */}
+      {showViewModal && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-4 border-black max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b-4 border-black p-6 flex justify-between items-center">
+              <h2 className="text-2xl font-black uppercase">Job Details</h2>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setViewingJob(null);
+                }}
+                className="p-2 hover:bg-gray-100 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {loadingView ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-black border-t-transparent"></div>
+                  <p className="mt-4 font-bold">Loading job details...</p>
+                </div>
+              ) : viewingJob ? (
+                <div className="space-y-6">
+                  {/* Title */}
+                  <div>
+                    <h3 className="text-3xl font-black uppercase mb-2">
+                      {viewingJob.title}
+                    </h3>
+                    <div className="flex gap-4 text-sm text-gray-600">
+                      <span>📍 {viewingJob.location || "Not specified"}</span>
+                      <span>
+                        💼 {viewingJob.employmentType || "Not specified"}
+                      </span>
+                      {viewingJob.salary && <span>💰 {viewingJob.salary}</span>}
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div>
+                    <span
+                      className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
+                        viewingJob.published
+                          ? "bg-green-100 text-green-800 border-green-800"
+                          : "bg-yellow-100 text-yellow-800 border-yellow-800"
+                      }`}
+                    >
+                      {viewingJob.published ? "✓ Published" : "📝 Draft"}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <h4 className="text-lg font-black uppercase mb-3">
+                      Job Description
+                    </h4>
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {viewingJob.description || "No description provided"}
+                    </p>
+                  </div>
+
+                  {/* Skills */}
+                  {viewingJob.skills && viewingJob.skills.length > 0 && (
+                    <div className="border-t-2 border-gray-200 pt-6">
+                      <h4 className="text-lg font-black uppercase mb-3">
+                        Required Skills
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {viewingJob.skills.map((skill, idx) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-gray-100 border-2 border-black text-sm font-semibold"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dates */}
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <h4 className="text-lg font-black uppercase mb-3">
+                      Posting Information
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-bold">Posted Date:</span>
+                        <p className="text-gray-700">
+                          {viewingJob.postedDate || "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-bold">Expiry Date:</span>
+                        <p className="text-gray-700">
+                          {viewingJob.expiryDate || "No expiry set"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="border-t-2 border-gray-200 pt-6 flex gap-4">
+                    <button
+                      onClick={() => {
+                        setShowViewModal(false);
+                        handleEdit(viewingJob.id);
+                      }}
+                      className="flex-1 px-6 py-3 bg-black text-white font-bold uppercase hover:bg-gray-800 transition-colors"
+                    >
+                      Edit Job Post
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowViewModal(false);
+                        setViewingJob(null);
+                      }}
+                      className="px-6 py-3 bg-white text-black font-bold uppercase border-2 border-black hover:bg-gray-100 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600">Failed to load job details</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default PostManagerPage;
-

@@ -1,6 +1,6 @@
 spring:
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:29092}
     consumer:
       group-id: group_id
       auto-offset-reset: earliest
@@ -10,34 +10,40 @@ spring:
       key-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   data:
     mongodb:
-      host: localhost
-      port: 27017
-      database: mongodb-authentication
-      username: admin
-      password: admin
-      authentication-database: admin
+      host: ${DATABASE_HOST:localhost}
+      port: ${DATABASE_PORT:27017}
+      database: ${DATABASE_NAME:mongodb-authentication}
+      username: ${DATABASE_USERNAME:admin}
+      password: ${DATABASE_PASSWORD:admin}
+      authentication-database: ${AUTHENTICATION_DATABASE:admin}
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${SMTP_EMAIL}
-    password: ${SMTP_PASSWORD}
+    username: ${SMTP_EMAIL:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
 kafka:
   topic:
     register: company-registration
 
 oauth:
   google:
-    client-id: ${GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET}
-    redirect-uri: http://localhost:5175/login/oauth2/code/google
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_LOGIN_REDIRECT_URL:http://localhost:5175/login/oauth2/code/google}
     token-uri: https://oauth2.googleapis.com/token
     user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY:}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:10}
+  refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:30}

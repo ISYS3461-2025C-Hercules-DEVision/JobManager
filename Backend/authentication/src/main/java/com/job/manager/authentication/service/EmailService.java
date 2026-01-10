@@ -3,7 +3,9 @@ package com.job.manager.authentication.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -11,7 +13,18 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username}")
+    private String from;   // ✅ PUT IT HERE (class field)
+
+    @Async
     public void sendVerificationEmail(String to, String code) {
+
+        // Local/dev convenience: allow running without SMTP configured.
+        // If SMTP is not set up, log the OTP so developers can continue the flow.
+        if (from == null || from.isBlank()) {
+            System.out.println("[WARN] SMTP not configured (spring.mail.username is empty). OTP for " + to + ": " + code);
+            return;
+        }
 
         String subject = "Your verification code";
 
@@ -26,10 +39,50 @@ public class EmailService {
         """.formatted(code);
 
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);   // ✅ USE IT HERE
         message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
 
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+            System.out.println("[INFO] Verification email sent successfully to: " + to);
+        } catch (Exception ex) {
+            // Don't fail registration due to SMTP issues in local/dev.
+            System.out.println("[WARN] Failed to send email via SMTP. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());
+        }
+    }
+
+    public void sendPasswordResetEmail(String to, String code) {
+        if (from == null || from.isBlank()) {
+            System.out.println("[WARN] SMTP not configured. Password reset OTP for " + to + ": " + code);
+            return;
+        }
+
+        String subject = "Password Reset Code";
+
+        String body = """
+        Hi,
+
+        You requested to reset your password. Your reset code is:
+
+        %s
+
+        This code expires in 10 minutes.
+
+        If you didn't request this, please ignore this email.
+        """.formatted(code);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(from);
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body);
+
+        try {
+            mailSender.send(message);
+        } catch (Exception ex) {
+            System.out.println("[WARN] Failed to send password reset email. OTP for " + to + ": " + code + ". Error: " + ex.getMessage());
+        }
     }
 }

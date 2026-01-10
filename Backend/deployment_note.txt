@@ -1,0 +1,9 @@
+Steps to access Kong + Jenkins:
+Step 1: Disable security of Chrome
+open /Applications/Google\ Chrome.app --args --user-data-dir="/var/tmp/Chrome dev session" --disable-web-security
+Step 2: Access Jenkins/Kong
+Jenkins URL: http://13.239.254.228:8080/
+Username: admin
+Password: admin
+Kong admin URL: http://13.236.146.126:8002/
+Kong API URL: http://13.236.146.126:8000/

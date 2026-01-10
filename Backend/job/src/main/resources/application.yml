@@ -1,20 +1,23 @@
 spring:
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:29092}
     consumer:
       group-id: job-consumer-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.job.manager.dto
+  data:
+    mongodb:
+      host: ${DATABASE_HOST:localhost}
+      port: ${DATABASE_PORT:27022}
+      database: ${DATABASE_NAME:mongodb-job}
+      username: ${DATABASE_USERNAME:admin}
+      password: ${DATABASE_PASSWORD:admin}
+      authentication-database: ${AUTHENTICATION_DATABASE:admin}
 
-  mongodb:
-    host: localhost
-    port: 27022
-    database: mongodb-company
-    username: admin
-    password: admin
-    authentication-database: admin
+server:
+  port: 8082
 
 kafka:
   topic:

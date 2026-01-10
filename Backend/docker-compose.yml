@@ -46,6 +46,18 @@ services:
       - "8001:8001"
       - "8002:8002"
 
+  # Eureka Discovery Server
+  discovery:
+    build:
+      context: .
+      dockerfile: discovery/Dockerfile
+    container_name: discovery
+    ports:
+      - "8761:8761"
+    environment:
+      - "SPRING_PROFILES_ACTIVE=default"
+    depends_on: []
+
   # Kafka & Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
