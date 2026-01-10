@@ -27,7 +27,7 @@ public class JobController {
         return jobService.createJobPost(jobPost);
     }
 
-    @GetMapping("/jobs/my   ")
+    @GetMapping("/jobs/my")
     public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
         return jobService.getJobsForCompany(user.getUserId());
     }
