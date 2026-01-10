@@ -3,6 +3,13 @@ package com.job.manager.job.service;
 import com.job.manager.job.entity.JobPost;
 import com.job.manager.job.kafka.JobKafkaProducer;
 import com.job.manager.job.repository.JobRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,11 +21,13 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final JobKafkaProducer kafkaProducer;
+    private final MongoTemplate mongoTemplate;
 
     public JobService(JobRepository jobRepository,
-                      JobKafkaProducer kafkaProducer) {
+                      JobKafkaProducer kafkaProducer, MongoTemplate mongoTemplate) {
         this.jobRepository = jobRepository;
         this.kafkaProducer = kafkaProducer;
+        this.mongoTemplate = mongoTemplate;
     }
 
     public JobPost createJobPost(JobPost jobPost) {
@@ -27,12 +36,12 @@ public class JobService {
 
         JobPost saved = jobRepository.save(jobPost);
         try {
-        kafkaProducer.sendJobUpdate(saved);
+            kafkaProducer.sendJobUpdate(saved);
         } catch (Exception e) {
             // log only — do NOT fail API
             System.err.println("Kafka publish failed: " + e.getMessage());
         }
-        
+
         return saved;
     }
 
@@ -40,20 +49,20 @@ public class JobService {
         return jobRepository.findByCompanyIdOrderByPostedDateDesc(companyId);
     }
 
-    public JobPost getJobById(String jobId, String companyId) {
+    public JobPost getJobById(String jobId) {
         JobPost job = jobRepository.findById(UUID.fromString(jobId))
                 .orElseThrow(() -> new RuntimeException("Job not found"));
-        
-        if (!job.getCompanyId().equals(companyId)) {
-            throw new RuntimeException("Unauthorized access to job post");
-        }
-        
+
         return job;
     }
 
     public JobPost updateJobPost(String jobId, String companyId, JobPost updatedJob) {
-        JobPost existingJob = getJobById(jobId, companyId);
-        
+        JobPost existingJob = getJobById(jobId);
+
+        if (!existingJob.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Unauthorized access to job post");
+        }
+
         // Update fields
         existingJob.setTitle(updatedJob.getTitle());
         existingJob.setDepartment(updatedJob.getDepartment());
@@ -64,22 +73,27 @@ public class JobService {
         existingJob.setSkills(updatedJob.getSkills());
         existingJob.setPublished(updatedJob.isPublished());
         existingJob.setExpiryDate(updatedJob.getExpiryDate());
-        
+
         JobPost saved = jobRepository.save(existingJob);
-        
+
         try {
             kafkaProducer.sendJobUpdate(saved);
         } catch (Exception e) {
             System.err.println("Kafka publish failed: " + e.getMessage());
         }
-        
+
         return saved;
     }
 
     public void deleteJobPost(String jobId, String companyId) {
-        JobPost job = getJobById(jobId, companyId);
+        JobPost job = getJobById(jobId);
+
+        if (!job.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Unauthorized access to job post");
+        }
+
         jobRepository.delete(job);
-        
+
         try {
             kafkaProducer.sendJobUpdate(job);
         } catch (Exception e) {
@@ -90,11 +104,14 @@ public class JobService {
     public void bulkActivate(List<String> jobIds, String companyId) {
         for (String jobId : jobIds) {
             try {
-                JobPost job = getJobById(jobId, companyId);
+                JobPost job = getJobById(jobId);
+                if (!job.getCompanyId().equals(companyId)) {
+                    throw new RuntimeException("Unauthorized access to job post");
+                }
                 job.setPublished(true);
                 job.setExpiryDate(null); // Clear expiry when activating
                 jobRepository.save(job);
-                
+
                 try {
                     kafkaProducer.sendJobUpdate(job);
                 } catch (Exception e) {
@@ -109,11 +126,14 @@ public class JobService {
     public void bulkClose(List<String> jobIds, String companyId) {
         for (String jobId : jobIds) {
             try {
-                JobPost job = getJobById(jobId, companyId);
+                JobPost job = getJobById(jobId);
+                if (!job.getCompanyId().equals(companyId)) {
+                    throw new RuntimeException("Unauthorized access to job post");
+                }
                 job.setPublished(false);
                 job.setExpiryDate(LocalDate.now()); // Set expiry to today
                 jobRepository.save(job);
-                
+
                 try {
                     kafkaProducer.sendJobUpdate(job);
                 } catch (Exception e) {
@@ -134,5 +154,58 @@ public class JobService {
             }
         }
     }
+
+    public Page<JobPost> getJobs(
+            String title,
+            String location,
+            String employmentType,
+            String keyword,
+            int page,
+            int size
+    ) {
+
+        Query query = new Query();
+
+        if (title != null && !title.isBlank()) {
+            query.addCriteria(
+                    Criteria.where("title")
+                            .regex(title, "i")
+            );
+        }
+
+        if (location != null && !location.isBlank()) {
+            query.addCriteria(
+                    Criteria.where("location").is(location)
+            );
+        }
+
+        if (employmentType != null && !employmentType.isBlank()) {
+            query.addCriteria(
+                    Criteria.where("employmentType").is(employmentType)
+            );
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            query.addCriteria(new Criteria().orOperator(
+                    Criteria.where("title").regex(keyword, "i"),
+                    Criteria.where("description").regex(keyword, "i")
+            ));
+        }
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        query.with(pageable);
+
+        List<JobPost> jobs =
+                mongoTemplate.find(query, JobPost.class);
+
+        long total =
+                mongoTemplate.count(
+                        Query.of(query).limit(-1).skip(-1),
+                        JobPost.class
+                );
+
+        return new PageImpl<>(jobs, pageable, total);
+    }
+
 
 }
