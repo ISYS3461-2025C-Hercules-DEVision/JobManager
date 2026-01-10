@@ -313,7 +313,7 @@ function SubscriptionSection() {
 
         {/* Action Buttons */}
         <div className="p-6 space-y-3">
-          {currentSubscription.status!== "PENDING" && currentSubscription.planType !== "Enterprise" && (
+          {currentSubscription.planType !== "Enterprise" && (
             <button
               onClick={() => setShowUpgradeModal(true)}
               className="w-full px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold uppercase border-2 border-black transition-colors"
