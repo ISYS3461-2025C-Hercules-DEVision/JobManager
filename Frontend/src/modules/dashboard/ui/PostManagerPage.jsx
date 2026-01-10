@@ -70,6 +70,7 @@ function PostManagerPage() {
             views: 0,
             postedDate: j.postedDate || null,
             expiryDate: j.expiryDate || null,
+            skills: Array.isArray(j.skills) ? j.skills : [], // Include skills array
           };
         });
 
@@ -494,6 +495,9 @@ function PostManagerPage() {
                 <th className="px-6 py-4 text-left text-sm font-black uppercase">
                   Type
                 </th>
+                <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                  Skills
+                </th>
                 <th
                   className="px-6 py-4 text-left text-sm font-black uppercase cursor-pointer hover:bg-gray-200 transition-colors"
                   onClick={() => handleSort("status")}
@@ -543,6 +547,29 @@ function PostManagerPage() {
                   </td>
                   <td className="px-6 py-4 font-semibold">{post.department}</td>
                   <td className="px-6 py-4 text-sm">{post.type}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1 max-w-[200px]">
+                      {post.skills && post.skills.length > 0 ? (
+                        <>
+                          {post.skills.slice(0, 3).map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 text-xs font-bold bg-primary text-white border border-black"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {post.skills.length > 3 && (
+                            <span className="px-2 py-0.5 text-xs font-bold bg-gray-200 text-gray-700 border border-gray-400">
+                              +{post.skills.length - 3}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-bold uppercase border-2 ${

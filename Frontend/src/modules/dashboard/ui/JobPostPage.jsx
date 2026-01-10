@@ -2,6 +2,137 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { jobService } from "../services/jobService";
 
+// Common technical skills for suggestions
+const SUGGESTED_SKILLS = [
+  'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'C#', 'Go', 'Rust', 'Ruby', 'PHP',
+  'React', 'Angular', 'Vue.js', 'Node.js', 'Express', 'Django', 'Flask', 'Spring Boot',
+  'SQL', 'PostgreSQL', 'MongoDB', 'Redis', 'MySQL', 'Oracle', 'Cassandra',
+  'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Terraform', 'Jenkins', 'CI/CD',
+  'Kafka', 'RabbitMQ', 'GraphQL', 'REST API', 'Microservices', 'Agile', 'Scrum',
+  'Git', 'Linux', 'Machine Learning', 'Data Science', 'TensorFlow', 'PyTorch'
+];
+
+/**
+ * SkillTagInput - Component for managing skill tags
+ * Allows adding/removing technical skills as tags with autocomplete suggestions
+ */
+function SkillTagInput({ skills, onSkillsChange, error }) {
+  const [inputValue, setInputValue] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const filteredSuggestions = SUGGESTED_SKILLS.filter(
+    skill => 
+      skill.toLowerCase().includes(inputValue.toLowerCase()) &&
+      !skills.some(s => s.toLowerCase() === skill.toLowerCase())
+  ).slice(0, 8);
+
+  const addSkill = (skill) => {
+    const trimmedSkill = skill.trim();
+    // Check for duplicates (case-insensitive) and max limit
+    const isDuplicate = skills.some(s => s.toLowerCase() === trimmedSkill.toLowerCase());
+    if (trimmedSkill && !isDuplicate && skills.length < 20) {
+      onSkillsChange([...skills, trimmedSkill]);
+    }
+    setInputValue('');
+    setShowSuggestions(false);
+  };
+
+  const removeSkill = (skillToRemove) => {
+    onSkillsChange(skills.filter(skill => skill !== skillToRemove));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        addSkill(inputValue);
+      }
+    } else if (e.key === 'Backspace' && !inputValue && skills.length > 0) {
+      removeSkill(skills[skills.length - 1]);
+    } else if (e.key === ',' && inputValue.trim()) {
+      e.preventDefault();
+      addSkill(inputValue);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-bold uppercase mb-2">
+        Technical Skills & Competencies
+      </label>
+      
+      {/* Tags Display */}
+      <div className={`min-h-[52px] px-3 py-2 border-2 ${error ? 'border-primary' : 'border-black'} bg-white flex flex-wrap gap-2 items-center`}>
+        {skills.map((skill, index) => (
+          <span
+            key={index}
+            className="inline-flex items-center gap-1 px-3 py-1 bg-primary text-white font-bold text-sm border-2 border-black"
+          >
+            {skill}
+            <button
+              type="button"
+              onClick={() => removeSkill(skill)}
+              className="ml-1 hover:text-gray-200 font-black"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setShowSuggestions(true);
+          }}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          placeholder={skills.length === 0 ? "Type a skill and press Enter (e.g., Python, Kafka, SQL)" : "Add more..."}
+          className="flex-1 min-w-[150px] py-1 focus:outline-none font-semibold"
+        />
+      </div>
+      
+      {/* Suggestions Dropdown */}
+      {showSuggestions && inputValue && filteredSuggestions.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-white border-2 border-black max-h-48 overflow-y-auto">
+          {filteredSuggestions.map((skill, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => addSkill(skill)}
+              className="w-full px-4 py-2 text-left font-semibold hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
+            >
+              {skill}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      {error && <p className="text-primary text-sm font-bold mt-1">{error}</p>}
+      
+      {/* Quick Add Suggestions */}
+      {skills.length < 5 && (
+        <div className="mt-2">
+          <span className="text-xs font-bold text-gray-500 uppercase">Quick add: </span>
+          <div className="inline-flex flex-wrap gap-1 mt-1">
+            {SUGGESTED_SKILLS.filter(s => !skills.some(sk => sk.toLowerCase() === s.toLowerCase())).slice(0, 6).map((skill, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => addSkill(skill)}
+                className="px-2 py-1 text-xs font-bold border border-gray-300 hover:border-black hover:bg-gray-100 transition-colors"
+              >
+                + {skill}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * JobPostPage - Create and edit job posts
  * Features: Rich form with validation, preview mode
@@ -26,7 +157,7 @@ function JobPostPage() {
     requirements: "",
     responsibilities: "",
     benefits: "",
-    skills: "",
+    skills: [], // Array for tag management
     experienceLevel: "Mid-level",
     published: true,
     expiryDate: "",
@@ -56,7 +187,7 @@ function JobPostPage() {
             requirements: "",
             responsibilities: "",
             benefits: "",
-            skills: Array.isArray(job.skills) ? job.skills.join(", ") : "",
+            skills: Array.isArray(job.skills) ? job.skills : [],
             experienceLevel: "Mid-level",
             published: job.published !== undefined ? job.published : true,
             expiryDate: job.expiryDate || "",
@@ -484,19 +615,12 @@ function JobPostPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-bold uppercase mb-2">
-                      Required Skills
-                    </label>
-                    <input
-                      type="text"
-                      name="skills"
-                      value={formData.skills}
-                      onChange={handleChange}
-                      placeholder="e.g., React, TypeScript, Node.js (comma separated)"
-                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                    />
-                  </div>
+                  {/* Skills Tag Input */}
+                  <SkillTagInput
+                    skills={formData.skills}
+                    onSkillsChange={(newSkills) => setFormData(prev => ({ ...prev, skills: newSkills }))}
+                    error={errors.skills}
+                  />
 
                   <div>
                     <label className="block text-sm font-bold uppercase mb-2">
@@ -789,18 +913,18 @@ function JobPostPage() {
                 )}
 
                 {/* Skills */}
-                {formData.skills && (
+                {formData.skills && formData.skills.length > 0 && (
                   <div className="bg-white border-4 border-black p-6 mb-6">
                     <h2 className="text-xl font-black uppercase mb-4 text-primary border-b-2 border-black pb-2">
                       🛠️ Required Skills
                     </h2>
                     <div className="flex flex-wrap gap-3">
-                      {formData.skills.split(",").map((skill, idx) => (
+                      {formData.skills.map((skill, idx) => (
                         <span
                           key={idx}
                           className="px-4 py-2 bg-primary text-white font-bold border-2 border-black"
                         >
-                          {skill.trim()}
+                          {skill}
                         </span>
                       ))}
                     </div>
