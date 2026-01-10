@@ -100,8 +100,7 @@ public class SubscriptionValidator {
             Subscription.SubscriptionStatus status = subscription.getStatus();
 
             // Only allow new subscription if previous one is EXPIRED or CANCELLED
-            if (status == Subscription.SubscriptionStatus.ACTIVE ||
-                    status == Subscription.SubscriptionStatus.PENDING) {
+            if (status == Subscription.SubscriptionStatus.ACTIVE) {
                 throw new ValidationException(
                         String.format("Company %s already has an %s subscription. " +
                                 "Please cancel the existing subscription before creating a new one.",
