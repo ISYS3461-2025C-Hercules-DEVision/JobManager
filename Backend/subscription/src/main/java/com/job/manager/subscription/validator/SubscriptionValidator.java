@@ -106,6 +106,9 @@ public class SubscriptionValidator {
                                 "Please cancel the existing subscription before creating a new one.",
                                 companyId, status.name().toLowerCase()));
             }
+            else if(status == Subscription.SubscriptionStatus.PENDING) {
+                subscriptionRepository.deleteById(subscription.getSubscriptionId());
+            }
 
             log.info("Found existing {} subscription for company {}, allowing new subscription",
                     status, companyId);
