@@ -126,8 +126,7 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
 
-        subscription.setStatus(Subscription.SubscriptionStatus.ACTIVE);
-        subscription.setPlanType(Subscription.PlanType.FREE);
+        subscription.setStatus(Subscription.SubscriptionStatus.CANCELLED);
         subscription.setUpdatedAt(LocalDateTime.now());
 
         Subscription saved = subscriptionRepository.save(subscription);
@@ -135,6 +134,8 @@ public class SubscriptionService {
         // Publish Kafka event to notify company service
         SubscriptionEventDTO event = mapToEventDTO(saved);
         eventProducer.sendSubscriptionCancelledEvent(event);
+
+        subscriptionRepository.deleteById(subscriptionId);
         log.info(">>> [SUBSCRIPTION] Published cancellation event for company: {}", saved.getCompanyId());
 
         return mapToResponseDTO(saved);
