@@ -4,6 +4,7 @@ import com.job.manager.company.annotation.CurrentUser;
 import com.job.manager.company.dto.*;
 import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.PublicProfile;
+import com.job.manager.company.exception.BusinessException;
 import com.job.manager.company.service.CompanyService;
 import com.job.manager.company.service.SupabaseStorageService;
 import jakarta.validation.Valid;
@@ -244,6 +245,11 @@ public class CompanyController {
 
         Company company = companyService.getCompanyByEmail(user.getEmail());
 
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading logo");
+        }
+
         // Upload logo to Supabase Storage
         String logoUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");
 
@@ -296,6 +302,11 @@ public class CompanyController {
             @RequestParam("file") MultipartFile file) {
 
         Company company = companyService.getCompanyByEmail(user.getEmail());
+
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading banner");
+        }
 
         // Upload banner to Supabase Storage
         String bannerUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");

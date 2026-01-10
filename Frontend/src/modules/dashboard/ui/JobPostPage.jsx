@@ -17,15 +17,19 @@ function JobPostPage() {
     title: "",
     department: "",
     location: "",
-    type: "Full-time",
+    employmentTypes: ["Full-time"],
+    salaryType: "RANGE",
     salaryMin: "",
     salaryMax: "",
+    salaryCurrency: "USD",
     description: "",
     requirements: "",
     responsibilities: "",
     benefits: "",
     skills: "",
     experienceLevel: "Mid-level",
+    published: true,
+    expiryDate: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -38,30 +42,24 @@ function JobPostPage() {
       const loadJob = async () => {
         try {
           const job = await jobService.getJobById(jobId);
-          // Parse salary string
-          let salaryMin = "";
-          let salaryMax = "";
-          if (job.salary) {
-            const match = job.salary.match(/(\d+)-(\d+)/);
-            if (match) {
-              salaryMin = match[1];
-              salaryMax = match[2];
-            }
-          }
 
           setFormData({
             title: job.title || "",
             department: job.department || "",
             location: job.location || "",
-            type: job.employmentType || "Full-time",
-            salaryMin,
-            salaryMax,
+            employmentTypes: Array.isArray(job.employmentTypes) ? job.employmentTypes : [job.employmentTypes || "Full-time"],
+            salaryType: job.salaryType || "RANGE",
+            salaryMin: job.salaryMin || "",
+            salaryMax: job.salaryMax || "",
+            salaryCurrency: job.salaryCurrency || "USD",
             description: job.description || "",
             requirements: "",
             responsibilities: "",
             benefits: "",
             skills: Array.isArray(job.skills) ? job.skills.join(", ") : "",
             experienceLevel: "Mid-level",
+            published: job.published !== undefined ? job.published : true,
+            expiryDate: job.expiryDate || "",
           });
         } catch (error) {
           console.error("Failed to load job:", error);
@@ -75,8 +73,25 @@ function JobPostPage() {
   }, [isEditMode, jobId]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    
+    if (name === "employmentTypes") {
+      // Handle employment type checkboxes
+      const currentTypes = [...formData.employmentTypes];
+      if (checked) {
+        setFormData((prev) => ({ ...prev, employmentTypes: [...currentTypes, value] }));
+      } else {
+        setFormData((prev) => ({ 
+          ...prev, 
+          employmentTypes: currentTypes.filter(t => t !== value) 
+        }));
+      }
+    } else if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+    
     // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -91,6 +106,36 @@ function JobPostPage() {
     if (!formData.location.trim()) newErrors.location = "Location is required";
     if (!formData.description.trim())
       newErrors.description = "Job description is required";
+    
+    // Validate employment types
+    if (!formData.employmentTypes || formData.employmentTypes.length === 0) {
+      newErrors.employmentTypes = "At least one employment type is required";
+    } else {
+      const hasFullTime = formData.employmentTypes.some(t => 
+        t === "Full-time" || t === "FULL_TIME"
+      );
+      const hasPartTime = formData.employmentTypes.some(t => 
+        t === "Part-time" || t === "PART_TIME"
+      );
+      if (hasFullTime && hasPartTime) {
+        newErrors.employmentTypes = "Cannot be both Full-time and Part-time";
+      }
+    }
+    
+    // Validate salary based on type
+    if (formData.salaryType === "RANGE") {
+      if (!formData.salaryMin || !formData.salaryMax) {
+        newErrors.salary = "RANGE requires both min and max values";
+      } else if (Number(formData.salaryMin) > Number(formData.salaryMax)) {
+        newErrors.salary = "Min salary cannot exceed max salary";
+      }
+    } else if (formData.salaryType === "FROM" && !formData.salaryMin) {
+      newErrors.salary = "FROM requires minimum value";
+    } else if (formData.salaryType === "UP_TO" && !formData.salaryMax) {
+      newErrors.salary = "UP_TO requires maximum value";
+    } else if (formData.salaryType === "ABOUT" && !formData.salaryMin) {
+      newErrors.salary = "ABOUT requires a value";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -246,67 +291,139 @@ function JobPostPage() {
                     </div>
                   </div>
 
-                  {/* Job Type and Experience Level */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">
-                        Job Type
-                      </label>
-                      <select
-                        name="type"
-                        value={formData.type}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      >
-                        <option>Full-time</option>
-                        <option>Part-time</option>
-                        <option>Contract</option>
-                        <option>Internship</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-bold uppercase mb-2">
-                        Experience Level
-                      </label>
-                      <select
-                        name="experienceLevel"
-                        value={formData.experienceLevel}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      >
-                        <option>Entry-level</option>
-                        <option>Mid-level</option>
-                        <option>Senior</option>
-                        <option>Lead</option>
-                        <option>Executive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Salary Range */}
+                  {/* Employment Types (Multi-select) */}
                   <div>
                     <label className="block text-sm font-bold uppercase mb-2">
-                      Salary Range (Optional)
+                      Employment Type <span className="text-primary">*</span>
                     </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input
-                        type="number"
-                        name="salaryMin"
-                        value={formData.salaryMin}
-                        onChange={handleChange}
-                        placeholder="Min (USD)"
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
-                      <input
-                        type="number"
-                        name="salaryMax"
-                        value={formData.salaryMax}
-                        onChange={handleChange}
-                        placeholder="Max (USD)"
-                        className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      {["Full-time", "Part-time", "Internship", "Contract"].map((type) => (
+                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="employmentTypes"
+                            value={type}
+                            checked={formData.employmentTypes.includes(type)}
+                            onChange={handleChange}
+                            className="w-4 h-4 border-2 border-black"
+                          />
+                          <span className="font-semibold">{type}</span>
+                        </label>
+                      ))}
                     </div>
+                    {errors.employmentTypes && (
+                      <p className="text-primary text-sm font-bold mt-1">
+                        {errors.employmentTypes}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-600 mt-1">
+                      Note: Cannot select both Full-time and Part-time
+                    </p>
+                  </div>
+
+                  {/* Experience Level */}
+                  <div>
+                    <label className="block text-sm font-bold uppercase mb-2">
+                      Experience Level
+                    </label>
+                    <select
+                      name="experienceLevel"
+                      value={formData.experienceLevel}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                    >
+                      <option>Entry-level</option>
+                      <option>Mid-level</option>
+                      <option>Senior</option>
+                      <option>Lead</option>
+                      <option>Executive</option>
+                    </select>
+                  </div>
+
+                  {/* Salary Structure */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-bold uppercase">
+                      Salary <span className="text-primary">*</span>
+                    </label>
+                    
+                    {/* Salary Type */}
+                    <select
+                      name="salaryType"
+                      value={formData.salaryType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                    >
+                      <option value="RANGE">Range (e.g., $1000 - $2000)</option>
+                      <option value="ABOUT">About (e.g., About $1500)</option>
+                      <option value="UP_TO">Up to (e.g., Up to $2000)</option>
+                      <option value="FROM">From (e.g., From $1000)</option>
+                      <option value="NEGOTIABLE">Negotiable</option>
+                    </select>
+                    
+                    {/* Conditional Salary Inputs */}
+                    {formData.salaryType !== "NEGOTIABLE" && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {/* Currency */}
+                        <select
+                          name="salaryCurrency"
+                          value={formData.salaryCurrency}
+                          onChange={handleChange}
+                          className="px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                        >
+                          <option value="USD">USD</option>
+                          <option value="VND">VND</option>
+                          <option value="EUR">EUR</option>
+                          <option value="GBP">GBP</option>
+                        </select>
+                        
+                        {/* Min Value (for RANGE, FROM, ABOUT) */}
+                        {(formData.salaryType === "RANGE" || 
+                          formData.salaryType === "FROM" || 
+                          formData.salaryType === "ABOUT") && (
+                          <input
+                            type="number"
+                            name="salaryMin"
+                            value={formData.salaryMin}
+                            onChange={handleChange}
+                            placeholder={formData.salaryType === "RANGE" ? "Min" : "Amount"}
+                            className="px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                          />
+                        )}
+                        
+                        {/* Max Value (for RANGE, UP_TO) */}
+                        {(formData.salaryType === "RANGE" || 
+                          formData.salaryType === "UP_TO") && (
+                          <input
+                            type="number"
+                            name="salaryMax"
+                            value={formData.salaryMax}
+                            onChange={handleChange}
+                            placeholder="Max"
+                            className="px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                          />
+                        )}
+                      </div>
+                    )}
+                    
+                    {errors.salary && (
+                      <p className="text-primary text-sm font-bold">
+                        {errors.salary}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Expiry Date */}
+                  <div>
+                    <label className="block text-sm font-bold uppercase mb-2">
+                      Expiry Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      name="expiryDate"
+                      value={formData.expiryDate}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:border-primary font-semibold"
+                    />
                   </div>
                 </div>
               </div>
@@ -404,6 +521,29 @@ function JobPostPage() {
               <div className="bg-white border-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase mb-4">Actions</h3>
                 <div className="space-y-3">
+                  {/* Published Toggle */}
+                  <div className="p-4 bg-gray-50 border-2 border-black">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="published"
+                        checked={formData.published}
+                        onChange={handleChange}
+                        className="w-5 h-5 border-2 border-black"
+                      />
+                      <div>
+                        <span className="font-bold text-sm uppercase">
+                          {formData.published ? "Published" : "Draft"}
+                        </span>
+                        <p className="text-xs text-gray-600">
+                          {formData.published 
+                            ? "Visible to applicants" 
+                            : "Save as draft (not visible)"}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  
                   <button
                     type="submit"
                     disabled={submitting}
@@ -412,10 +552,10 @@ function JobPostPage() {
                     {submitting
                       ? isEditMode
                         ? "Updating..."
-                        : "Publishing..."
+                        : "Saving..."
                       : isEditMode
                       ? "Update Job Post"
-                      : "Publish Job Post"}
+                      : formData.published ? "Publish Job Post" : "Save Draft"}
                   </button>
                   <button
                     type="button"
@@ -560,23 +700,40 @@ function JobPostPage() {
                         <p className="text-xs font-bold uppercase text-gray-600">
                           Employment Type
                         </p>
-                        <p className="font-bold">{formData.type}</p>
+                        <p className="font-bold">
+                          {formData.employmentTypes.join(", ")}
+                        </p>
                       </div>
                     </div>
-                    {(formData.salaryMin || formData.salaryMax) && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">💰</span>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-gray-600">
+                          Salary
+                        </p>
+                        <p className="font-bold">
+                          {formData.salaryType === "NEGOTIABLE" 
+                            ? "Negotiable" 
+                            : formData.salaryType === "RANGE"
+                            ? `${formData.salaryCurrency} ${formData.salaryMin} - ${formData.salaryMax}`
+                            : formData.salaryType === "FROM"
+                            ? `From ${formData.salaryCurrency} ${formData.salaryMin}`
+                            : formData.salaryType === "UP_TO"
+                            ? `Up to ${formData.salaryCurrency} ${formData.salaryMax}`
+                            : formData.salaryType === "ABOUT"
+                            ? `About ${formData.salaryCurrency} ${formData.salaryMin}`
+                            : "Not specified"}
+                        </p>
+                      </div>
+                    </div>
+                    {formData.expiryDate && (
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl">💰</span>
+                        <span className="text-2xl">📅</span>
                         <div>
                           <p className="text-xs font-bold uppercase text-gray-600">
-                            Salary
+                            Expires
                           </p>
-                          <p className="font-bold">
-                            {formData.salaryMin && formData.salaryMax
-                              ? `$${formData.salaryMin} - $${formData.salaryMax}`
-                              : formData.salaryMin
-                              ? `From $${formData.salaryMin}`
-                              : `Up to $${formData.salaryMax}`}
-                          </p>
+                          <p className="font-bold">{formData.expiryDate}</p>
                         </div>
                       </div>
                     )}
