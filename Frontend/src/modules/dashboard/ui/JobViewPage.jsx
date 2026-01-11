@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { jobService } from "../services/jobService";
+import { applicationService } from "../services/applicationService";
+import { useProfile } from "../../../state/ProfileContext";
+import { useApp } from "../../../state/AppContext";
 
 /**
  * JobViewPage - Detailed view of a job posting
@@ -11,7 +14,12 @@ function JobViewPage() {
   const jobId = searchParams.get("id");
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [applicants, setApplicants] = useState({}); // Map of applicantId -> applicant details
   const navigate = useNavigate();
+  const { profile } = useProfile();
+  const { showSuccess, showError } = useApp();
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -25,6 +33,94 @@ function JobViewPage() {
         setLoading(false);
       }
     };
+
+  // Fetch applications when job and profile are loaded
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (!job || !profile?.companyId) return;
+
+      try {
+        setLoadingApplications(true);
+        const apps = await applicationService.getApplicationsForJobPost(
+          profile.companyId,
+          jobId
+        );
+    
+
+  const handleApprove = async (applicationId) => {
+    try {
+      await applicationService.approveApplication(applicationId);
+      showSuccess("Application approved successfully");
+      // Refresh applications
+      const apps = await applicationService.getApplicationsForJobPost(
+        profile.companyId,
+        jobId
+      );
+      setApplications(apps);
+    } catch (error) {
+      console.error("Failed to approve application:", error);
+      showError("Failed to approve application");
+    }
+  };
+
+  const handleReject = async (applicationId) => {
+    if (!confirm("Are you sure you want to reject this application?")) {
+      return;
+    }
+
+    try {
+      await applicationService.rejectApplication(applicationId);
+      showSuccess("Application rejected");
+      // Refresh applications
+      const apps = await applicationService.getApplicationsForJobPost(
+        profile.companyId,
+        jobId
+      );
+      setApplications(apps);
+    } catch (error) {
+      console.error("Failed to reject application:", error);
+      showError("Failed to reject application");
+    }
+  };
+
+  const handleViewApplicant = (applicantId) => {
+    navigate(`/dashboard/applicant/${applicantId}`);
+  };
+
+  const handleDownloadCV = (cvUrl) => {
+    if (!cvUrl) {
+      showError("CV not available");
+      return;
+    }
+    window.open(cvUrl, "_blank");
+  };    setApplications(apps);
+
+        // Fetch applicant details for each application
+        const applicantDetails = {};
+        for (const app of apps) {
+          try {
+            const applicant = await applicationService.getApplicantById(
+              app.applicantId
+            );
+            applicantDetails[app.applicantId] = applicant;
+          } catch (error) {
+            console.error(
+              `Failed to fetch applicant ${app.applicantId}:`,
+              error
+            );
+          }
+        }
+        setApplicants(applicantDetails);
+      } catch (error) {
+        console.error("Failed to fetch applications:", error);
+        showError("Failed to load applications");
+      } finally {
+        setLoadingApplications(false);
+      }
+    };
+
+    fetchApplications();
+  }, [job, profile, jobId, showError]);
 
     if (jobId) {
       fetchJob();
@@ -140,9 +236,123 @@ function JobViewPage() {
                   )}
                 </div>
               </div>
-              <span
-                className={`px-6 py-3 text-sm font-black uppercase border-4 whitespace-nowrap ${
-                  job.published
+          {/* Applications Section */}
+          <div className="bg-white border-4 border-black">
+            <div className="border-b-4 border-black p-6 flex items-center justify-between">
+              <h3 className="text-xl font-black uppercase">
+                Applications ({applications.length})
+              </h3>
+              {loadingApplications && (
+                <div className="text-sm font-bold text-gray-600">
+                  Loading...
+                </div>
+              )}
+            </div>
+
+            {/* Applications Table */}
+            <div className="overflow-x-auto">
+              {applications.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="text-6xl mb-4">📭</div>
+                  <p className="text-xl font-bold text-gray-600">
+                    No applications yet
+                  </p>
+                  <p className="text-gray-500 mt-2">
+                    Applications for this job will appear here
+                  </p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="border-b-4 border-black">
+                    <tr className="bg-gray-100">
+                      <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                        Applicant Name
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                        Applicant ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                        Applied Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                        CV
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-black uppercase">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {applications.map((app) => {
+                      const applicant = applicants[app.applicantId];
+                      const cvUrl = app.fileUrls?.[0] || null; // First document is CV
+
+                      return (
+                        <tr
+                          key={app.applicationId}
+                          className="border-b-2 border-gray-200 hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4 font-semibold">
+                            {applicant?.name || "Loading..."}
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() =>
+                                handleViewApplicant(app.applicantId)
+                              }
+                              className="text-blue-600 hover:text-blue-800 font-bold underline"
+                            >
+                              {app.applicantId}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            {app.timeApplied
+                              ? new Date(app.timeApplied).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  }
+                                )
+                              : "N/A"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {cvUrl ? (
+                              <button
+                                onClick={() => handleDownloadCV(cvUrl)}
+                                className="px-3 py-1 text-xs font-bold uppercase border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors"
+                              >
+                                📄 Download CV
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">
+                                No CV
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleApprove(app.applicationId)}
+                                className="px-3 py-1 text-xs font-bold uppercase bg-green-100 border-2 border-green-600 text-green-800 hover:bg-green-600 hover:text-white transition-colors"
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(app.applicationId)}
+                                className="px-3 py-1 text-xs font-bold uppercase bg-red-100 border-2 border-red-600 text-red-800 hover:bg-red-600 hover:text-white transition-colors"
+                              >
+                                ✗ Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
                     ? "bg-green-100 text-green-800 border-green-800"
                     : "bg-yellow-100 text-yellow-800 border-yellow-800"
                 }`}
