@@ -209,7 +209,7 @@ public class PaymentController {
      * @param token JWT token from Authorization header
      * @return List of all payments
      */
-    @GetMapping
+    @GetMapping("/allpayments")
     public ResponseEntity<?> getAllPayments(
             @RequestHeader("Authorization") String token) {
         
