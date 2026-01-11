@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { getToken } from "../../utils/tokenStorage";
+import { PLANS_ARRAY } from "../../config/plans";
 
 const words = ["TALENT.", "Engineers.", "Developers.", "Leader."];
 
@@ -105,16 +106,22 @@ function HomePage() {
 
           <div className="flex flex-wrap gap-6">
             <Link
-              to="/register"
+              to={getToken() ? "/dashboard" : "/register"}
               className="bg-primary text-white font-black uppercase text-lg border-4 border-black px-10 py-4 hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-none"
             >
-              Hire Talent →
+              Get Started →
+            </Link>
+            <Link
+              to="/register"
+              className="bg-white text-black font-black uppercase text-lg border-4 border-black px-10 py-4 hover:bg-black hover:text-white transition-none"
+            >
+              Hire Talent
             </Link>
             <a
               href="#pricing"
               className="bg-white text-black font-black uppercase text-lg border-4 border-black px-10 py-4 hover:bg-black hover:text-white transition-none"
             >
-              View Plan
+              View Pricing
             </a>
           </div>
         </div>
@@ -202,109 +209,82 @@ function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-black text-black mb-4 uppercase">
-              Talent Search
+              Simple Pricing
             </h2>
             <p className="text-xl font-bold text-black border-4 border-black bg-white inline-block px-8 py-4">
-              Powerful AI to filter candidates by skills and experience.
+              Choose the plan that fits your hiring needs
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Starter Plan */}
-            <div className="bg-white border-4 border-black p-8 hover:translate-x-2 hover:translate-y-2 hover:shadow-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-none">
-              <div className="border-b-4 border-black pb-6 mb-6">
-                <h3 className="text-2xl font-black text-black mb-2 uppercase">
-                  Starter
-                </h3>
-                <div className="text-5xl font-black text-primary">$0</div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {PLANS_ARRAY.map((plan) => (
+              <div
+                key={plan.id}
+                className={`${
+                  plan.popular ? "bg-primary" : "bg-white"
+                } border-4 border-black p-8 hover:translate-x-2 hover:translate-y-2 hover:shadow-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-none`}
+              >
+                <div className="border-b-4 border-black pb-6 mb-6">
+                  {plan.popular && (
+                    <div className="inline-block bg-black text-white font-black text-xs uppercase px-3 py-1 mb-3">
+                      Most Popular
+                    </div>
+                  )}
+                  <h3
+                    className={`text-2xl font-black ${
+                      plan.popular ? "text-white" : "text-black"
+                    } mb-2 uppercase`}
+                  >
+                    {plan.displayName}
+                  </h3>
+                  <div
+                    className={`text-5xl font-black ${
+                      plan.popular ? "text-white" : "text-primary"
+                    }`}
+                  >
+                    ${plan.price}
+                    <span className="text-lg">/month</span>
+                  </div>
+                  <p
+                    className={`text-sm font-bold mt-2 ${
+                      plan.popular ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {plan.description}
+                  </p>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span
+                        className={`font-black text-2xl mr-3 ${
+                          plan.popular ? "text-white" : "text-primary"
+                        }`}
+                      >
+                        ✓
+                      </span>
+                      <span
+                        className={`font-bold ${
+                          plan.popular ? "text-white" : "text-black"
+                        }`}
+                      >
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to={getToken() ? "/dashboard" : "/register"}
+                  className={`block text-center font-black uppercase text-sm border-4 border-black px-6 py-3 transition-none ${
+                    plan.popular
+                      ? "bg-white text-black hover:bg-black hover:text-white"
+                      : "bg-primary text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                  }`}
+                >
+                  {plan.id === "free" ? "Get Started Free" : "Upgrade Now"}
+                </Link>
               </div>
-              <ul className="space-y-4">
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">
-                    3 Job Postings Daily
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">
-                    Basic Candidate Search
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">Email Support</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Growth Plan */}
-            <div className="bg-primary border-4 border-black p-8 hover:translate-x-2 hover:translate-y-2 hover:shadow-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-none">
-              <div className="border-b-4 border-black pb-6 mb-6">
-                <h3 className="text-2xl font-black text-white mb-2 uppercase">
-                  Growth
-                </h3>
-                <div className="text-5xl font-black text-white">$99</div>
-              </div>
-              <ul className="space-y-4">
-                <li className="flex items-start">
-                  <span className="text-white font-black text-2xl mr-3">✓</span>
-                  <span className="text-white font-bold">
-                    15 Job Postings Daily
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-white font-black text-2xl mr-3">✓</span>
-                  <span className="text-white font-bold">Advanced Filters</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-white font-black text-2xl mr-3">✓</span>
-                  <span className="text-white font-bold">
-                    Candidate Contact
-                  </span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Scale Plan */}
-            <div className="bg-white border-4 border-black p-8 hover:translate-x-2 hover:translate-y-2 hover:shadow-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-none">
-              <div className="border-b-4 border-black pb-6 mb-6">
-                <h3 className="text-2xl font-black text-black mb-2 uppercase">
-                  Scale
-                </h3>
-                <div className="text-5xl font-black text-primary">$300</div>
-              </div>
-              <ul className="space-y-4">
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">
-                    Unlimited Jobs Posting
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">API Access</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary font-black text-2xl mr-3">
-                    ✓
-                  </span>
-                  <span className="text-black font-bold">
-                    Dedicated Account Manager
-                  </span>
-                </li>
-              </ul>
-            </div>
+            ))}
           </div>
         </div>
       </section>
