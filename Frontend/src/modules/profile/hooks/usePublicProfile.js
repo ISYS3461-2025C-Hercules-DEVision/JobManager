@@ -55,7 +55,20 @@ export const usePublicProfile = () => {
     setError(null);
 
     try {
-      // Step 1: Create public profile with text data only
+      // Step 1: Check if public profile already exists
+      try {
+        const existingProfile = await profileService.getPublicProfile();
+        if (existingProfile) {
+          // Profile already exists - reject the creation attempt
+          setError("Public profile already exists. Please update from Settings instead.");
+          setLoading(false);
+          return { success: false, error: "Public profile already exists" };
+        }
+      } catch (err) {
+        // Profile doesn't exist (404 error), continue with creation
+      }
+
+      // Step 2: Create new public profile with text data only
       await profileService.createPublicProfile({
         companyName: formData.companyName,
         aboutUs: formData.aboutUs,
@@ -66,14 +79,28 @@ export const usePublicProfile = () => {
         city: formData.city,
       });
 
-      // Step 2: Upload logo if provided
+      // Step 3: Upload logo if provided
       if (logoFile) {
-        await profileService.uploadProfileLogo(logoFile);
+        try {
+          const logoResult = await profileService.uploadProfileLogo(logoFile);
+          console.log("Logo uploaded successfully:", logoResult);
+        } catch (logoError) {
+          console.error("Logo upload failed:", logoError);
+          // Don't fail the entire submission if logo upload fails
+          // User can upload logo later from settings
+        }
       }
 
-      // Step 3: Upload banner if provided
+      // Step 4: Upload banner if provided
       if (bannerFile) {
-        await profileService.uploadProfileBanner(bannerFile);
+        try {
+          const bannerResult = await profileService.uploadProfileBanner(bannerFile);
+          console.log("Banner uploaded successfully:", bannerResult);
+        } catch (bannerError) {
+          console.error("Banner upload failed:", bannerError);
+          // Don't fail the entire submission if banner upload fails
+          // User can upload banner later from settings
+        }
       }
 
       setSuccess(true);
