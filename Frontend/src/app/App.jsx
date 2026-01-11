@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { HomePage } from "../pages/home";
 import { LoginPage, RegisterPage, VerifyPage } from "../modules/auth";
 import GoogleCallback from "../pages/GoogleCallback";
+import PaymentSuccess from "../pages/PaymentSuccess";
+import PaymentCancel from "../pages/PaymentCancel";
 import {
   DashboardLayout,
   DashboardPage,
@@ -14,10 +16,12 @@ import {
 import ProfileView from "../modules/profile/ui/ProfileView";
 import JobViewPage from "../modules/dashboard/ui/JobViewPage";
 import ApplicantDetailPage from "../modules/dashboard/ui/ApplicantDetailPage";
+import ToastContainer from "../components/ToastContainer";
 
 function App() {
   return (
     <Router>
+      <ToastContainer />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
@@ -25,6 +29,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyPage />} />
         <Route path="/login/oauth2/code/google" element={<GoogleCallback />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
 
         {/* Protected Dashboard Routes */}
         <Route
