@@ -46,10 +46,8 @@ function JobViewPage() {
 
       try {
         setLoadingApplications(true);
-        const apps = await applicationService.getApplicationsForJobPost(
-          profile.companyId,
-          jobId
-        );
+        const apps = await applicationService.getApplicationsForJobPost(jobId);
+        console.log("Applications:", apps);
         setApplications(apps);
 
         // Fetch applicant details for each application
@@ -84,10 +82,7 @@ function JobViewPage() {
       await applicationService.approveApplication(applicationId);
       showSuccess("Application approved successfully");
       // Refresh applications
-      const apps = await applicationService.getApplicationsForJobPost(
-        profile.companyId,
-        jobId
-      );
+      const apps = await applicationService.getApplicationsForJobPost(jobId);
       setApplications(apps);
     } catch (error) {
       console.error("Failed to approve application:", error);
@@ -104,10 +99,7 @@ function JobViewPage() {
       await applicationService.rejectApplication(applicationId);
       showSuccess("Application rejected");
       // Refresh applications
-      const apps = await applicationService.getApplicationsForJobPost(
-        profile.companyId,
-        jobId
-      );
+      const apps = await applicationService.getApplicationsForJobPost(jobId);
       setApplications(apps);
     } catch (error) {
       console.error("Failed to reject application:", error);
