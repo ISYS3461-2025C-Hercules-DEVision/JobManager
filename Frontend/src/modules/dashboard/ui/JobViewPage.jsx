@@ -34,6 +34,11 @@ function JobViewPage() {
       }
     };
 
+    if (jobId) {
+      fetchJob();
+    }
+  }, [jobId]);
+
   // Fetch applications when job and profile are loaded
   useEffect(() => {
     const fetchApplications = async () => {
@@ -45,7 +50,34 @@ function JobViewPage() {
           profile.companyId,
           jobId
         );
-    
+        setApplications(apps);
+
+        // Fetch applicant details for each application
+        const applicantDetails = {};
+        for (const app of apps) {
+          try {
+            const applicant = await applicationService.getApplicantById(
+              app.applicantId
+            );
+            applicantDetails[app.applicantId] = applicant;
+          } catch (error) {
+            console.error(
+              `Failed to fetch applicant ${app.applicantId}:`,
+              error
+            );
+          }
+        }
+        setApplicants(applicantDetails);
+      } catch (error) {
+        console.error("Failed to fetch applications:", error);
+        showError("Failed to load applications");
+      } finally {
+        setLoadingApplications(false);
+      }
+    };
+
+    fetchApplications();
+  }, [job, profile, jobId, showError]);
 
   const handleApprove = async (applicationId) => {
     try {
@@ -93,39 +125,7 @@ function JobViewPage() {
       return;
     }
     window.open(cvUrl, "_blank");
-  };    setApplications(apps);
-
-        // Fetch applicant details for each application
-        const applicantDetails = {};
-        for (const app of apps) {
-          try {
-            const applicant = await applicationService.getApplicantById(
-              app.applicantId
-            );
-            applicantDetails[app.applicantId] = applicant;
-          } catch (error) {
-            console.error(
-              `Failed to fetch applicant ${app.applicantId}:`,
-              error
-            );
-          }
-        }
-        setApplicants(applicantDetails);
-      } catch (error) {
-        console.error("Failed to fetch applications:", error);
-        showError("Failed to load applications");
-      } finally {
-        setLoadingApplications(false);
-      }
-    };
-
-    fetchApplications();
-  }, [job, profile, jobId, showError]);
-
-    if (jobId) {
-      fetchJob();
-    }
-  }, [jobId]);
+  };
 
   const handleEdit = () => {
     navigate(`/dashboard/job-post?id=${jobId}`);
@@ -236,6 +236,85 @@ function JobViewPage() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Description Card */}
+          <div className="bg-white border-4 border-black">
+            <div className="border-b-4 border-black p-6">
+              <h3 className="text-xl font-black uppercase">Job Description</h3>
+            </div>
+            <div className="p-8">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {job.description || (
+                  <span className="text-gray-400 italic">
+                    No description provided
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Skills Card */}
+          {job.skills && job.skills.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">
+                  Required Skills
+                </h3>
+              </div>
+              <div className="p-8">
+                <div className="flex flex-wrap gap-3">
+                  {job.skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase hover:bg-black hover:text-white transition-colors"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Posting Information Card */}
+          <div className="bg-white border-4 border-black">
+            <div className="border-b-4 border-black p-6">
+              <h3 className="text-xl font-black uppercase">
+                Posting Information
+              </h3>
+            </div>
+            <div className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                    Posted Date
+                  </p>
+                  <p className="text-lg font-bold">
+                    {job.postedDate || (
+                      <span className="text-gray-400 italic">
+                        Not specified
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                    Expiry Date
+                  </p>
+                  <p className="text-lg font-bold">
+                    {job.expiryDate || (
+                      <span className="text-gray-400 italic">
+                        No expiry set
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Applications Section */}
           <div className="bg-white border-4 border-black">
             <div className="border-b-4 border-black p-6 flex items-center justify-between">
@@ -353,94 +432,6 @@ function JobViewPage() {
                   </tbody>
                 </table>
               )}
-                    ? "bg-green-100 text-green-800 border-green-800"
-                    : "bg-yellow-100 text-yellow-800 border-yellow-800"
-                }`}
-              >
-                {job.published ? "✓ Published" : "📝 Draft"}
-              </span>
-            </div>
-          </div>
-
-          {/* Description Card */}
-          <div className="bg-white border-4 border-black">
-            <div className="border-b-4 border-black p-6">
-              <h3 className="text-xl font-black uppercase">Job Description</h3>
-            </div>
-            <div className="p-8">
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {job.description || (
-                  <span className="text-gray-400 italic">
-                    No description provided
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          {/* Skills Card */}
-          {job.skills && job.skills.length > 0 && (
-            <div className="bg-white border-4 border-black">
-              <div className="border-b-4 border-black p-6">
-                <h3 className="text-xl font-black uppercase">
-                  Required Skills
-                </h3>
-              </div>
-              <div className="p-8">
-                <div className="flex flex-wrap gap-3">
-                  {job.skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase hover:bg-black hover:text-white transition-colors"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Posting Information Card */}
-          <div className="bg-white border-4 border-black">
-            <div className="border-b-4 border-black p-6">
-              <h3 className="text-xl font-black uppercase">
-                Posting Information
-              </h3>
-            </div>
-            <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
-                    Posted Date
-                  </p>
-                  <p className="text-lg font-bold">
-                    {job.postedDate || (
-                      <span className="text-gray-400 italic">
-                        Not specified
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
-                    Expiry Date
-                  </p>
-                  <p className="text-lg font-bold">
-                    {job.expiryDate || (
-                      <span className="text-gray-400 italic">
-                        No expiry set
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border-4 border-black">
-            <div className="border-b-4 border-black p-6">
-              <h3 className="text-xl font-black uppercase">Applications</h3>
             </div>
           </div>
         </div>
