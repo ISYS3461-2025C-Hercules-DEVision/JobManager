@@ -27,6 +27,10 @@ export const ENV = {
   // Notification Service endpoints
   NOTIFICATION_SERVICE_URL:
     import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://13.236.146.126:8000/notification",
+  
+  // WebSocket endpoint for real-time notifications
+  NOTIFICATION_WS_URL:
+    import.meta.env.VITE_NOTIFICATION_WS_URL || "http://13.236.146.126:8000/notification/ws/notifications",
 
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
   MOCK_AUTH: "false",
