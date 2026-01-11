@@ -25,7 +25,7 @@ function JobViewPage() {
         setLoading(false);
       }
     };
-    
+
     if (jobId) {
       fetchJob();
     }
@@ -36,7 +36,7 @@ function JobViewPage() {
   };
 
   const handleBack = () => {
-    navigate("/dashboard");
+    navigate("/dashboard/post-manager");
   };
 
   return (
@@ -46,14 +46,35 @@ function JobViewPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-black uppercase mb-2">Job Details</h1>
-            <p className="text-gray-600">Complete information about this job posting</p>
+            <p className="text-gray-600">
+              Complete information about this job posting
+            </p>
           </div>
-          <button
-            onClick={handleBack}
-            className="px-6 py-3 bg-white border-4 border-black font-bold uppercase hover:bg-gray-100 transition-colors"
-          >
-            ← Back
-          </button>
+          <div>
+            <button
+              onClick={handleBack}
+              className="px-6 py-3 bg-white border-4 border-black font-bold uppercase hover:bg-gray-100 transition-colors mr-2"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={handleEdit}
+              className="px-6 py-3 bg-white border-4 border-black font-bold uppercase hover:bg-gray-100 transition-colors mr-2"
+            >
+              ✏️ Edit Job Post
+            </button>
+            <button
+              onClick={() => {
+                if (confirm("Are you sure you want to delete this job post?")) {
+                  // TODO: Implement delete functionality
+                  console.log("Delete job:", jobId);
+                }
+              }}
+              className="px-6 py-3 bg-white text-red-600 border-4 border-red-600 font-black uppercase hover:bg-red-50 transition-colors"
+            >
+              🗑️ Delete
+            </button>
+          </div>
         </div>
       </div>
 
@@ -70,7 +91,9 @@ function JobViewPage() {
         <div className="bg-white border-4 border-black p-12 text-center">
           <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-black uppercase mb-2">Job Not Found</h2>
-          <p className="text-gray-600 mb-6">The job you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-600 mb-6">
+            The job you're looking for doesn't exist or has been removed.
+          </p>
           <button
             onClick={handleBack}
             className="px-6 py-3 bg-black text-white border-4 border-black font-bold uppercase hover:bg-gray-800 transition-colors"
@@ -87,15 +110,21 @@ function JobViewPage() {
           <div className="bg-white border-4 border-black p-8">
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
-                <h2 className="text-3xl font-black uppercase mb-4">{job.title}</h2>
+                <h2 className="text-3xl font-black uppercase mb-4">
+                  {job.title}
+                </h2>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                     <span className="text-lg">📍</span>
-                    <span className="font-bold">{job.location || "Not specified"}</span>
+                    <span className="font-bold">
+                      {job.location || "Not specified"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                     <span className="text-lg">💼</span>
-                    <span className="font-bold">{job.employmentType || "Not specified"}</span>
+                    <span className="font-bold">
+                      {job.employmentType || "Not specified"}
+                    </span>
                   </div>
                   {job.salary && (
                     <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
@@ -131,7 +160,9 @@ function JobViewPage() {
             <div className="p-8">
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {job.description || (
-                  <span className="text-gray-400 italic">No description provided</span>
+                  <span className="text-gray-400 italic">
+                    No description provided
+                  </span>
                 )}
               </p>
             </div>
@@ -141,7 +172,9 @@ function JobViewPage() {
           {job.skills && job.skills.length > 0 && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
-                <h3 className="text-xl font-black uppercase">Required Skills</h3>
+                <h3 className="text-xl font-black uppercase">
+                  Required Skills
+                </h3>
               </div>
               <div className="p-8">
                 <div className="flex flex-wrap gap-3">
@@ -161,7 +194,9 @@ function JobViewPage() {
           {/* Posting Information Card */}
           <div className="bg-white border-4 border-black">
             <div className="border-b-4 border-black p-6">
-              <h3 className="text-xl font-black uppercase">Posting Information</h3>
+              <h3 className="text-xl font-black uppercase">
+                Posting Information
+              </h3>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -171,7 +206,9 @@ function JobViewPage() {
                   </p>
                   <p className="text-lg font-bold">
                     {job.postedDate || (
-                      <span className="text-gray-400 italic">Not specified</span>
+                      <span className="text-gray-400 italic">
+                        Not specified
+                      </span>
                     )}
                   </p>
                 </div>
@@ -181,7 +218,9 @@ function JobViewPage() {
                   </p>
                   <p className="text-lg font-bold">
                     {job.expiryDate || (
-                      <span className="text-gray-400 italic">No expiry set</span>
+                      <span className="text-gray-400 italic">
+                        No expiry set
+                      </span>
                     )}
                   </p>
                 </div>
@@ -189,25 +228,10 @@ function JobViewPage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
-            <button
-              onClick={handleEdit}
-              className="flex-1 px-6 py-4 bg-black text-white border-4 border-black font-black uppercase hover:bg-gray-800 transition-colors"
-            >
-              ✏️ Edit Job Post
-            </button>
-            <button
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this job post?")) {
-                  // TODO: Implement delete functionality
-                  console.log("Delete job:", jobId);
-                }
-              }}
-              className="px-6 py-4 bg-white text-red-600 border-4 border-red-600 font-black uppercase hover:bg-red-50 transition-colors"
-            >
-              🗑️ Delete
-            </button>
+          <div className="bg-white border-4 border-black">
+            <div className="border-b-4 border-black p-6">
+              <h3 className="text-xl font-black uppercase">Applications</h3>
+            </div>
           </div>
         </div>
       )}
