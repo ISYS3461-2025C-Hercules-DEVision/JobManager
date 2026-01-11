@@ -4,6 +4,7 @@ import com.job.manager.notification.client.CompanyEmailClient;
 import com.job.manager.notification.dto.ApplicantMatchedEvent;
 import com.job.manager.notification.model.Notification;
 import com.job.manager.notification.repository.NotificationRepository;
+import com.job.manager.notification.websocket.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -19,6 +20,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final JavaMailSender mailSender;
     private final CompanyEmailClient companyEmailClient;
+    private final NotificationWebSocketHandler webSocketHandler;
 
     @Value("${SMTP_EMAIL:}")
     private String from;
@@ -40,9 +42,18 @@ public class NotificationService {
                 .createdAt(Instant.now())
                 .build();
 
-        notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+        System.out.println("NotificationService: Saved notification to MongoDB: " + savedNotification.getId());
 
-        // 2. Resolve email
+        // 2. Send real-time WebSocket notification to company
+        try {
+            webSocketHandler.sendNotificationToCompany(event.getCompanyId(), savedNotification);
+            System.out.println("NotificationService: Sent WebSocket notification to company: " + event.getCompanyId());
+        } catch (Exception ex) {
+            System.out.println("NotificationService: Failed to send WebSocket notification: " + ex.getMessage());
+        }
+
+        // 3. Resolve email and send email notification
         String email = resolveCompanyEmail(event.getCompanyId());
         System.out.println("NotificationService: ABOUT TO SEND EMAIL to " + email);
         System.out.println("NotificationService: from = " + from);
