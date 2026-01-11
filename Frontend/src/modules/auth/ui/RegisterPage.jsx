@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useRegister } from "../hooks/useRegister";
+import { useEffect } from "react";
+import { getToken } from "../../../utils/tokenStorage";
 
 function RegisterPage() {
   const {
@@ -16,6 +18,11 @@ function RegisterPage() {
     togglePasswordVisibility,
     togglePasswordConfirmationVisibility,
   } = useRegister();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (getToken()) navigate("/dashboard");
+  }, []);
 
   return (
     <div className="min-h-screen bg-light-gray flex items-center justify-center p-4">

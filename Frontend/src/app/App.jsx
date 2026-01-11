@@ -12,6 +12,7 @@ import {
   ProtectedRoute,
 } from "../modules/dashboard";
 import ProfileView from "../modules/profile/ui/ProfileView";
+import JobViewPage from "../modules/dashboard/ui/JobViewPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="find-applicants" element={<FindApplicantsPage />} />
           <Route path="post-manager" element={<PostManagerPage />} />
+          <Route path="post-manager/view" element={<JobViewPage />} />
           <Route path="job-post" element={<JobPostPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfileView />} />

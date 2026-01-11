@@ -77,21 +77,6 @@ function PostManagerPage() {
     navigate(`/dashboard/job-post?id=${jobId}`);
   };
 
-  const handleView = async (jobId) => {
-    setShowViewModal(true);
-    setLoadingView(true);
-    try {
-      const job = await jobService.getJobById(jobId);
-      setViewingJob(job);
-    } catch (error) {
-      console.error("Failed to load job details:", error);
-      alert("Failed to load job details. Please try again.");
-      setShowViewModal(false);
-    } finally {
-      setLoadingView(false);
-    }
-  };
-
   const confirmDelete = (jobId) => {
     setDeleteJobId(jobId);
     setShowDeleteDialog(true);
@@ -590,7 +575,9 @@ function PostManagerPage() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleView(post.id)}
+                        onClick={() =>
+                          navigate(`/dashboard/post-manager/view?id=${post.id}`)
+                        }
                         className="p-2 border-2 border-black hover:bg-black hover:text-white transition-colors"
                         title="View"
                       >
@@ -696,154 +683,6 @@ function PostManagerPage() {
               >
                 Cancel
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Job Modal */}
-      {showViewModal && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border-4 border-black max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b-4 border-black p-6 flex justify-between items-center">
-              <h2 className="text-2xl font-black uppercase">Job Details</h2>
-              <button
-                onClick={() => {
-                  setShowViewModal(false);
-                  setViewingJob(null);
-                }}
-                className="p-2 hover:bg-gray-100 transition-colors"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6">
-              {loadingView ? (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-black border-t-transparent"></div>
-                  <p className="mt-4 font-bold">Loading job details...</p>
-                </div>
-              ) : viewingJob ? (
-                <div className="space-y-6">
-                  {/* Title */}
-                  <div>
-                    <h3 className="text-3xl font-black uppercase mb-2">
-                      {viewingJob.title}
-                    </h3>
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>📍 {viewingJob.location || "Not specified"}</span>
-                      <span>
-                        💼 {viewingJob.employmentType || "Not specified"}
-                      </span>
-                      {viewingJob.salary && <span>💰 {viewingJob.salary}</span>}
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div>
-                    <span
-                      className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
-                        viewingJob.published
-                          ? "bg-green-100 text-green-800 border-green-800"
-                          : "bg-yellow-100 text-yellow-800 border-yellow-800"
-                      }`}
-                    >
-                      {viewingJob.published ? "✓ Published" : "📝 Draft"}
-                    </span>
-                  </div>
-
-                  {/* Description */}
-                  <div className="border-t-2 border-gray-200 pt-6">
-                    <h4 className="text-lg font-black uppercase mb-3">
-                      Job Description
-                    </h4>
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {viewingJob.description || "No description provided"}
-                    </p>
-                  </div>
-
-                  {/* Skills */}
-                  {viewingJob.skills && viewingJob.skills.length > 0 && (
-                    <div className="border-t-2 border-gray-200 pt-6">
-                      <h4 className="text-lg font-black uppercase mb-3">
-                        Required Skills
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {viewingJob.skills.map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 bg-gray-100 border-2 border-black text-sm font-semibold"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Dates */}
-                  <div className="border-t-2 border-gray-200 pt-6">
-                    <h4 className="text-lg font-black uppercase mb-3">
-                      Posting Information
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-bold">Posted Date:</span>
-                        <p className="text-gray-700">
-                          {viewingJob.postedDate || "Not specified"}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-bold">Expiry Date:</span>
-                        <p className="text-gray-700">
-                          {viewingJob.expiryDate || "No expiry set"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="border-t-2 border-gray-200 pt-6 flex gap-4">
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false);
-                        handleEdit(viewingJob.id);
-                      }}
-                      className="flex-1 px-6 py-3 bg-black text-white font-bold uppercase hover:bg-gray-800 transition-colors"
-                    >
-                      Edit Job Post
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false);
-                        setViewingJob(null);
-                      }}
-                      className="px-6 py-3 bg-white text-black font-bold uppercase border-2 border-black hover:bg-gray-100 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-600">Failed to load job details</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
