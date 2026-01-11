@@ -28,7 +28,8 @@ public class ApplicantProfileKafkaListener {
             containerFactory = "applicantProfileKafkaListenerContainerFactory"
     )
     public void onApplicantCreated(ApplicantCreatedEvent event) {
-        log.info("Notification(Matching): received applicant event: {}", event);
+        log.info("Notification(Matching): received applicant event: {} {} ({})", 
+                event.getFirstName(), event.getLastName(), event.getApplicantId());
 
         List<CompanySearchProfileDto> profiles = subscriptionClient.getAllSearchProfiles();
         List<String> matchedCompanyIds = matchingEngine.findMatchingCompanyIds(event, profiles);
@@ -37,9 +38,12 @@ public class ApplicantProfileKafkaListener {
             ApplicantMatchedEvent matchedEvent = new ApplicantMatchedEvent();
             matchedEvent.setCompanyId(companyId);
             matchedEvent.setApplicantId(event.getApplicantId());
-            matchedEvent.setApplicantName(event.getName());
+            matchedEvent.setApplicantName(event.getFirstName() + " " + event.getLastName());
 
             notificationService.handleApplicantMatched(matchedEvent);
         }
+        
+        log.info("Matched applicant {} with {} companies", event.getApplicantId(), matchedCompanyIds.size());
     }
 }
+

@@ -13,6 +13,7 @@ import java.util.Set;
 public class MatchingEngine {
 
     public boolean matches(ApplicantCreatedEvent applicant, CompanySearchProfileDto profile) {
+        // Country matching (required)
         if (applicant.getCountry() == null || profile.getCountry() == null) {
             return false;
         }
@@ -20,6 +21,7 @@ public class MatchingEngine {
             return false;
         }
 
+        // Technical tags matching (at least one overlap required)
         if (applicant.getTechnicalTags() == null || profile.getTechnicalTags() == null) {
             return false;
         }
@@ -30,16 +32,18 @@ public class MatchingEngine {
             return false;
         }
 
+        // Employment status matching (if profile specifies preferences)
         if (profile.getEmploymentStatus() != null && !profile.getEmploymentStatus().isEmpty()) {
-            Set<String> applicantStatuses =
-                    applicant.getEmploymentStatus() != null ? applicant.getEmploymentStatus() : Set.of();
+            Set<String> applicantTypes =
+                    applicant.getEmploymentTypes() != null ? applicant.getEmploymentTypes() : Set.of();
             Set<String> profileStatuses = new HashSet<>(profile.getEmploymentStatus());
-            boolean statusOverlap = applicantStatuses.stream().anyMatch(profileStatuses::contains);
+            boolean statusOverlap = applicantTypes.stream().anyMatch(profileStatuses::contains);
             if (!statusOverlap) {
                 return false;
             }
         }
 
+        // Salary range matching
         BigDecimal profileMin = profile.getSalaryMin() != null ? profile.getSalaryMin() : BigDecimal.ZERO;
         BigDecimal profileMax = profile.getSalaryMax();
 
@@ -50,6 +54,7 @@ public class MatchingEngine {
         BigDecimal applicantMin = applicant.getExpectedSalaryMin();
         BigDecimal applicantMax = applicant.getExpectedSalaryMax();
 
+        // Check if salary ranges overlap
         if (applicantMax != null && applicantMax.compareTo(profileMin) < 0) {
             return false;
         }
@@ -57,6 +62,7 @@ public class MatchingEngine {
             return false;
         }
 
+        // Education level matching
         if (profile.getHighestEducationDegree() != null) {
             if (applicant.getHighestEducationDegree() == null) {
                 return false;
@@ -80,3 +86,4 @@ public class MatchingEngine {
                 .toList();
     }
 }
+
