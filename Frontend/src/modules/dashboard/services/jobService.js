@@ -82,7 +82,6 @@ export const jobService = {
 
   async getJobById(jobId) {
     const response = await httpClient.get(`${baseUrl}/jobs/${jobId}`);
-    console.log("TEST" + response);
     return response.data;
   },
 
