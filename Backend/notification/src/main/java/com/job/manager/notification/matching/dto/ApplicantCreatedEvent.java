@@ -10,14 +10,26 @@ import java.util.Set;
 public class ApplicantCreatedEvent {
 
     private String applicantId;
-    private String name;
-
-    private List<String> technicalTags;
-    private Set<String> employmentStatus;
+    
+    // Full name for matching and notifications
+    private String firstName;
+    private String lastName;
+    private String email;
+    
+    // Location for matching
+    private String city;
     private String country;
-
+    
+    // Skills for matching
+    private List<String> technicalTags;
+    
+    // Employment preferences for matching
+    private Set<String> employmentTypes;
+    
+    // Salary expectations for matching
     private BigDecimal expectedSalaryMin;
     private BigDecimal expectedSalaryMax;
-
+    
+    // Education for matching
     private String highestEducationDegree;
 }

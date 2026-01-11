@@ -146,11 +146,23 @@ services:
     volumes:
       - mongo_job_data:/data/db
 
+  mongodb-applicant:
+    image: mongo:6
+    container_name: mongodb-applicant
+    ports:
+      - "27023:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongo_applicant_data:/data/db
+
 volumes:
   kong_pg:
+  redis_data:
   mongo_auth_data:
   mongo_company_data:
   mongo_subscription_data:
   mongo_notification_data:
   mongo_job_data:
-  redis_data:
+  mongo_applicant_data:

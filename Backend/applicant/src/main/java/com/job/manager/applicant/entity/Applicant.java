@@ -1,20 +1,35 @@
-package com.job.manager.applicant.dto;
+package com.job.manager.applicant.entity;
 
-import com.job.manager.applicant.entity.Education;
-import com.job.manager.applicant.entity.WorkExperience;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
 @Data
-public class ApplicantCreateRequest {
-
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "applicants")
+public class Applicant {
+    
+    @Id
+    private String applicantId;
+    
     // Personal Information
     private String firstName;
     private String lastName;
+    
+    @Indexed(unique = true)
     private String email;
+    
     private String city;
     private String country;
     
@@ -37,4 +52,9 @@ public class ApplicantCreateRequest {
     // Salary Expectations
     private BigDecimal expectedSalaryMin;
     private BigDecimal expectedSalaryMax;
+    
+    // Metadata
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Boolean isActive;
 }

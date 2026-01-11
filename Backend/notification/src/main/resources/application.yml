@@ -25,11 +25,14 @@ spring:
       database: mongodb-notification
       username: admin
       password: admin
-      authentication-database: admin        
+      authentication-database: admin
+
+server:
+  port: 8085
 
 services:
   authentication:
-    base-url: ${AUTH_URL:http://localhost:8080/auth}
+    base-url: ${AUTH_URL:http://localhost:8080}
   subscription:
     base-url: ${SUBSCRIPTION_URL:http://localhost:8083}
   
