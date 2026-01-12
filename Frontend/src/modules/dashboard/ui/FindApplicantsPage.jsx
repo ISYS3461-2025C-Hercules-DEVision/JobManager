@@ -53,9 +53,15 @@ function FindApplicantsPage() {
         page: page,
       };
 
-      // Only add degree if selected
-      if (filters.degree && filters.degree.trim() !== '') {
-        filterParams.degree = filters.degree;
+      // If no specific degree selected, send all degree types
+      if (!filters.degree || filters.degree.trim() === '') {
+        const allDegrees = DEGREE_TYPES
+          .filter(d => d.value !== '') // Exclude the "All Degrees" option
+          .map(d => d.value);
+        filterParams.degrees = allDegrees;
+      } else {
+        // Single degree selected
+        filterParams.degrees = [filters.degree];
       }
 
       // Only add skills if provided
