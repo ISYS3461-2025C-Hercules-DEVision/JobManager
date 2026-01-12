@@ -5,9 +5,7 @@ import com.job.manager.notification.matching.dto.CompanySearchProfileDto;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class MatchingEngine {
@@ -22,58 +20,32 @@ public class MatchingEngine {
         }
 
         // Technical tags matching (at least one overlap required)
-        if (applicant.getTechnicalTags() == null || profile.getTechnicalTags() == null) {
+        if (applicant.getSkills() == null || profile.getTechnicalTags() == null) {
             return false;
         }
-        boolean hasTagOverlap = applicant.getTechnicalTags().stream()
+        boolean hasTagOverlap = applicant.getSkills().stream()
                 .anyMatch(tag -> profile.getTechnicalTags().stream()
                         .anyMatch(t -> t.equalsIgnoreCase(tag)));
         if (!hasTagOverlap) {
             return false;
         }
 
-        // Employment status matching (if profile specifies preferences)
-        if (profile.getEmploymentStatus() != null && !profile.getEmploymentStatus().isEmpty()) {
-            Set<String> applicantTypes =
-                    applicant.getEmploymentTypes() != null ? applicant.getEmploymentTypes() : Set.of();
-            Set<String> profileStatuses = new HashSet<>(profile.getEmploymentStatus());
-            boolean statusOverlap = applicantTypes.stream().anyMatch(profileStatuses::contains);
-            if (!statusOverlap) {
-                return false;
-            }
-        }
-
         // Salary range matching
         BigDecimal profileMin = profile.getSalaryMin() != null ? profile.getSalaryMin() : BigDecimal.ZERO;
         BigDecimal profileMax = profile.getSalaryMax();
 
-        if (applicant.getExpectedSalaryMin() == null && applicant.getExpectedSalaryMax() == null) {
+        if (applicant.getMinSalary() == null && applicant.getMaxSalary() == null) {
             return true;
         }
 
-        BigDecimal applicantMin = applicant.getExpectedSalaryMin();
-        BigDecimal applicantMax = applicant.getExpectedSalaryMax();
+        BigDecimal applicantMin = applicant.getMinSalary();
+        BigDecimal applicantMax = applicant.getMaxSalary();
 
         // Check if salary ranges overlap
         if (applicantMax != null && applicantMax.compareTo(profileMin) < 0) {
             return false;
         }
-        if (profileMax != null && applicantMin != null && applicantMin.compareTo(profileMax) > 0) {
-            return false;
-        }
-
-        // Education level matching
-        if (profile.getHighestEducationDegree() != null) {
-            if (applicant.getHighestEducationDegree() == null) {
-                return false;
-            }
-            if (!applicant.getHighestEducationDegree()
-                    .equalsIgnoreCase(profile.getHighestEducationDegree())) {
-                return false;
-            }
-        }
-
-        return true;
+        return profileMax == null || applicantMin == null || applicantMin.compareTo(profileMax) <= 0;
     }
 
     public List<String> findMatchingCompanyIds(
