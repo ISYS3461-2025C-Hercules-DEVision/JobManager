@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { applicationService } from "../services/applicationService";
 import { useApp } from "../../../state/AppContext";
 import { ENV } from "../../../config/env";
@@ -639,7 +639,7 @@ function ApplicantDetailPage() {
 
             {application.documents && application.documents.length > 0 ? (
               <div className="space-y-4">
-                {application.documents.map((doc, index) => (
+                {application.documents.map((doc) => (
                   <div
                     key={doc.fileId}
                     className="bg-gray-50 border-2 border-gray-300 p-6"

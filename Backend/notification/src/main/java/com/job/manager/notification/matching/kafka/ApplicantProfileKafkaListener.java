@@ -24,7 +24,6 @@ public class ApplicantProfileKafkaListener {
 
     @KafkaListener(
             topics = "applicant-profile-updates",
-            groupId = "notification-matching-group",
             containerFactory = "applicantProfileKafkaListenerContainerFactory"
     )
     public void onApplicantCreated(ApplicantCreatedEvent event) {
