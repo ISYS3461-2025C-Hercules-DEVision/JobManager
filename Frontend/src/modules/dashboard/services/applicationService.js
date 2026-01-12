@@ -64,20 +64,20 @@ export const applicationService = {
   /**
    * Filter applicants by degree and skills
    * @param {Object} filters - Filter criteria
-   * @param {string} filters.degree - Degree type (BACHELOR, MASTER, etc.)
+   * @param {Array<string>} filters.degrees - Array of degree types
    * @param {Array<string>} filters.skills - List of skills
    * @param {boolean} filters.matchAllSkills - Match all skills or any
    * @param {number} filters.take - Results per page
    * @param {number} filters.page - Page number
    * @returns {Promise<Object>} Paginated applicant results
    */
-  async filterApplicants({ degree, skills, matchAllSkills = false, take = 10, page = 1 }) {
+  async filterApplicants({ degrees, skills, matchAllSkills = false, take = 10, page = 1 }) {
     try {
       const params = new URLSearchParams();
       
-      // Only add degree param if a specific degree is selected
-      if (degree && degree.trim() !== '') {
-        params.append('degree', degree);
+      // Add all degrees as separate params
+      if (degrees && degrees.length > 0) {
+        degrees.forEach(degree => params.append('degree', degree));
       }
       
       // Only add skills if provided
