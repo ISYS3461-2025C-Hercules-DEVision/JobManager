@@ -25,25 +25,24 @@ public class CompanyController {
     private SupabaseStorageService supabaseStorageService;
 
     /**
-     * Get all companies - For Job Applicant subsystem integration
-     * Returns list of all companies with basic info
-     * No authentication required (public endpoint for JA team)
+     * Get all companies - paginated
+     * @param take page size
+     * @param page page number (1-based)
+     * Example: /companies?take=20&page=1
      */
     @GetMapping("/companies")
-    public ResponseEntity<java.util.List<CompanyInternalDTO>> getAllCompanies() {
-        java.util.List<Company> companies = companyService.getAllCompanies();
-        
-        java.util.List<CompanyInternalDTO> dtos = companies.stream()
-            .map(company -> CompanyInternalDTO.builder()
+    public ResponseEntity<org.springframework.data.domain.Page<CompanyInternalDTO>> getAllCompanies(
+            @RequestParam(defaultValue = "10") int take,
+            @RequestParam(defaultValue = "1") int page) {
+        org.springframework.data.domain.Page<Company> companies = companyService.getAllCompanies(take, page);
+        org.springframework.data.domain.Page<CompanyInternalDTO> dtos = companies.map(company -> CompanyInternalDTO.builder()
                 .companyId(company.getCompanyId())
                 .companyName(company.getCompanyName())
                 .email(company.getEmail())
                 .isPremium(company.getIsPremium())
                 .isActive(company.getIsActive())
                 .isEmailVerified(company.getIsEmailVerified())
-                .build())
-            .collect(java.util.stream.Collectors.toList());
-        
+                .build());
         return ResponseEntity.ok(dtos);
     }
 
@@ -320,7 +319,7 @@ public class CompanyController {
      * @return The public URL of the uploaded banner and updated profile
      */
     @PostMapping("/public-profile/banner")
-    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(
+    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(    Authorization: Bearer <YOUR_JWT_TOKEN>
             @CurrentUser AuthenticatedUser user,
             @RequestParam("file") MultipartFile file) {
 

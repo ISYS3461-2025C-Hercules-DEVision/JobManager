@@ -23,11 +23,13 @@ public class CompanyService {
     private PublicProfileRepository publicProfileRepository;
 
     /**
-     * Get all companies (for internal/external API consumption)
-     * Used by Job Applicant subsystem to fetch company details
+     * Get paginated companies (for internal/external API consumption)
+     * @param take page size
+     * @param page page number (1-based)
      */
-    public java.util.List<Company> getAllCompanies() {
-        return companyRepository.findAll();
+    public org.springframework.data.domain.Page<Company> getAllCompanies(int take, int page) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page-1,0), take);
+        return companyRepository.findAll(pageable);
     }
 
     public CompanyProfileUpdateDto updateProfile(String email, CompanyProfileUpdateDto updatedRequest) {
