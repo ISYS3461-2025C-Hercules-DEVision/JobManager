@@ -64,21 +64,24 @@ function SkillTagInput({ skills, onSkillsChange, error }) {
       {/* Tags Display */}
       <div className={`min-h-[52px] px-3 py-2 border-2 ${error ? 'border-primary' : 'border-black'} bg-white flex flex-wrap gap-2 items-center`}>
         {skills.map((skill, index) => (
-          <span
-            key={index}
-            className="inline-flex items-center gap-1 px-3 py-1 bg-primary text-white font-bold text-sm border-2 border-black"
-          >
-            {skill}
-            <button
-              type="button"
-              onClick={() => removeSkill(skill)}
-              className="ml-1 hover:text-gray-200 font-black"
-            >
-              ×
-            </button>
-          </span>
-        ))}
-        <input
+                      {[
+                        { label: "Full-time", value: "FULL_TIME" },
+                        { label: "Part-time", value: "PART_TIME" },
+                        { label: "Internship", value: "INTERNSHIP" },
+                        { label: "Contract", value: "CONTRACT" }
+                      ].map((type) => (
+                        <label key={type.value} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="employmentTypes"
+                            value={type.value}
+                            checked={formData.employmentTypes.includes(type.value)}
+                            onChange={handleChange}
+                            className="w-4 h-4 border-2 border-black"
+                          />
+                          <span className="font-semibold">{type.label}</span>
+                        </label>
+                      ))}
           type="text"
           value={inputValue}
           onChange={(e) => {
