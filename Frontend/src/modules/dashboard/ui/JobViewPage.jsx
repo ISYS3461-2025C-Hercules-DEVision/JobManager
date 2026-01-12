@@ -79,7 +79,11 @@ function JobViewPage() {
 
   const handleApprove = async (applicationId) => {
     try {
-      await applicationService.approveApplication(jobId, applicationId, "Application approved - strong profile");
+      await applicationService.approveApplication(
+        jobId,
+        applicationId,
+        "Application approved - strong profile"
+      );
       showSuccess("Application approved successfully");
       // Refresh applications
       const apps = await applicationService.getApplicationsForJobPost(jobId);
@@ -96,7 +100,11 @@ function JobViewPage() {
     }
 
     try {
-      await applicationService.rejectApplication(jobId, applicationId, "Application rejected - requirements not met");
+      await applicationService.rejectApplication(
+        jobId,
+        applicationId,
+        "Application rejected - requirements not met"
+      );
       showSuccess("Application rejected");
       // Refresh applications
       const apps = await applicationService.getApplicationsForJobPost(jobId);
@@ -211,7 +219,8 @@ function JobViewPage() {
                   <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                     <span className="text-lg">💼</span>
                     <span className="font-bold">
-                      {Array.isArray(job.employmentTypes) && job.employmentTypes.length > 0
+                      {Array.isArray(job.employmentTypes) &&
+                      job.employmentTypes.length > 0
                         ? job.employmentTypes.join(", ")
                         : job.employmentType || "Not specified"}
                     </span>
@@ -290,7 +299,9 @@ function JobViewPage() {
           {job.responsibilities && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
-                <h3 className="text-xl font-black uppercase">Key Responsibilities</h3>
+                <h3 className="text-xl font-black uppercase">
+                  Key Responsibilities
+                </h3>
               </div>
               <div className="p-8">
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
@@ -431,7 +442,7 @@ function JobViewPage() {
                           className="border-b-2 border-gray-200 hover:bg-gray-50"
                         >
                           <td className="px-6 py-4 font-semibold">
-                            {applicant?.name || "Loading..."}
+                            {applicant?.fullName || "Loading..."}
                           </td>
                           <td className="px-6 py-4">
                             <button
