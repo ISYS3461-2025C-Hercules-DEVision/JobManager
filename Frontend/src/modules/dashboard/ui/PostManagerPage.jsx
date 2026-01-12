@@ -42,7 +42,6 @@ function PostManagerPage() {
     const load = async () => {
       try {
         const data = await jobService.listMyJobs();
-        console.log('🔍 Raw job data from API:', data);
         const today = new Date();
 
         const mapped = data.map((j) => {
@@ -75,7 +74,6 @@ function PostManagerPage() {
           };
         });
 
-        console.log('📊 Mapped job posts:', mapped);
         setJobPosts(mapped);
       } catch (error) {
         console.error("Failed to load job posts:", error);

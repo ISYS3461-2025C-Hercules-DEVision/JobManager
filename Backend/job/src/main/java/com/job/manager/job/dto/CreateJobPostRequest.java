@@ -57,24 +57,4 @@ public class CreateJobPostRequest {
     private boolean published;
     
     private List<String> skills;
-    
-    /**
-     * Job requirements (e.g., education, certifications, years of experience)
-     */
-    private String requirements;
-    
-    /**
-     * Key responsibilities and duties
-     */
-    private String responsibilities;
-    
-    /**
-     * Benefits offered (e.g., health insurance, 401k, remote work)
-     */
-    private String benefits;
-    
-    /**
-     * Experience level required: Entry-level, Mid-level, Senior, Lead, Executive
-     */
-    private String experienceLevel;
 }
