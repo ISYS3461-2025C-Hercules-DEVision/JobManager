@@ -11,15 +11,23 @@ function ApplicantDetailPage() {
   const { applicationId } = useParams();
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
+  const [applicant, setApplicant] = useState(null);
   const navigate = useNavigate();
   const { showError } = useApp();
 
   useEffect(() => {
-    const fetchApplication = async () => {
+    const fetchApplicationData = async () => {
       try {
         setLoading(true);
-        const data = await applicationService.getApplicationById(applicationId);
-        setApplication(data);
+        // Fetch application details (for CV/documents)
+        const appData = await applicationService.getApplicationById(applicationId);
+        setApplication(appData);
+        
+        // Fetch applicant profile (for personal info)
+        if (appData.applicantId) {
+          const applicantData = await applicationService.getApplicantById(appData.applicantId);
+          setApplicant(applicantData);
+        }
       } catch (error) {
         console.error("Failed to fetch application details:", error);
         showError("Failed to load application details");
@@ -29,7 +37,7 @@ function ApplicantDetailPage() {
     };
 
     if (applicationId) {
-      fetchApplication();
+      fetchApplicationData();
     }
   }, [applicationId, showError]);
 
@@ -44,10 +52,10 @@ function ApplicantDetailPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-black uppercase mb-2">
-              Application Details
+              Applicant Profile
             </h1>
             <p className="text-gray-600">
-              Review application and candidate documents
+              Complete information about this candidate
             </p>
           </div>
           <button
@@ -64,20 +72,20 @@ function ApplicantDetailPage() {
         <div className="bg-white border-4 border-black p-12 text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-black border-t-transparent mb-4"></div>
           <p className="text-xl font-bold uppercase">
-            Loading application details...
+            Loading applicant details...
           </p>
         </div>
       )}
 
       {/* Error State */}
-      {!loading && !application && (
+      {!loading && !applicant && (
         <div className="bg-white border-4 border-black p-12 text-center">
           <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-black uppercase mb-2">
-            Application Not Found
+            Applicant Not Found
           </h2>
           <p className="text-gray-600 mb-6">
-            The application you're looking for doesn't exist or has been removed.
+            The applicant you're looking for doesn't exist or has been removed.
           </p>
           <button
             onClick={handleBack}
@@ -88,11 +96,300 @@ function ApplicantDetailPage() {
         </div>
       )}
 
-      {/* Application Content */}
-      {!loading && application && (
+      {/* Applicant Content */}
+      {!loading && applicant && (
         <div className="space-y-6">
-          {/* Application Status Card */}
+          {/* Basic Info Card */}
           <div className="bg-white border-4 border-black p-8">
+            <div className="flex items-start gap-6">
+              {/* Profile Image */}
+              {applicant.profileImageUrl ? (
+                <img
+                  src={applicant.profileImageUrl}
+                  alt={applicant.fullName}
+                  className="w-32 h-32 object-cover border-4 border-black"
+                />
+              ) : (
+                <div className="w-32 h-32 bg-gray-200 border-4 border-black flex items-center justify-center">
+                  <span className="text-5xl">👤</span>
+                </div>
+              )}
+
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <h2 className="text-3xl font-black uppercase">
+                    {applicant.fullName || applicant.name || "Unknown"}
+                  </h2>
+                  
+                  {/* Status Badges */}
+                  <div className="flex gap-2">
+                    <span
+                      className={`px-3 py-1 text-xs font-bold uppercase border-2 ${
+                        applicant.activated
+                          ? "bg-green-100 text-green-800 border-green-800"
+                          : "bg-red-100 text-red-800 border-red-800"
+                      }`}
+                    >
+                      {applicant.activated ? "✓ Activated" : "✗ Not Activated"}
+                    </span>
+                    <span
+                      className={`px-3 py-1 text-xs font-bold uppercase border-2 ${
+                        applicant.employmentStatus
+                          ? "bg-blue-100 text-blue-800 border-blue-800"
+                          : "bg-gray-100 text-gray-800 border-gray-800"
+                      }`}
+                    >
+                      {applicant.employmentStatus ? "💼 Employed" : "🔍 Seeking"}
+                    </span>
+                    {applicant.archived && (
+                      <span className="px-3 py-1 text-xs font-bold uppercase border-2 bg-yellow-100 text-yellow-800 border-yellow-800">
+                        📦 Archived
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {applicant.email && (
+                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                      <span className="text-lg">✉️</span>
+                      <span className="font-bold">{applicant.email}</span>
+                    </div>
+                  )}
+                  {applicant.phoneNumber && (
+                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                      <span className="text-lg">📱</span>
+                      <span className="font-bold">{applicant.phoneNumber}</span>
+                    </div>
+                  )}
+                  {(applicant.city || applicant.location) && (
+                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                      <span className="text-lg">📍</span>
+                      <span className="font-bold">
+                        {applicant.city || applicant.location}
+                        {applicant.country && `, ${applicant.country}`}
+                      </span>
+                    </div>
+                  )}
+                  {applicant.streetAddress && (
+                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                      <span className="text-lg">🏠</span>
+                      <span className="font-bold">{applicant.streetAddress}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Professional Summary */}
+          {applicant.summary && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">
+                  Professional Summary
+                </h3>
+              </div>
+              <div className="p-8">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {applicant.summary}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Skills */}
+          {applicant.skills && applicant.skills.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Skills</h3>
+              </div>
+              <div className="p-8">
+                <div className="flex flex-wrap gap-3">
+                  {applicant.skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Experience */}
+          {applicant.experience && applicant.experience.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">
+                  Work Experience
+                </h3>
+              </div>
+              <div className="p-8 space-y-6">
+                {applicant.experience.map((exp, idx) => (
+                  <div
+                    key={idx}
+                    className="border-l-4 border-black pl-6 pb-6 last:pb-0"
+                  >
+                    <h4 className="text-lg font-black uppercase mb-2">
+                      {exp.title || exp.position}
+                    </h4>
+                    <p className="font-bold text-gray-700 mb-2">
+                      {exp.company}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {exp.startDate} - {exp.endDate || "Present"}
+                    </p>
+                    {exp.description && (
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {exp.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Education */}
+          {applicant.education && applicant.education.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Education</h3>
+              </div>
+              <div className="p-8 space-y-6">
+                {applicant.education.map((edu, idx) => (
+                  <div
+                    key={idx}
+                    className="border-l-4 border-black pl-6 pb-6 last:pb-0"
+                  >
+                    <h4 className="text-lg font-black uppercase mb-2">
+                      {edu.degree}
+                    </h4>
+                    <p className="font-bold text-gray-700 mb-2">
+                      {edu.institution}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {edu.startYear} - {edu.endYear || "Present"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Additional Information */}
+          <div className="bg-white border-4 border-black">
+            <div className="border-b-4 border-black p-6">
+              <h3 className="text-xl font-black uppercase">
+                Additional Information
+              </h3>
+            </div>
+            <div className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {applicant.expectedSalary && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                      Expected Salary
+                    </p>
+                    <p className="text-lg font-bold">
+                      ${applicant.expectedSalary.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+                {applicant.availability && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                      Availability
+                    </p>
+                    <p className="text-lg font-bold">
+                      {applicant.availability}
+                    </p>
+                  </div>
+                )}
+                {applicant.yearsOfExperience !== undefined && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                      Years of Experience
+                    </p>
+                    <p className="text-lg font-bold">
+                      {applicant.yearsOfExperience} years
+                    </p>
+                  </div>
+                )}
+                {applicant.createdAt && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                      Member Since
+                    </p>
+                    <p className="text-lg font-bold">
+                      {new Date(applicant.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Resume & Portfolio from Applicant */}
+          {(applicant.resumeId || (applicant.mediaPortfolios && applicant.mediaPortfolios.length > 0)) && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">
+                  Documents & Portfolio
+                </h3>
+              </div>
+              <div className="p-8 space-y-6">
+                {applicant.resumeId && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-3">
+                      Resume
+                    </p>
+                    <a
+                      href={`/api/files/${applicant.resumeId}`}
+                      download
+                      className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 border-2 border-black hover:bg-white hover:text-black transition-colors font-bold uppercase text-sm"
+                    >
+                      <span>📄</span>
+                      Download Resume
+                    </a>
+                  </div>
+                )}
+
+                {applicant.mediaPortfolios && applicant.mediaPortfolios.length > 0 && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-3">
+                      Media Portfolio
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {applicant.mediaPortfolios.map((url, index) => (
+                        <a
+                          key={index}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-white border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold text-sm"
+                        >
+                          <span>🔗</span>
+                          Portfolio {index + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Application Status Card (if application data exists) */}
+          {application && (
+            <div className="bg-white border-4 border-black p-8">
             <h3 className="text-2xl font-black uppercase mb-6 border-b-4 border-black pb-2">
               Application Information
             </h3>
