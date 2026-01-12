@@ -13,6 +13,7 @@ function ApplicantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
   const [applicant, setApplicant] = useState(null);
+  const [resume, setResume] = useState(null);
   const navigate = useNavigate();
   const { showError } = useApp();
 
@@ -32,6 +33,18 @@ function ApplicantDetailPage() {
             appData.applicantId
           );
           setApplicant(applicantData);
+          
+          // Fetch applicant resume (for skills, education, experience)
+          try {
+            const resumeData = await applicationService.getApplicantResume(
+              appData.applicantId
+            );
+            setResume(resumeData);
+            console.log("Resume data:", resumeData);
+          } catch (resumeError) {
+            console.log("Resume not available:", resumeError);
+            // Resume is optional, don't throw error
+          }
         }
       } catch (error) {
         console.error("Failed to fetch application details:", error);
@@ -194,7 +207,7 @@ function ApplicantDetailPage() {
           </div>
 
           {/* Professional Summary */}
-          {applicant.summary && (
+          {(resume?.summary || applicant.summary) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -203,26 +216,26 @@ function ApplicantDetailPage() {
               </div>
               <div className="p-8">
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {applicant.summary}
+                  {resume?.summary || applicant.summary}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Skills */}
-          {applicant.skills && applicant.skills.length > 0 && (
+          {/* Skills - prioritize resume data */}
+          {((resume?.skills && resume.skills.length > 0) || (applicant.skills && applicant.skills.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Skills</h3>
               </div>
               <div className="p-8">
                 <div className="flex flex-wrap gap-3">
-                  {applicant.skills.map((skill, idx) => (
+                  {(resume?.skills || applicant.skills || []).map((skill, idx) => (
                     <span
                       key={idx}
                       className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
                     >
-                      {skill}
+                      {typeof skill === 'string' ? skill : skill.name || skill.skillName}
                     </span>
                   ))}
                 </div>
@@ -230,8 +243,8 @@ function ApplicantDetailPage() {
             </div>
           )}
 
-          {/* Experience */}
-          {applicant.experience && applicant.experience.length > 0 && (
+          {/* Experience - prioritize resume data */}
+          {((resume?.experiences && resume.experiences.length > 0) || (applicant.experience && applicant.experience.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -239,19 +252,19 @@ function ApplicantDetailPage() {
                 </h3>
               </div>
               <div className="p-8 space-y-6">
-                {applicant.experience.map((exp, idx) => (
+                {(resume?.experiences || applicant.experience || []).map((exp, idx) => (
                   <div
                     key={idx}
                     className="border-l-4 border-black pl-6 pb-6 last:pb-0"
                   >
                     <h4 className="text-lg font-black uppercase mb-2">
-                      {exp.title || exp.position}
+                      {exp.title || exp.position || exp.jobTitle}
                     </h4>
                     <p className="font-bold text-gray-700 mb-2">
-                      {exp.company}
+                      {exp.company || exp.companyName}
                     </p>
                     <p className="text-sm text-gray-600 mb-3">
-                      {exp.startDate} - {exp.endDate || "Present"}
+                      {exp.startDate} - {exp.endDate || exp.currentlyWorking ? "Present" : exp.endDate}
                     </p>
                     {exp.description && (
                       <p className="text-gray-700 whitespace-pre-wrap">
@@ -264,26 +277,138 @@ function ApplicantDetailPage() {
             </div>
           )}
 
-          {/* Education */}
-          {applicant.education && applicant.education.length > 0 && (
+          {/* Education - prioritize resume data */}
+          {((resume?.educations && resume.educations.length > 0) || (applicant.education && applicant.education.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Education</h3>
               </div>
               <div className="p-8 space-y-6">
-                {applicant.education.map((edu, idx) => (
+                {(resume?.educations || applicant.education || []).map((edu, idx) => (
                   <div
                     key={idx}
                     className="border-l-4 border-black pl-6 pb-6 last:pb-0"
                   >
                     <h4 className="text-lg font-black uppercase mb-2">
-                      {edu.degree}
+                      {edu.degree || edu.degreeType}
                     </h4>
                     <p className="font-bold text-gray-700 mb-2">
-                      {edu.institution}
+                      {edu.institution || edu.institutionName}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {edu.startYear} - {edu.endYear || "Present"}
+                      {edu.startYear || edu.startDate} - {edu.endYear || edu.endDate || "Present"}
+                    </p>
+                    {edu.fieldOfStudy && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Field: {edu.fieldOfStudy}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Certifications - from resume data */}
+          {resume?.certifications && resume.certifications.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Certifications</h3>
+              </div>
+              <div className="p-8 space-y-4">
+                {resume.certifications.map((cert, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-gray-50 border-2 border-gray-300 p-4"
+                  >
+                    <h4 className="text-lg font-black uppercase mb-2">
+                      {cert.name || cert.certificationName}
+                    </h4>
+                    {cert.issuingOrganization && (
+                      <p className="font-bold text-gray-700 mb-1">
+                        {cert.issuingOrganization}
+                      </p>
+                    )}
+                    {cert.issueDate && (
+                      <p className="text-sm text-gray-600">
+                        Issued: {cert.issueDate}
+                        {cert.expiryDate && ` • Expires: ${cert.expiryDate}`}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Projects - from resume data */}
+          {resume?.projects && resume.projects.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Projects</h3>
+              </div>
+              <div className="p-8 space-y-6">
+                {resume.projects.map((project, idx) => (
+                  <div
+                    key={idx}
+                    className="border-l-4 border-black pl-6 pb-6 last:pb-0"
+                  >
+                    <h4 className="text-lg font-black uppercase mb-2">
+                      {project.title || project.projectName}
+                    </h4>
+                    {project.description && (
+                      <p className="text-gray-700 whitespace-pre-wrap mb-2">
+                        {project.description}
+                      </p>
+                    )}
+                    {(project.startDate || project.endDate) && (
+                      <p className="text-sm text-gray-600">
+                        {project.startDate} {project.endDate && `- ${project.endDate}`}
+                      </p>
+                    )}
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {project.technologies.map((tech, techIdx) => (
+                          <span
+                            key={techIdx}
+                            className="px-3 py-1 bg-gray-200 border-2 border-gray-400 text-xs font-bold"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Languages - from resume data */}
+          {resume?.languages && resume.languages.length > 0 && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Languages</h3>
+              </div>
+              <div className="p-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {resume.languages.map((lang, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 border-2 border-gray-300 p-4"
+                    >
+                      <p className="font-bold text-lg mb-1">
+                        {lang.language || lang.languageName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {lang.proficiency || lang.proficiencyLevel}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
                     </p>
                   </div>
                 ))}
