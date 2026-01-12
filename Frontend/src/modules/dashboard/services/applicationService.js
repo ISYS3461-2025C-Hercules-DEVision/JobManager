@@ -1,8 +1,8 @@
 import { httpClient } from "../../../utils/HttpUtil";
 import { ENV } from "../../../config/env";
 
-const APPLICATION_BASE_URL = `${ENV.API_BASE_URL}/api/v1/applications`;
-const APPLICANT_BASE_URL = "http://13.210.119.17:10789/api/v1/applicants";
+const APPLICATION_BASE_URL = `${ENV.APPLICATION_SERVICE_URL}/api/v1/applications`;
+const APPLICANT_BASE_URL = `${ENV.APPLICANT_SERVICE_URL}/api/v1/applicants`;
 
 /**
  * Application Service
