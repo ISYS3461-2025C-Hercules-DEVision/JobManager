@@ -31,19 +31,46 @@ public class ApplicantProfileKafkaListener {
         log.info("Notification(Matching): received applicant event: {} ({})",
                 event.getFullName(), event.getApplicantId());
 
-        List<CompanySearchProfileDto> profiles = subscriptionClient.getAllSearchProfiles();
-        List<String> matchedCompanyIds = matchingEngine.findMatchingCompanyIds(event, profiles);
+        long startTime = System.currentTimeMillis();
 
-        for (String companyId : matchedCompanyIds) {
-            ApplicantMatchedEvent matchedEvent = new ApplicantMatchedEvent();
-            matchedEvent.setCompanyId(companyId);
-            matchedEvent.setApplicantId(event.getApplicantId());
-            matchedEvent.setApplicantName(event.getFullName());
+        try {
+            List<CompanySearchProfileDto> profiles = subscriptionClient.getAllSearchProfiles();
+            log.info("Retrieved {} company search profiles for matching", profiles.size());
 
-            notificationService.handleApplicantMatched(matchedEvent);
+            if (profiles.isEmpty()) {
+                log.warn("No company search profiles available for matching applicant {}", event.getApplicantId());
+                return;
+            }
+
+            List<String> matchedCompanyIds = matchingEngine.findMatchingCompanyIds(event, profiles);
+            log.info("Matching complete: applicant {} matched with {} out of {} companies",
+                    event.getApplicantId(), matchedCompanyIds.size(), profiles.size());
+
+            if (matchedCompanyIds.isEmpty()) {
+                log.info("No matches found for applicant {} (country: {}, skills: {})",
+                        event.getApplicantId(), event.getCountry(), event.getSkills());
+            }
+
+            for (String companyId : matchedCompanyIds) {
+                ApplicantMatchedEvent matchedEvent = new ApplicantMatchedEvent();
+                matchedEvent.setCompanyId(companyId);
+                matchedEvent.setApplicantId(event.getApplicantId());
+                matchedEvent.setApplicantName(event.getFullName());
+
+                log.debug("Sending match notification to company {} for applicant {}",
+                        companyId, event.getApplicantId());
+                notificationService.handleApplicantMatched(matchedEvent);
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Successfully processed applicant {} - matched with {} companies in {}ms",
+                    event.getApplicantId(), matchedCompanyIds.size(), duration);
+
+        } catch (Exception e) {
+            log.error("Error processing applicant event for {}: {}",
+                    event.getApplicantId(), e.getMessage(), e);
+            throw e;
         }
-        
-        log.info("Matched applicant {} with {} companies", event.getApplicantId(), matchedCompanyIds.size());
     }
 }
 
