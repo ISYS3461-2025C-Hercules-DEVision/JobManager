@@ -219,4 +219,34 @@ public class CompanyService {
 
         companyRepository.save(company);
     }
+
+    /**
+     * Activate company account
+     * Sets isActive to true
+     */
+    @Transactional
+    public void activateAccount(String email) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Company not found"));
+
+        company.setIsActive(true);
+        company.setUpdatedAt(LocalDateTime.now());
+
+        companyRepository.save(company);
+    }
+
+    /**
+     * Deactivate company account
+     * Sets isActive to false - user will be unable to access the system
+     */
+    @Transactional
+    public void deactivateAccount(String email) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Company not found"));
+
+        company.setIsActive(false);
+        company.setUpdatedAt(LocalDateTime.now());
+
+        companyRepository.save(company);
+    }
 }

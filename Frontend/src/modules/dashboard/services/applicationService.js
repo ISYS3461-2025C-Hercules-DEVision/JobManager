@@ -45,6 +45,23 @@ export const applicationService = {
   },
 
   /**
+   * Get application details by ID
+   * @param {string} applicationId - Application ID
+   * @returns {Promise<Object>} Application details with documents
+   */
+  async getApplicationById(applicationId) {
+    try {
+      const response = await httpClient.get(
+        `${APPLICATION_BASE_URL}/${applicationId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch application:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Update application status (Approve/Reject/etc)
    * @param {string} jobPostId - Job Post ID
    * @param {string} applicationId - Application ID
