@@ -2,8 +2,6 @@ package com.job.manager.job.controller;
 
 import com.job.manager.job.dto.AuthenticatedUser;
 import com.job.manager.job.entity.JobPost;
-import com.job.manager.job.dto.JobPostResponse;
-import com.job.manager.job.util.JobPostMapper;
 import com.job.manager.job.service.JobService;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -34,27 +32,24 @@ public class JobController {
         return jobService.getJobsForCompany(user.getUserId());
     }
 
-        // Endpoint for JA: returns JobPostResponse DTOs with postedDate and expiryDate
-        @GetMapping("/jobs/ja")
-        public org.springframework.data.domain.Page<JobPostResponse> getAllJobsForJA(
+    @GetMapping("/jobs")
+    public Page<JobPost> getAllJobs(
             @RequestParam(required=false) String title,
             @RequestParam(required=false) String location,
             @RequestParam(required=false) String employmentType,
             @RequestParam(required=false) String keyWord,
             @RequestParam(defaultValue="1") int page,
             @RequestParam(defaultValue="10") int size
-        ) {
-        org.springframework.data.domain.Page<JobPost> jobs = jobService.getJobs(
-            title, location, employmentType, keyWord, page, size
+    ) {
+        return jobService.getJobs(
+                title, location, employmentType, keyWord, page, size
         );
-        return jobs.map(JobPostMapper::toResponse);
-        }
+    }
 
-    // Endpoint for JA: returns JobPostResponse DTO with postedDate and expiryDate
-    @GetMapping("/jobs/ja/{jobId}")
-    public JobPostResponse getJobByIdForJA(@PathVariable String jobId) {
-        JobPost job = jobService.getJobById(jobId);
-        return JobPostMapper.toResponse(job);
+    @GetMapping("/jobs/{jobId}")
+    public JobPost getJobById(@PathVariable String jobId
+    ) {
+        return jobService.getJobById(jobId);
     }
 
     @PutMapping("/jobs/{jobId}")
