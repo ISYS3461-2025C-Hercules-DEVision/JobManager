@@ -45,6 +45,23 @@ export const applicationService = {
   },
 
   /**
+   * Get applicant resume details
+   * @param {string} applicantId - Applicant ID
+   * @returns {Promise<Object>} Resume details with skills, education, experience, etc.
+   */
+  async getApplicantResume(applicantId) {
+    try {
+      const response = await httpClient.get(
+        `${APPLICANT_BASE_URL}/${applicantId}/resumes`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch applicant resume:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get application details by ID
    * @param {string} applicationId - Application ID
    * @returns {Promise<Object>} Application details with documents
