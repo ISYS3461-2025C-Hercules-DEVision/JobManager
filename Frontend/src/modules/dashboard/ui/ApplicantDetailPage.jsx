@@ -34,7 +34,7 @@ function ApplicantDetailPage() {
             appData.applicantId
           );
           setApplicant(applicantData);
-          
+
           // Fetch applicant resume (for skills, education, experience)
           try {
             const resumeData = await applicationService.getApplicantResume(
@@ -224,28 +224,34 @@ function ApplicantDetailPage() {
           )}
 
           {/* Skills - prioritize resume data */}
-          {((resume?.skills && resume.skills.length > 0) || (applicant.skills && applicant.skills.length > 0)) && (
+          {((resume?.skills && resume.skills.length > 0) ||
+            (applicant.skills && applicant.skills.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Skills</h3>
               </div>
               <div className="p-8">
                 <div className="flex flex-wrap gap-3">
-                  {(resume?.skills || applicant.skills || []).map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
-                    >
-                      {typeof skill === 'string' ? skill : skill.name || skill.skillName}
-                    </span>
-                  ))}
+                  {(resume?.skills || applicant.skills || []).map(
+                    (skill, idx) => (
+                      <span
+                        key={idx}
+                        className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
+                      >
+                        {typeof skill === "string"
+                          ? skill
+                          : skill.name || skill.skillName}
+                      </span>
+                    )
+                  )}
                 </div>
               </div>
             </div>
           )}
 
           {/* Experience - prioritize resume data */}
-          {((resume?.experience && resume.experience.length > 0) || (applicant.experience && applicant.experience.length > 0)) && (
+          {((resume?.experience && resume.experience.length > 0) ||
+            (applicant.experience && applicant.experience.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -253,64 +259,73 @@ function ApplicantDetailPage() {
                 </h3>
               </div>
               <div className="p-8 space-y-6">
-                {(resume?.experience || applicant.experience || []).map((exp, idx) => (
-                  <div
-                    key={idx}
-                    className="border-l-4 border-black pl-6 pb-6 last:pb-0"
-                  >
-                    <h4 className="text-lg font-black uppercase mb-2">
-                      {exp.jobTitle || exp.title || exp.position}
-                    </h4>
-                    <p className="font-bold text-gray-700 mb-2">
-                      {exp.companyName || exp.company}
-                    </p>
-                    <p className="text-sm text-gray-600 mb-3">
-                      {exp.fromYear || exp.startDate} - {exp.toYear || exp.endDate || (exp.currentlyWorking ? "Present" : "")}
-                    </p>
-                    {exp.description && (
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {exp.description}
+                {(resume?.experience || applicant.experience || []).map(
+                  (exp, idx) => (
+                    <div
+                      key={idx}
+                      className="border-l-4 border-black pl-6 pb-6 last:pb-0"
+                    >
+                      <h4 className="text-lg font-black uppercase mb-2">
+                        {exp.jobTitle || exp.title || exp.position}
+                      </h4>
+                      <p className="font-bold text-gray-700 mb-2">
+                        {exp.companyName || exp.company}
                       </p>
-                    )}
-                  </div>
-                ))}
+                      <p className="text-sm text-gray-600 mb-3">
+                        {exp.fromYear || exp.startDate} -{" "}
+                        {exp.toYear ||
+                          exp.endDate ||
+                          (exp.currentlyWorking ? "Present" : "")}
+                      </p>
+                      {exp.description && (
+                        <p className="text-gray-700 whitespace-pre-wrap">
+                          {exp.description}
+                        </p>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}
 
           {/* Education - prioritize resume data */}
-          {((resume?.education && resume.education.length > 0) || (applicant.education && applicant.education.length > 0)) && (
+          {((resume?.education && resume.education.length > 0) ||
+            (applicant.education && applicant.education.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Education</h3>
               </div>
               <div className="p-8 space-y-6">
-                {(resume?.education || applicant.education || []).map((edu, idx) => (
-                  <div
-                    key={idx}
-                    className="border-l-4 border-black pl-6 pb-6 last:pb-0"
-                  >
-                    <h4 className="text-lg font-black uppercase mb-2">
-                      {edu.degree || edu.degreeType}
-                    </h4>
-                    <p className="font-bold text-gray-700 mb-2">
-                      {edu.institution || edu.institutionName}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {edu.fromYear || edu.startYear || edu.startDate} - {edu.toYear || edu.endYear || edu.endDate || "Present"}
-                    </p>
-                    {edu.fieldOfStudy && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Field: {edu.fieldOfStudy}
+                {(resume?.education || applicant.education || []).map(
+                  (edu, idx) => (
+                    <div
+                      key={idx}
+                      className="border-l-4 border-black pl-6 pb-6 last:pb-0"
+                    >
+                      <h4 className="text-lg font-black uppercase mb-2">
+                        {edu.degree || edu.degreeType}
+                      </h4>
+                      <p className="font-bold text-gray-700 mb-2">
+                        {edu.institution || edu.institutionName}
                       </p>
-                    )}
-                    {edu.gpa && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        GPA: {edu.gpa}
+                      <p className="text-sm text-gray-600">
+                        {edu.fromYear || edu.startYear || edu.startDate} -{" "}
+                        {edu.toYear || edu.endYear || edu.endDate || "Present"}
                       </p>
-                    )}
-                  </div>
-                ))}
+                      {edu.fieldOfStudy && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Field: {edu.fieldOfStudy}
+                        </p>
+                      )}
+                      {edu.gpa && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          GPA: {edu.gpa}
+                        </p>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}
@@ -328,7 +343,9 @@ function ApplicantDetailPage() {
                       key={idx}
                       className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
                     >
-                      {typeof cert === 'string' ? cert : cert.name || cert.certificationName}
+                      {typeof cert === "string"
+                        ? cert
+                        : cert.name || cert.certificationName}
                     </span>
                   ))}
                 </div>
@@ -358,21 +375,23 @@ function ApplicantDetailPage() {
                     )}
                     {(project.startDate || project.endDate) && (
                       <p className="text-sm text-gray-600">
-                        {project.startDate} {project.endDate && `- ${project.endDate}`}
+                        {project.startDate}{" "}
+                        {project.endDate && `- ${project.endDate}`}
                       </p>
                     )}
-                    {project.technologies && project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {project.technologies.map((tech, techIdx) => (
-                          <span
-                            key={techIdx}
-                            className="px-3 py-1 bg-gray-200 border-2 border-gray-400 text-xs font-bold"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {project.technologies &&
+                      project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {project.technologies.map((tech, techIdx) => (
+                            <span
+                              key={techIdx}
+                              className="px-3 py-1 bg-gray-200 border-2 border-gray-400 text-xs font-bold"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                   </div>
                 ))}
               </div>
@@ -401,12 +420,6 @@ function ApplicantDetailPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
-                    </p>
-                  </div>
-                ))}
               </div>
             </div>
           )}
@@ -495,7 +508,12 @@ function ApplicantDetailPage() {
                       </p>
                     )}
                     <a
-                      href={`${ENV.APPLICANT_SERVICE_URL || 'http://13.210.119.17:10789'}/api/v1/applicants/${resume.applicantId}/resumes/${resume.resumeId}/download`}
+                      href={`${
+                        ENV.APPLICANT_SERVICE_URL ||
+                        "http://13.210.119.17:10789"
+                      }/api/v1/applicants/${resume.applicantId}/resumes/${
+                        resume.resumeId
+                      }/download`}
                       download
                       className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 border-2 border-black hover:bg-white hover:text-black transition-colors font-bold uppercase text-sm"
                     >
@@ -652,9 +670,11 @@ function ApplicantDetailPage() {
                         {doc.fileType === "PDF" && (
                           <div className="mt-4 border-2 border-black">
                             <iframe
-                              src={doc.fileUrl}
+                              src={`https://docs.google.com/gview?url=${encodeURIComponent(
+                                doc.fileUrl
+                              )}&embedded=true`}
                               className="w-full h-96"
-                              title={`Document ${index + 1}`}
+                              title="PDF Preview"
                             />
                           </div>
                         )}
