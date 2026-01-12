@@ -382,4 +382,33 @@ public class CompanyController {
                 .updatedAt(profile.getUpdatedAt())
                 .build();
     }
+
+    /**
+     * Activate company account
+     * @param user Authenticated user
+     * @return Success message
+     */
+    @PostMapping("/account/activate")
+    public ResponseEntity<MessageResponseDto> activateAccount(@CurrentUser AuthenticatedUser user) {
+        companyService.activateAccount(user.getEmail());
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Account activated successfully")
+                .build());
+    }
+
+    /**
+     * Deactivate company account
+     * After deactivation, the user will be logged out and cannot access the system
+     * @param user Authenticated user
+     * @return Error response indicating account is deactivated
+     */
+    @PostMapping("/account/deactivate")
+    public ResponseEntity<MessageResponseDto> deactivateAccount(@CurrentUser AuthenticatedUser user) {
+        companyService.deactivateAccount(user.getEmail());
+        // Return 403 Forbidden to indicate the account is now deactivated
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(MessageResponseDto.builder()
+                        .message("Account deactivated. You have been logged out.")
+                        .build());
+    }
 }
