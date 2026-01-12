@@ -42,8 +42,6 @@ public class CompanyController {
             .isPremium(company.getIsPremium())
             .isActive(company.getIsActive())
             .isEmailVerified(company.getIsEmailVerified())
-            .postedDate(company.getCreatedAt())
-            .expiryDate(company.getUpdatedAt())
             .build());
         return ResponseEntity.ok(dtos);
     }
@@ -62,8 +60,6 @@ public class CompanyController {
                     .isPremium(company.getIsPremium())
                     .isActive(company.getIsActive())
                     .isEmailVerified(company.getIsEmailVerified())
-                    .postedDate(company.getCreatedAt())
-                    .expiryDate(company.getUpdatedAt())
                     .build();
                 return ResponseEntity.ok(dto);
         } catch (Exception e) {

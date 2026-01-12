@@ -22,7 +22,4 @@ public class CompanyInternalDTO {
     private Boolean isActive;
     private Boolean isEmailVerified;
 
-    // For job post integration with JA
-    private java.time.LocalDateTime postedDate;
-    private java.time.LocalDateTime expiryDate;
 }
