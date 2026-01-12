@@ -62,6 +62,38 @@ export const applicationService = {
   },
 
   /**
+   * Filter applicants by degree and skills
+   * @param {Object} filters - Filter criteria
+   * @param {string} filters.degree - Degree type (BACHELOR, MASTER, etc.)
+   * @param {Array<string>} filters.skills - List of skills
+   * @param {boolean} filters.matchAllSkills - Match all skills or any
+   * @param {number} filters.take - Results per page
+   * @param {number} filters.page - Page number
+   * @returns {Promise<Object>} Paginated applicant results
+   */
+  async filterApplicants({ degree, skills, matchAllSkills = false, take = 10, page = 1 }) {
+    try {
+      const params = new URLSearchParams();
+      
+      if (degree) params.append('degree', degree);
+      if (skills && skills.length > 0) {
+        skills.forEach(skill => params.append('skills', skill));
+      }
+      params.append('matchAllSkills', matchAllSkills);
+      params.append('take', take);
+      params.append('page', page);
+
+      const response = await httpClient.get(
+        `${APPLICANT_BASE_URL}/filter?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to filter applicants:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get application details by ID
    * @param {string} applicationId - Application ID
    * @returns {Promise<Object>} Application details with documents
