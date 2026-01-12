@@ -148,7 +148,7 @@ function JobPostPage() {
     title: "",
     department: "",
     location: "",
-    employmentTypes: ["FULL_TIME"],
+    employmentTypes: ["Full-time"],
     salaryType: "RANGE",
     salaryMin: "",
     salaryMax: "",

@@ -55,6 +55,26 @@ public class JobPostResponse {
     private List<String> skills;
     
     /**
+     * Job requirements (e.g., education, certifications, years of experience)
+     */
+    private String requirements;
+    
+    /**
+     * Key responsibilities and duties
+     */
+    private String responsibilities;
+    
+    /**
+     * Benefits offered (e.g., health insurance, 401k, remote work)
+     */
+    private String benefits;
+    
+    /**
+     * Experience level required: Entry-level, Mid-level, Senior, Lead, Executive
+     */
+    private String experienceLevel;
+    
+    /**
      * Generates a human-readable salary display string
      */
     public static String generateSalaryDisplay(SalaryType type, BigDecimal min, BigDecimal max, String currency) {
