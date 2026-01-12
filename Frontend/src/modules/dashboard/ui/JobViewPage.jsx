@@ -115,8 +115,10 @@ function JobViewPage() {
     }
   };
 
-  const handleViewApplicant = (applicantId) => {
-    navigate(`/dashboard/applicant/${applicantId}`);
+  const handleViewApplicant = (applicantId, applicationId) => {
+    navigate(
+      `/dashboard/applicant/${applicantId}?applicationId=${applicationId}`
+    );
   };
 
   const handleDownloadCV = (cvUrl) => {
@@ -447,7 +449,10 @@ function JobViewPage() {
                           <td className="px-6 py-4">
                             <button
                               onClick={() =>
-                                handleViewApplicant(app.applicantId)
+                                handleViewApplicant(
+                                  app.applicantId,
+                                  app.applicationId
+                                )
                               }
                               className="text-blue-600 hover:text-blue-800 font-bold underline"
                             >

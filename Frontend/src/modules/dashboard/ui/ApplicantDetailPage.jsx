@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { applicationService } from "../services/applicationService";
 import { useApp } from "../../../state/AppContext";
 
@@ -8,7 +8,8 @@ import { useApp } from "../../../state/AppContext";
  * Shows complete applicant profile information
  */
 function ApplicantDetailPage() {
-  const { applicationId } = useParams();
+  const [searchParams] = useSearchParams();
+  const applicationId = searchParams.get("applicationId");
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
   const [applicant, setApplicant] = useState(null);
@@ -20,12 +21,16 @@ function ApplicantDetailPage() {
       try {
         setLoading(true);
         // Fetch application details (for CV/documents)
-        const appData = await applicationService.getApplicationById(applicationId);
+        const appData = await applicationService.getApplicationById(
+          applicationId
+        );
         setApplication(appData);
-        
+
         // Fetch applicant profile (for personal info)
         if (appData.applicantId) {
-          const applicantData = await applicationService.getApplicantById(appData.applicantId);
+          const applicantData = await applicationService.getApplicantById(
+            appData.applicantId
+          );
           setApplicant(applicantData);
         }
       } catch (error) {
@@ -35,6 +40,8 @@ function ApplicantDetailPage() {
         setLoading(false);
       }
     };
+
+    console.log(applicationId);
 
     if (applicationId) {
       fetchApplicationData();
@@ -120,7 +127,7 @@ function ApplicantDetailPage() {
                   <h2 className="text-3xl font-black uppercase">
                     {applicant.fullName || applicant.name || "Unknown"}
                   </h2>
-                  
+
                   {/* Status Badges */}
                   <div className="flex gap-2">
                     <span
@@ -139,7 +146,9 @@ function ApplicantDetailPage() {
                           : "bg-gray-100 text-gray-800 border-gray-800"
                       }`}
                     >
-                      {applicant.employmentStatus ? "💼 Employed" : "🔍 Seeking"}
+                      {applicant.employmentStatus
+                        ? "💼 Employed"
+                        : "🔍 Seeking"}
                     </span>
                     {applicant.archived && (
                       <span className="px-3 py-1 text-xs font-bold uppercase border-2 bg-yellow-100 text-yellow-800 border-yellow-800">
@@ -174,7 +183,9 @@ function ApplicantDetailPage() {
                   {applicant.streetAddress && (
                     <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                       <span className="text-lg">🏠</span>
-                      <span className="font-bold">{applicant.streetAddress}</span>
+                      <span className="font-bold">
+                        {applicant.streetAddress}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -325,11 +336,14 @@ function ApplicantDetailPage() {
                       Member Since
                     </p>
                     <p className="text-lg font-bold">
-                      {new Date(applicant.createdAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {new Date(applicant.createdAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
                     </p>
                   </div>
                 )}
@@ -338,7 +352,9 @@ function ApplicantDetailPage() {
           </div>
 
           {/* Resume & Portfolio from Applicant */}
-          {(applicant.resumeId || (applicant.mediaPortfolios && applicant.mediaPortfolios.length > 0)) && (
+          {(applicant.resumeId ||
+            (applicant.mediaPortfolios &&
+              applicant.mediaPortfolios.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -362,27 +378,28 @@ function ApplicantDetailPage() {
                   </div>
                 )}
 
-                {applicant.mediaPortfolios && applicant.mediaPortfolios.length > 0 && (
-                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                    <p className="text-sm font-black uppercase text-gray-600 mb-3">
-                      Media Portfolio
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      {applicant.mediaPortfolios.map((url, index) => (
-                        <a
-                          key={index}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 bg-white border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold text-sm"
-                        >
-                          <span>🔗</span>
-                          Portfolio {index + 1}
-                        </a>
-                      ))}
+                {applicant.mediaPortfolios &&
+                  applicant.mediaPortfolios.length > 0 && (
+                    <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                      <p className="text-sm font-black uppercase text-gray-600 mb-3">
+                        Media Portfolio
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {applicant.mediaPortfolios.map((url, index) => (
+                          <a
+                            key={index}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-white border-2 border-black px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold text-sm"
+                          >
+                            <span>🔗</span>
+                            Portfolio {index + 1}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           )}
@@ -390,67 +407,74 @@ function ApplicantDetailPage() {
           {/* Application Status Card (if application data exists) */}
           {application && (
             <div className="bg-white border-4 border-black p-8">
-            <h3 className="text-2xl font-black uppercase mb-6 border-b-4 border-black pb-2">
-              Application Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                <p className="text-sm font-black uppercase text-gray-600 mb-2">
-                  Status
-                </p>
-                <span
-                  className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
-                    application.status === "APPROVED"
-                      ? "bg-green-100 text-green-800 border-green-800"
-                      : application.status === "REJECTED"
-                      ? "bg-red-100 text-red-800 border-red-800"
-                      : "bg-yellow-100 text-yellow-800 border-yellow-800"
-                  }`}
-                >
-                  {application.status}
-                </span>
+              <h3 className="text-2xl font-black uppercase mb-6 border-b-4 border-black pb-2">
+                Application Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                    Status
+                  </p>
+                  <span
+                    className={`inline-block px-4 py-2 text-sm font-bold uppercase border-2 ${
+                      application.status === "APPROVED"
+                        ? "bg-green-100 text-green-800 border-green-800"
+                        : application.status === "REJECTED"
+                        ? "bg-red-100 text-red-800 border-red-800"
+                        : "bg-yellow-100 text-yellow-800 border-yellow-800"
+                    }`}
+                  >
+                    {application.status}
+                  </span>
+                </div>
+                <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                    Submitted Date
+                  </p>
+                  <p className="text-lg font-bold">
+                    {new Date(application.submissionDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
+                <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                  <p className="text-sm font-black uppercase text-gray-600 mb-2">
+                    Last Updated
+                  </p>
+                  <p className="text-lg font-bold">
+                    {new Date(application.updatedAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </p>
+                </div>
               </div>
-              <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                <p className="text-sm font-black uppercase text-gray-600 mb-2">
-                  Submitted Date
-                </p>
-                <p className="text-lg font-bold">
-                  {new Date(application.submissionDate).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-              <div className="bg-gray-50 border-2 border-gray-300 p-4">
-                <p className="text-sm font-black uppercase text-gray-600 mb-2">
-                  Last Updated
-                </p>
-                <p className="text-lg font-bold">
-                  {new Date(application.updatedAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
+              {application.feedback && (
+                <div className="mt-6 bg-blue-50 border-2 border-blue-300 p-4">
+                  <p className="text-sm font-black uppercase text-blue-600 mb-2">
+                    Feedback
+                  </p>
+                  <p className="text-gray-800">{application.feedback}</p>
+                </div>
+              )}
             </div>
-            {application.feedback && (
-              <div className="mt-6 bg-blue-50 border-2 border-blue-300 p-4">
-                <p className="text-sm font-black uppercase text-blue-600 mb-2">
-                  Feedback
-                </p>
-                <p className="text-gray-800">{application.feedback}</p>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* CV/Documents Card */}
           <div className="bg-white border-4 border-black p-8">
             <h3 className="text-2xl font-black uppercase mb-6 border-b-4 border-black pb-2">
               Application Documents
             </h3>
-            
+
             {application.documents && application.documents.length > 0 ? (
               <div className="space-y-4">
                 {application.documents.map((doc, index) => (
@@ -467,15 +491,19 @@ function ApplicantDetailPage() {
                               {doc.fileType} Document
                             </p>
                             <p className="text-xs text-gray-500">
-                              Uploaded: {new Date(doc.createdAt).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              Uploaded:{" "}
+                              {new Date(doc.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
                             </p>
                           </div>
                         </div>
-                        
+
                         {/* CV Preview (if PDF) */}
                         {doc.fileType === "PDF" && (
                           <div className="mt-4 border-2 border-black">
@@ -487,7 +515,7 @@ function ApplicantDetailPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Download Button */}
                       <div className="ml-6">
                         <a
