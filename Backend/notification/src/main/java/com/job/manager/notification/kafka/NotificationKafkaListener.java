@@ -14,11 +14,11 @@ public class NotificationKafkaListener {
 
     @KafkaListener(
             topics = {
-                "subscription.created",
-                "subscription.activated",
-                "subscription.expired",
-                "subscription.cancelled",
-                "subscription.expiring-soon"
+                "subscription-created",
+                "subscription-activated",
+                "subscription-expired",
+                "subscription-cancelled",
+                "subscription-expiring-soon"
             },
             groupId = "notification-group",
             containerFactory = "subscriptionKafkaListenerContainerFactory"
