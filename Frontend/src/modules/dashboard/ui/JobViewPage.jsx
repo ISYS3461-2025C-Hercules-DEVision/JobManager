@@ -211,19 +211,44 @@ function JobViewPage() {
                   <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                     <span className="text-lg">💼</span>
                     <span className="font-bold">
-                      {job.employmentType || "Not specified"}
+                      {Array.isArray(job.employmentTypes) && job.employmentTypes.length > 0
+                        ? job.employmentTypes.join(", ")
+                        : job.employmentType || "Not specified"}
                     </span>
                   </div>
-                  {job.salary && (
-                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
-                      <span className="text-lg">💰</span>
-                      <span className="font-bold">{job.salary}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                    <span className="text-lg">💰</span>
+                    <span className="font-bold">
+                      {(() => {
+                        if (!job.salaryType) return "Not specified";
+                        const currency = job.salaryCurrency || "USD";
+                        switch (job.salaryType) {
+                          case "RANGE":
+                            return `${job.salaryMin}-${job.salaryMax} ${currency}`;
+                          case "ABOUT":
+                            return `About ${job.salaryMin} ${currency}`;
+                          case "UP_TO":
+                            return `Up to ${job.salaryMax} ${currency}`;
+                          case "FROM":
+                            return `From ${job.salaryMin} ${currency}`;
+                          case "NEGOTIABLE":
+                            return "Negotiable";
+                          default:
+                            return "Not specified";
+                        }
+                      })()}
+                    </span>
+                  </div>
                   {job.department && (
                     <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
                       <span className="text-lg">🏢</span>
                       <span className="font-bold">{job.department}</span>
+                    </div>
+                  )}
+                  {job.experienceLevel && (
+                    <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 border-2 border-black">
+                      <span className="text-lg">📊</span>
+                      <span className="font-bold">{job.experienceLevel}</span>
                     </div>
                   )}
                 </div>
@@ -246,6 +271,48 @@ function JobViewPage() {
               </p>
             </div>
           </div>
+
+          {/* Requirements Card */}
+          {job.requirements && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Requirements</h3>
+              </div>
+              <div className="p-8">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {job.requirements}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Responsibilities Card */}
+          {job.responsibilities && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Key Responsibilities</h3>
+              </div>
+              <div className="p-8">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {job.responsibilities}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Benefits Card */}
+          {job.benefits && (
+            <div className="bg-white border-4 border-black">
+              <div className="border-b-4 border-black p-6">
+                <h3 className="text-xl font-black uppercase">Benefits</h3>
+              </div>
+              <div className="p-8">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {job.benefits}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Skills Card */}
           {job.skills && job.skills.length > 0 && (
