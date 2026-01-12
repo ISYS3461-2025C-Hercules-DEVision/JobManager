@@ -47,13 +47,23 @@ function FindApplicantsPage() {
         .map(s => s.trim())
         .filter(s => s.length > 0);
 
-      const result = await applicationService.filterApplicants({
-        degree: filters.degree || undefined,
-        skills: skillsArray.length > 0 ? skillsArray : undefined,
+      const filterParams = {
         matchAllSkills: filters.matchAllSkills,
         take: pagination.size,
         page: page,
-      });
+      };
+
+      // Only add degree if selected
+      if (filters.degree && filters.degree.trim() !== '') {
+        filterParams.degree = filters.degree;
+      }
+
+      // Only add skills if provided
+      if (skillsArray.length > 0) {
+        filterParams.skills = skillsArray;
+      }
+
+      const result = await applicationService.filterApplicants(filterParams);
 
       setApplicants(result.content || []);
       setPagination({

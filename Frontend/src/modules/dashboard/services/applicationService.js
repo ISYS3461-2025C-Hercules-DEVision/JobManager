@@ -75,10 +75,16 @@ export const applicationService = {
     try {
       const params = new URLSearchParams();
       
-      if (degree) params.append('degree', degree);
+      // Only add degree param if a specific degree is selected
+      if (degree && degree.trim() !== '') {
+        params.append('degree', degree);
+      }
+      
+      // Only add skills if provided
       if (skills && skills.length > 0) {
         skills.forEach(skill => params.append('skills', skill));
       }
+      
       params.append('matchAllSkills', matchAllSkills);
       params.append('take', take);
       params.append('page', page);
