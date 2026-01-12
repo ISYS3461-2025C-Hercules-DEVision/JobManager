@@ -36,13 +36,15 @@ public class CompanyController {
             @RequestParam(defaultValue = "1") int page) {
         org.springframework.data.domain.Page<Company> companies = companyService.getAllCompanies(take, page);
         org.springframework.data.domain.Page<CompanyInternalDTO> dtos = companies.map(company -> CompanyInternalDTO.builder()
-                .companyId(company.getCompanyId())
-                .companyName(company.getCompanyName())
-                .email(company.getEmail())
-                .isPremium(company.getIsPremium())
-                .isActive(company.getIsActive())
-                .isEmailVerified(company.getIsEmailVerified())
-                .build());
+            .companyId(company.getCompanyId())
+            .companyName(company.getCompanyName())
+            .email(company.getEmail())
+            .isPremium(company.getIsPremium())
+            .isActive(company.getIsActive())
+            .isEmailVerified(company.getIsEmailVerified())
+            .postedDate(company.getCreatedAt())
+            .expiryDate(company.getUpdatedAt())
+            .build());
         return ResponseEntity.ok(dtos);
     }
 
@@ -53,16 +55,17 @@ public class CompanyController {
         try {
             Company company = companyService.getCompanyById(companyId);
 
-            CompanyInternalDTO dto = CompanyInternalDTO.builder()
+                CompanyInternalDTO dto = CompanyInternalDTO.builder()
                     .companyId(company.getCompanyId())
                     .companyName(company.getCompanyName())
                     .email(company.getEmail())
                     .isPremium(company.getIsPremium())
                     .isActive(company.getIsActive())
                     .isEmailVerified(company.getIsEmailVerified())
+                    .postedDate(company.getCreatedAt())
+                    .expiryDate(company.getUpdatedAt())
                     .build();
-
-            return ResponseEntity.ok(dto);
+                return ResponseEntity.ok(dto);
         } catch (Exception e) {
             // Return 404 if company not found (for proper error handling in other services)
             return ResponseEntity.notFound().build();
