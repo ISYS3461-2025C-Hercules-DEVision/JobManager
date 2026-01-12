@@ -79,7 +79,7 @@ function JobViewPage() {
 
   const handleApprove = async (applicationId) => {
     try {
-      await applicationService.approveApplication(applicationId);
+      await applicationService.approveApplication(jobId, applicationId, "Application approved - strong profile");
       showSuccess("Application approved successfully");
       // Refresh applications
       const apps = await applicationService.getApplicationsForJobPost(jobId);
@@ -96,7 +96,7 @@ function JobViewPage() {
     }
 
     try {
-      await applicationService.rejectApplication(applicationId);
+      await applicationService.rejectApplication(jobId, applicationId, "Application rejected - requirements not met");
       showSuccess("Application rejected");
       // Refresh applications
       const apps = await applicationService.getApplicationsForJobPost(jobId);
@@ -356,7 +356,7 @@ function JobViewPage() {
                   <tbody>
                     {applications.map((app) => {
                       const applicant = applicants[app.applicantId];
-                      const cvUrl = app.fileUrls?.[0] || null; // First document is CV
+                      const cvUrl = app.fileUrl?.[0] || null; // First document is CV (API returns fileUrl, not fileUrls)
 
                       return (
                         <tr
