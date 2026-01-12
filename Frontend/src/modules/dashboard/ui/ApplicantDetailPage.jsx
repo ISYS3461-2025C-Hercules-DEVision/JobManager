@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { applicationService } from "../services/applicationService";
 import { useApp } from "../../../state/AppContext";
+import { ENV } from "../../../config/env";
 
 /**
  * ApplicantDetailPage - Detailed view of an applicant
@@ -207,7 +208,7 @@ function ApplicantDetailPage() {
           </div>
 
           {/* Professional Summary */}
-          {(resume?.summary || applicant.summary) && (
+          {(resume?.objective || applicant.summary) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -216,7 +217,7 @@ function ApplicantDetailPage() {
               </div>
               <div className="p-8">
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {resume?.summary || applicant.summary}
+                  {resume?.objective || applicant.summary}
                 </p>
               </div>
             </div>
@@ -244,7 +245,7 @@ function ApplicantDetailPage() {
           )}
 
           {/* Experience - prioritize resume data */}
-          {((resume?.experiences && resume.experiences.length > 0) || (applicant.experience && applicant.experience.length > 0)) && (
+          {((resume?.experience && resume.experience.length > 0) || (applicant.experience && applicant.experience.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">
@@ -252,19 +253,19 @@ function ApplicantDetailPage() {
                 </h3>
               </div>
               <div className="p-8 space-y-6">
-                {(resume?.experiences || applicant.experience || []).map((exp, idx) => (
+                {(resume?.experience || applicant.experience || []).map((exp, idx) => (
                   <div
                     key={idx}
                     className="border-l-4 border-black pl-6 pb-6 last:pb-0"
                   >
                     <h4 className="text-lg font-black uppercase mb-2">
-                      {exp.title || exp.position || exp.jobTitle}
+                      {exp.jobTitle || exp.title || exp.position}
                     </h4>
                     <p className="font-bold text-gray-700 mb-2">
-                      {exp.company || exp.companyName}
+                      {exp.companyName || exp.company}
                     </p>
                     <p className="text-sm text-gray-600 mb-3">
-                      {exp.startDate} - {exp.endDate || exp.currentlyWorking ? "Present" : exp.endDate}
+                      {exp.fromYear || exp.startDate} - {exp.toYear || exp.endDate || (exp.currentlyWorking ? "Present" : "")}
                     </p>
                     {exp.description && (
                       <p className="text-gray-700 whitespace-pre-wrap">
@@ -278,13 +279,13 @@ function ApplicantDetailPage() {
           )}
 
           {/* Education - prioritize resume data */}
-          {((resume?.educations && resume.educations.length > 0) || (applicant.education && applicant.education.length > 0)) && (
+          {((resume?.education && resume.education.length > 0) || (applicant.education && applicant.education.length > 0)) && (
             <div className="bg-white border-4 border-black">
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Education</h3>
               </div>
               <div className="p-8 space-y-6">
-                {(resume?.educations || applicant.education || []).map((edu, idx) => (
+                {(resume?.education || applicant.education || []).map((edu, idx) => (
                   <div
                     key={idx}
                     className="border-l-4 border-black pl-6 pb-6 last:pb-0"
@@ -296,11 +297,16 @@ function ApplicantDetailPage() {
                       {edu.institution || edu.institutionName}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {edu.startYear || edu.startDate} - {edu.endYear || edu.endDate || "Present"}
+                      {edu.fromYear || edu.startYear || edu.startDate} - {edu.toYear || edu.endYear || edu.endDate || "Present"}
                     </p>
                     {edu.fieldOfStudy && (
                       <p className="text-sm text-gray-600 mt-1">
                         Field: {edu.fieldOfStudy}
+                      </p>
+                    )}
+                    {edu.gpa && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        GPA: {edu.gpa}
                       </p>
                     )}
                   </div>
@@ -315,28 +321,17 @@ function ApplicantDetailPage() {
               <div className="border-b-4 border-black p-6">
                 <h3 className="text-xl font-black uppercase">Certifications</h3>
               </div>
-              <div className="p-8 space-y-4">
-                {resume.certifications.map((cert, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-gray-50 border-2 border-gray-300 p-4"
-                  >
-                    <h4 className="text-lg font-black uppercase mb-2">
-                      {cert.name || cert.certificationName}
-                    </h4>
-                    {cert.issuingOrganization && (
-                      <p className="font-bold text-gray-700 mb-1">
-                        {cert.issuingOrganization}
-                      </p>
-                    )}
-                    {cert.issueDate && (
-                      <p className="text-sm text-gray-600">
-                        Issued: {cert.issueDate}
-                        {cert.expiryDate && ` • Expires: ${cert.expiryDate}`}
-                      </p>
-                    )}
-                  </div>
-                ))}
+              <div className="p-8">
+                <div className="flex flex-wrap gap-3">
+                  {resume.certifications.map((cert, idx) => (
+                    <span
+                      key={idx}
+                      className="px-4 py-2 bg-white border-4 border-black text-sm font-bold uppercase"
+                    >
+                      {typeof cert === 'string' ? cert : cert.name || cert.certificationName}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -477,7 +472,8 @@ function ApplicantDetailPage() {
           </div>
 
           {/* Resume & Portfolio from Applicant */}
-          {(applicant.resumeId ||
+          {(resume?.resumeId ||
+            applicant.resumeId ||
             (applicant.mediaPortfolios &&
               applicant.mediaPortfolios.length > 0)) && (
             <div className="bg-white border-4 border-black">
@@ -487,7 +483,30 @@ function ApplicantDetailPage() {
                 </h3>
               </div>
               <div className="p-8 space-y-6">
-                {applicant.resumeId && (
+                {/* Resume from resume API */}
+                {resume?.resumeId && (
+                  <div className="bg-gray-50 border-2 border-gray-300 p-4">
+                    <p className="text-sm font-black uppercase text-gray-600 mb-3">
+                      Resume
+                    </p>
+                    {resume.headline && (
+                      <p className="text-lg font-bold mb-3">
+                        {resume.headline}
+                      </p>
+                    )}
+                    <a
+                      href={`${ENV.APPLICANT_SERVICE_URL || 'http://13.210.119.17:10789'}/api/v1/applicants/${resume.applicantId}/resumes/${resume.resumeId}/download`}
+                      download
+                      className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 border-2 border-black hover:bg-white hover:text-black transition-colors font-bold uppercase text-sm"
+                    >
+                      <span>📄</span>
+                      Download Resume
+                    </a>
+                  </div>
+                )}
+
+                {/* Resume from applicant profile */}
+                {!resume?.resumeId && applicant.resumeId && (
                   <div className="bg-gray-50 border-2 border-gray-300 p-4">
                     <p className="text-sm font-black uppercase text-gray-600 mb-3">
                       Resume
