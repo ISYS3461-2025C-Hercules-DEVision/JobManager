@@ -1,6 +1,7 @@
 import { AuthProvider } from './AuthContext';
 import { AppProvider } from './AppContext';
 import { ProfileProvider } from './ProfileContext';
+import { NotificationProvider } from './NotificationContext';
 
 /**
  * Combined Providers
@@ -11,7 +12,9 @@ const AppProviders = ({ children }) => {
     <AuthProvider>
       <AppProvider>
         <ProfileProvider>
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </ProfileProvider>
       </AppProvider>
     </AuthProvider>

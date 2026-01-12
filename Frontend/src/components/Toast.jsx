@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
  * Toast Component
  * Individual toast notification with auto-dismiss and animations
  */
-const Toast = ({ id, type, message, duration, onClose }) => {
+const Toast = ({ id, type, message, title, duration, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
@@ -98,7 +98,12 @@ const Toast = ({ id, type, message, duration, onClose }) => {
 
         {/* Message */}
         <div className="flex-1">
-          <p className="font-bold text-white leading-tight">
+          {title && (
+            <p className="font-black text-white leading-tight mb-1">
+              {title}
+            </p>
+          )}
+          <p className={`${title ? 'font-medium' : 'font-bold'} text-white leading-tight`}>
             {message}
           </p>
         </div>

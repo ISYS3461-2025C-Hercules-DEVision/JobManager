@@ -3,8 +3,8 @@
  * Handles all notification-related API calls
  */
 
-import { httpClient } from '../../../utils/HttpUtil';
-import { ENV } from '../../../config/env';
+import { httpClient } from "../../../utils/HttpUtil";
+import { ENV } from "../../../config/env";
 
 const NOTIFICATION_BASE_URL = ENV.NOTIFICATION_SERVICE_URL;
 
@@ -15,10 +15,12 @@ const NOTIFICATION_BASE_URL = ENV.NOTIFICATION_SERVICE_URL;
  */
 export const getNotifications = async (companyId) => {
   try {
-    const response = await httpClient.get(`${NOTIFICATION_BASE_URL}/notifications/${companyId}`);
+    const response = await httpClient.get(
+      `${NOTIFICATION_BASE_URL}/notifications/${companyId}`
+    );
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch notifications:', error);
+    console.error("Failed to fetch notifications:", error);
     throw error;
   }
 };
@@ -30,10 +32,12 @@ export const getNotifications = async (companyId) => {
  */
 export const markAsRead = async (notificationId) => {
   try {
-    const response = await httpClient.patch(`${NOTIFICATION_BASE_URL}/notifications/${notificationId}/read`);
+    const response = await httpClient.patch(
+      `${NOTIFICATION_BASE_URL}/notifications/${notificationId}/read`
+    );
     return response.data;
   } catch (error) {
-    console.error('Failed to mark notification as read:', error);
+    console.error("Failed to mark notification as read:", error);
     throw error;
   }
 };
@@ -45,9 +49,11 @@ export const markAsRead = async (notificationId) => {
  */
 export const deleteNotification = async (notificationId) => {
   try {
-    await httpClient.delete(`${NOTIFICATION_BASE_URL}/notifications/${notificationId}`);
+    await httpClient.delete(
+      `${NOTIFICATION_BASE_URL}/notifications/${notificationId}`
+    );
   } catch (error) {
-    console.error('Failed to delete notification:', error);
+    console.error("Failed to delete notification:", error);
     throw error;
   }
 };
@@ -60,9 +66,9 @@ export const deleteNotification = async (notificationId) => {
 export const getUnreadCount = async (companyId) => {
   try {
     const notifications = await getNotifications(companyId);
-    return notifications.filter(n => !n.read).length;
+    return notifications.filter((n) => !n.read).length;
   } catch (error) {
-    console.error('Failed to get unread count:', error);
+    console.error("Failed to get unread count:", error);
     return 0;
   }
 };
@@ -73,4 +79,3 @@ export default {
   deleteNotification,
   getUnreadCount,
 };
-
