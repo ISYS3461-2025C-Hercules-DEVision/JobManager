@@ -1,6 +1,4 @@
 /**
-export default PaymentSuccess;
-/**
  * Payment Success Page
  * Handles Stripe redirect after successful payment
  */
@@ -172,4 +170,3 @@ const PaymentSuccess = () => {
 };
 
 export default PaymentSuccess;
-const sessionId = searchParams.get("session_id");
