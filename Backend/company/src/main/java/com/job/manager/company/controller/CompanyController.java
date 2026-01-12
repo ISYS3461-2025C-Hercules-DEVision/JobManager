@@ -32,7 +32,7 @@ public class CompanyController {
      */
     @GetMapping("/companies")
     public ResponseEntity<org.springframework.data.domain.Page<CompanyInternalDTO>> getAllCompanies(
-            @RequestParam(defaultValue = "10") int take,
+            @RequestParam(defaultValue = "20") int take,
             @RequestParam(defaultValue = "1") int page) {
         org.springframework.data.domain.Page<Company> companies = companyService.getAllCompanies(take, page);
         org.springframework.data.domain.Page<CompanyInternalDTO> dtos = companies.map(company -> CompanyInternalDTO.builder()
@@ -319,7 +319,7 @@ public class CompanyController {
      * @return The public URL of the uploaded banner and updated profile
      */
     @PostMapping("/public-profile/banner")
-    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(    Authorization: Bearer <YOUR_JWT_TOKEN>
+    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(    
             @CurrentUser AuthenticatedUser user,
             @RequestParam("file") MultipartFile file) {
 
