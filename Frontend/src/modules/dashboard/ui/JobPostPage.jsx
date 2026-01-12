@@ -61,40 +61,39 @@ function SkillTagInput({ skills, onSkillsChange, error }) {
         Technical Skills & Competencies
       </label>
       
-      {/* Tags Display */}
-      <div className={`min-h-[52px] px-3 py-2 border-2 ${error ? 'border-primary' : 'border-black'} bg-white flex flex-wrap gap-2 items-center`}>
-        {skills.map((skill, index) => (
-                      {[
-                        { label: "Full-time", value: "FULL_TIME" },
-                        { label: "Part-time", value: "PART_TIME" },
-                        { label: "Internship", value: "INTERNSHIP" },
-                        { label: "Contract", value: "CONTRACT" }
-                      ].map((type) => (
-                        <label key={type.value} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            name="employmentTypes"
-                            value={type.value}
-                            checked={formData.employmentTypes.includes(type.value)}
-                            onChange={handleChange}
-                            className="w-4 h-4 border-2 border-black"
-                          />
-                          <span className="font-semibold">{type.label}</span>
-                        </label>
-                      ))}
-          type="text"
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder={skills.length === 0 ? "Type a skill and press Enter (e.g., Python, Kafka, SQL)" : "Add more..."}
-          className="flex-1 min-w-[150px] py-1 focus:outline-none font-semibold"
-        />
-      </div>
+     {/* Tags Display */}
+<div className={`min-h-[52px] px-3 py-2 border-2 ${error ? 'border-primary' : 'border-black'} bg-white flex flex-wrap gap-2 items-center`}>
+  {skills.map((skill, index) => (
+    <span
+      key={`${skill}-${index}`}
+      className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 border-2 border-black font-semibold"
+    >
+      {skill}
+      <button
+        type="button"
+        onClick={() => removeSkill(skill)}
+        className="font-black leading-none hover:text-primary"
+        aria-label={`Remove ${skill}`}
+      >
+        ×
+      </button>
+    </span>
+  ))}
+
+  <input
+    type="text"
+    value={inputValue}
+    onChange={(e) => {
+      setInputValue(e.target.value);
+      setShowSuggestions(true);
+    }}
+    onKeyDown={handleKeyDown}
+    onFocus={() => setShowSuggestions(true)}
+    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+    placeholder={skills.length === 0 ? "Type a skill and press Enter (e.g., Python, Kafka, SQL)" : "Add more..."}
+    className="flex-1 min-w-[150px] py-1 focus:outline-none font-semibold bg-transparent"
+  />
+</div>
       
       {/* Suggestions Dropdown */}
       {showSuggestions && inputValue && filteredSuggestions.length > 0 && (
