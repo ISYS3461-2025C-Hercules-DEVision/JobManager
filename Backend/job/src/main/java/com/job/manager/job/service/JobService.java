@@ -87,10 +87,6 @@ public class JobService {
         existingJob.setSkills(updatedJob.getSkills());
         existingJob.setPublished(updatedJob.isPublished());
         existingJob.setExpiryDate(updatedJob.getExpiryDate());
-        existingJob.setRequirements(updatedJob.getRequirements());
-        existingJob.setResponsibilities(updatedJob.getResponsibilities());
-        existingJob.setBenefits(updatedJob.getBenefits());
-        existingJob.setExperienceLevel(updatedJob.getExperienceLevel());
 
         JobPost saved = jobRepository.save(existingJob);
 
