@@ -27,6 +27,10 @@ public class JobPostMapper {
         jobPost.setLocation(request.getLocation());
         jobPost.setPublished(request.isPublished());
         jobPost.setSkills(request.getSkills());
+        jobPost.setRequirements(request.getRequirements());
+        jobPost.setResponsibilities(request.getResponsibilities());
+        jobPost.setBenefits(request.getBenefits());
+        jobPost.setExperienceLevel(request.getExperienceLevel());
         return jobPost;
     }
 
@@ -56,6 +60,10 @@ public class JobPostMapper {
         response.setLocation(jobPost.getLocation());
         response.setPublished(jobPost.isPublished());
         response.setSkills(jobPost.getSkills());
+        response.setRequirements(jobPost.getRequirements());
+        response.setResponsibilities(jobPost.getResponsibilities());
+        response.setBenefits(jobPost.getBenefits());
+        response.setExperienceLevel(jobPost.getExperienceLevel());
         return response;
     }
 
@@ -75,5 +83,9 @@ public class JobPostMapper {
         jobPost.setLocation(request.getLocation());
         jobPost.setPublished(request.isPublished());
         jobPost.setSkills(request.getSkills());
+        jobPost.setRequirements(request.getRequirements());
+        jobPost.setResponsibilities(request.getResponsibilities());
+        jobPost.setBenefits(request.getBenefits());
+        jobPost.setExperienceLevel(request.getExperienceLevel());
     }
 }
