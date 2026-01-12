@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAuth } from "../../../state/AuthContext";
 import { useProfile } from "../../../state/ProfileContext";
 import { useApp } from "../../../state/AppContext";
+import { useNotificationContext } from "../../../state/NotificationContext";
 
 /**
  * Sidebar Component - Navigation sidebar for Job Manager Dashboard
@@ -14,13 +15,17 @@ import { useApp } from "../../../state/AppContext";
 function Sidebar() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { profile, publicProfile, loading } = useProfile();
+  const { profile, publicProfile, loading: profileLoading } = useProfile();
   const { showSuccess, showError } = useApp();
+  const { unreadCount } = useNotificationContext();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Prepare company data from profile context
+  // Use loading state to prevent showing default/stale data
   const companyData = {
-    name: publicProfile?.displayName || profile?.companyName || "Company",
+    name: profileLoading
+      ? "Loading..."
+      : publicProfile?.displayName || profile?.companyName || "Company",
     avatar: publicProfile?.logoUrl || null,
     subscriptionPlan: profile?.isPremium ? "Premium" : "Free",
     subscriptionStatus: profile?.isActive ? "Active" : "Inactive",
@@ -117,6 +122,35 @@ function Sidebar() {
       ),
     },
     {
+      name: "Notification",
+      path: "/dashboard/notification",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11
+       c0-3.07-1.63-5.64-4.5-6.32V4
+       a1.5 1.5 0 00-3 0v.68
+       C7.63 5.36 6 7.929 6 11v3.159
+       c0 .538-.214 1.055-.595 1.436L4 17h5"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 17v1a3 3 0 006 0v-1"
+          />
+        </svg>
+      ),
+    },
+    {
       name: "Settings",
       path: "/dashboard/settings",
       icon: (
@@ -196,8 +230,28 @@ function Sidebar() {
                 }
                 title={isCollapsed ? item.name : ""}
               >
-                <span className="flex-shrink-0">{item.icon}</span>
-                {!isCollapsed && <span className="ml-3">{item.name}</span>}
+                <span className="shrink-0 relative">
+                  {item.icon}
+                  {/* Unread Badge for Notification */}
+                  {item.path === "/dashboard/notification" &&
+                    unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-5 border-2 border-dark">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                </span>
+                {!isCollapsed && (
+                  <span className="ml-3 flex items-center justify-between flex-1">
+                    <span>{item.name}</span>
+                    {/* Unread Badge for Notification (expanded) */}
+                    {item.path === "/dashboard/notification" &&
+                      unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-5">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}
