@@ -21,8 +21,8 @@ const buildJobPayload = (formData) => {
     title: formData.title,
     department: formData.department || "",
     description: formData.description,
-    employmentTypes: Array.isArray(formData.employmentTypes) 
-      ? formData.employmentTypes 
+    employmentTypes: Array.isArray(formData.employmentTypes)
+      ? formData.employmentTypes
       : [formData.employmentTypes || "Full-time"],
     location: formData.location,
     salaryType: formData.salaryType || "NEGOTIABLE",
@@ -37,11 +37,19 @@ const buildJobPayload = (formData) => {
 
   // Add salary values based on type
   if (formData.salaryType !== "NEGOTIABLE") {
-    if (formData.salaryType === "RANGE" || formData.salaryType === "FROM" || formData.salaryType === "ABOUT") {
-      payload.salaryMin = formData.salaryMin ? Number(formData.salaryMin) : null;
+    if (
+      formData.salaryType === "RANGE" ||
+      formData.salaryType === "FROM" ||
+      formData.salaryType === "ABOUT"
+    ) {
+      payload.salaryMin = formData.salaryMin
+        ? Number(formData.salaryMin)
+        : null;
     }
     if (formData.salaryType === "RANGE" || formData.salaryType === "UP_TO") {
-      payload.salaryMax = formData.salaryMax ? Number(formData.salaryMax) : null;
+      payload.salaryMax = formData.salaryMax
+        ? Number(formData.salaryMax)
+        : null;
     }
   }
 
@@ -56,7 +64,7 @@ const buildJobPayload = (formData) => {
 export const jobService = {
   async listMyJobs() {
     const response = await httpClient.get(
-      `${baseUrl}${API_ENDPOINTS.JOB.MY_JOBS}`
+      `${baseUrl}${API_ENDPOINTS.JOB.LIST}`
     );
     return Array.isArray(response.data) ? response.data : [];
   },
