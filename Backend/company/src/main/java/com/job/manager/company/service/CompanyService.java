@@ -22,6 +22,14 @@ public class CompanyService {
     @Autowired
     private PublicProfileRepository publicProfileRepository;
 
+    /**
+     * Get all companies (for internal/external API consumption)
+     * Used by Job Applicant subsystem to fetch company details
+     */
+    public java.util.List<Company> getAllCompanies() {
+        return companyRepository.findAll();
+    }
+
     public CompanyProfileUpdateDto updateProfile(String email, CompanyProfileUpdateDto updatedRequest) {
         Company company = companyRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Company not found with email: " + email));

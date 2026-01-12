@@ -32,6 +32,14 @@ export const ENV = {
   NOTIFICATION_WS_URL:
     import.meta.env.VITE_NOTIFICATION_WS_URL || "http://13.236.146.126:8000/notification/ws/notifications",
 
+  // Application Service endpoints (Job Applicant subsystem - separate deployment)
+  APPLICATION_SERVICE_URL:
+    import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://13.210.119.17:10789",
+
+  // Applicant Service endpoints (Job Applicant subsystem - separate deployment)
+  APPLICANT_SERVICE_URL:
+    import.meta.env.VITE_APPLICANT_SERVICE_URL || "http://13.210.119.17:10789",
+
   // Mock mode for frontend-only development (set VITE_MOCK_AUTH=true to disable real API calls)
   MOCK_AUTH: "false",
 
