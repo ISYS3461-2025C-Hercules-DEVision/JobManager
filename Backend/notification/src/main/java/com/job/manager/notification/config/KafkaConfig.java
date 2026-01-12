@@ -11,42 +11,37 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class
-KafkaConfig {
+public class KafkaConfig {
 
     @Value("${KAFKA_BOOTSTRAP_SERVER:localhost:29092}")
     String bootstrapServers;
 
     @Bean
     public ConsumerFactory<String, ApplicantMatchedEvent> matchedConsumerFactory() {
-        JsonDeserializer<ApplicantMatchedEvent> deserializer =
-                new JsonDeserializer<>(ApplicantMatchedEvent.class, false);
-        deserializer.addTrustedPackages("com.job.manager.*");
-        deserializer.setRemoveTypeHeaders(false);
-        deserializer.setUseTypeMapperForKey(false);
-
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
+        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ApplicantMatchedEvent.class.getName());
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.job.manager.*");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
 
-        return new DefaultKafkaConsumerFactory<>(
-                props,
-                new StringDeserializer(),
-                deserializer
-        );
+        return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, ApplicantMatchedEvent>
     matchedKafkaListenerContainerFactory() {
-
         ConcurrentKafkaListenerContainerFactory<String, ApplicantMatchedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(matchedConsumerFactory());
@@ -55,22 +50,18 @@ KafkaConfig {
 
     @Bean
     public ConsumerFactory<String, ApplicantCreatedEvent> applicantProfileConsumerFactory() {
-        JsonDeserializer<ApplicantCreatedEvent> deserializer =
-                new JsonDeserializer<>(ApplicantCreatedEvent.class, false);
-        deserializer.addTrustedPackages("com.job.manager.*");
-        deserializer.setRemoveTypeHeaders(false);
-        deserializer.setUseTypeMapperForKey(false);
-
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-matching-group");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
+        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ApplicantCreatedEvent.class.getName());
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.job.manager.*");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
 
-        return new DefaultKafkaConsumerFactory<>(
-                props,
-                new StringDeserializer(),
-                deserializer
-        );
+        return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean
@@ -82,33 +73,28 @@ KafkaConfig {
         return factory;
     }
 
-        @Bean
-        public ConsumerFactory<String, SubscriptionEventDTO> subscriptionConsumerFactory() {
-                JsonDeserializer<SubscriptionEventDTO> deserializer =
-                                new JsonDeserializer<>(SubscriptionEventDTO.class, false);
-                deserializer.addTrustedPackages("com.job.manager.*");
-                deserializer.setRemoveTypeHeaders(false);
-                deserializer.setUseTypeMapperForKey(false);
+    @Bean
+    public ConsumerFactory<String, SubscriptionEventDTO> subscriptionConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
+        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
+        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, SubscriptionEventDTO.class.getName());
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.job.manager.*");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
 
-                Map<String, Object> props = new HashMap<>();
-                props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-                props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-group");
-                props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
 
-                return new DefaultKafkaConsumerFactory<>(
-                                props,
-                                new StringDeserializer(),
-                                deserializer
-                );
-        }
-
-        @Bean
-        public ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO>
-        subscriptionKafkaListenerContainerFactory() {
-
-                ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO> factory =
-                                new ConcurrentKafkaListenerContainerFactory<>();
-                factory.setConsumerFactory(subscriptionConsumerFactory());
-                return factory;
-        }
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO>
+    subscriptionKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, SubscriptionEventDTO> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(subscriptionConsumerFactory());
+        return factory;
+    }
 }
