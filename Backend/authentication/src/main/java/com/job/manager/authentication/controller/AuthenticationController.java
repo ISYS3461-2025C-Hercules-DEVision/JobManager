@@ -93,4 +93,23 @@ public class AuthenticationController {
         authenticationService.markProfileCompleted(userId);
         return ResponseEntity.ok("Profile marked as completed");
     }
+
+    @GetMapping("/users/{usersId}/status")
+    public ResponseEntity<String> getUserStatus(@PathVariable String userId) {
+        String response = authenticationService.getUserStatus(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{userId}/activate")
+    public ResponseEntity<String> activateUser(@PathVariable String userId) {
+        authenticationService.activateUser(userId);
+        return ResponseEntity.ok("User account activated successfully");
+    }
+
+    @PostMapping("/users/{userId}/deactivate")
+    public ResponseEntity<String> deactivateUser(@PathVariable String userId) {
+        authenticationService.deactivateUser(userId);
+        return ResponseEntity.ok("User account deactivated successfully");
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.job.manager.authentication.service;
 
+import com.job.manager.authentication.constants.AccountStatus;
 import com.job.manager.authentication.constants.AuthenticationProvider;
 import com.job.manager.authentication.constants.CountryCode;
 import com.job.manager.authentication.dto.GoogleTokenResponse;
@@ -14,6 +15,7 @@ import com.job.manager.authentication.util.JwtUtil;
 import com.job.manager.authentication.util.OtpGenerator;
 import com.job.manager.dto.RegisterRequest;
 import com.job.manager.dto.VerifyEmailRequest;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +28,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Optional;
+
+import static com.job.manager.authentication.constants.AccountStatus.ACTIVE;
 
 @Service
 public class AuthenticationService {
@@ -90,6 +94,7 @@ public class AuthenticationService {
         }
 
         User user = userRepository.findByUsername(loginRequest.getUsername())
+                .filter(account -> ACTIVE.equals(account.getStatus()))
                 .orElseThrow(() -> {
                     rateLimitService.recordLoginAttempt(loginRequest.getUsername());
                     return new BusinessException("Invalid username or password");
@@ -437,6 +442,26 @@ public class AuthenticationService {
                 .orElseThrow(() -> new BusinessException("User not found"));
         user.setHasPublicProfile(true);
         userRepository.save(user);
+    }
+
+    public void activateUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setStatus(ACTIVE);
+        userRepository.save(user);
+    }
+
+    public void deactivateUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setStatus(AccountStatus.DEACTIVATED);
+        userRepository.save(user);
+    }
+
+    public String getUserStatus(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return user.getStatus().name();
     }
 
 }

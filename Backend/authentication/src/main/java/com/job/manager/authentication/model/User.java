@@ -1,5 +1,6 @@
 package com.job.manager.authentication.model;
 
+import com.job.manager.authentication.constants.AccountStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -27,4 +28,6 @@ public class User {
     private String providerId;
     
     private Boolean hasPublicProfile; // true if user has completed public profile setup
+
+    private AccountStatus status = AccountStatus.ACTIVE;
 }
