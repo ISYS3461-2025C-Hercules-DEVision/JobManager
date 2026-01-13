@@ -1,11 +1,10 @@
 /**
  * useNotifications Hook
- * Manages notification state and WebSocket connection
+ * Manages notification state
  */
 
 import { useState, useEffect, useCallback } from "react";
 import notificationService from "../services/notificationService";
-import { webSocketService } from "../services/webSocketService";
 
 export const useNotifications = (companyId) => {
   const [notifications, setNotifications] = useState([]);
@@ -40,10 +39,10 @@ export const useNotifications = (companyId) => {
   }, [companyId]);
 
   /**
-   * Handle new notification from WebSocket
+   * Handle new notification (polling-based)
    */
   const handleNewNotification = useCallback((notification) => {
-    console.log("New notification received via WebSocket:", notification);
+    console.log("New notification received:", notification);
 
     // Add new notification to the beginning of the list
     setNotifications((prev) => [notification, ...prev]);

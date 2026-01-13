@@ -5,7 +5,6 @@
 
 // Services
 export { default as notificationService } from './services/notificationService';
-export { default as webSocketService } from './services/webSocketService';
 
 // Hooks
 export { useNotifications } from './hooks/useNotifications';

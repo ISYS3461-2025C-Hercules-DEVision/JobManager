@@ -1,14 +1,13 @@
 /**
  * NotificationContext
- * Global context for managing notifications and WebSocket connections
- * Provides real-time notification updates and toast notifications
+ * Global context for managing notifications
+ * Provides notification updates and toast notifications
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useProfile } from './ProfileContext';
 import { useApp } from './AppContext';
 import notificationService from '../modules/notification/services/notificationService';
-import { webSocketService } from '../modules/notification/services/webSocketService';
 
 const NotificationContext = createContext(null);
 
@@ -57,10 +56,10 @@ export const NotificationProvider = ({ children }) => {
   }, [companyId]);
 
   /**
-   * Handle new notification from WebSocket
+   * Handle new notification
    */
   const handleNewNotification = useCallback((notification) => {
-    console.log('🔔 New notification received via WebSocket:', notification);
+    console.log('🔔 New notification received:', notification);
 
     // Add new notification to the beginning of the list
     setNotifications((prev) => [notification, ...prev]);
@@ -156,24 +155,16 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Initialize: Fetch notifications and connect to WebSocket
+  // Initialize: Fetch notifications
   useEffect(() => {
     if (!companyId) return;
 
     // Fetch initial notifications
     fetchNotifications();
 
-    // Connect to WebSocket for real-time updates
-    webSocketService.connect(companyId, handleNewNotification);
-
     // Request notification permission
     requestNotificationPermission();
-
-    // Cleanup on unmount
-    return () => {
-      webSocketService.disconnect();
-    };
-  }, [companyId, fetchNotifications, handleNewNotification, requestNotificationPermission]);
+  }, [companyId, fetchNotifications, requestNotificationPermission]);
 
   const value = {
     notifications,
