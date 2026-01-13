@@ -94,7 +94,7 @@ public class AuthenticationController {
         return ResponseEntity.ok("Profile marked as completed");
     }
 
-    @GetMapping("/users/{usersId}/status")
+    @GetMapping("/users/{userId}/status")
     public ResponseEntity<String> getUserStatus(@PathVariable String userId) {
         String response = authenticationService.getUserStatus(userId);
         return ResponseEntity.ok(response);
