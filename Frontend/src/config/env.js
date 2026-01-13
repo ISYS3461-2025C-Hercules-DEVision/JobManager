@@ -5,17 +5,23 @@
 
 export const ENV = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://13.236.146.126:8000',
+  API_BASE_URL:
+    import.meta.env.VITE_API_BASE_URL || "http://13.236.146.126:8000",
 
   // Authentication endpoints
-  AUTH_SERVICE_URL: import.meta.env.VITE_AUTH_SERVICE_URL || 'http://13.236.146.126:8000/authentication',
+  AUTH_SERVICE_URL:
+    import.meta.env.VITE_AUTH_SERVICE_URL ||
+    "http://13.236.146.126:8000/authentication",
 
   // Company Service endpoints
-  COMPANY_SERVICE_URL: import.meta.env.VITE_COMPANY_SERVICE_URL || 'http://13.236.146.126:8000/company',
+  COMPANY_SERVICE_URL:
+    import.meta.env.VITE_COMPANY_SERVICE_URL ||
+    "http://13.236.146.126:8000/company",
 
   // Subscription Service endpoints
   SUBSCRIPTION_SERVICE_URL:
-    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL || "http://13.236.146.126:8000/subscription",
+    import.meta.env.VITE_SUBSCRIPTION_SERVICE_URL ||
+    "http://13.236.146.126:8000/subscription",
 
   // Job Service endpoints
   JOB_SERVICE_URL:
@@ -23,18 +29,17 @@ export const ENV = {
 
   // Payment Service endpoints
   PAYMENT_SERVICE_URL:
-    import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://13.236.146.126:8000/subscription",
+    import.meta.env.VITE_PAYMENT_SERVICE_URL ||
+    "http://13.236.146.126:8000/subscription",
   // Notification Service endpoints
   NOTIFICATION_SERVICE_URL:
-    import.meta.env.VITE_NOTIFICATION_SERVICE_URL || "http://13.236.146.126:8000/notification",
-  
-  // WebSocket endpoint for real-time notifications
-  NOTIFICATION_WS_URL:
-    import.meta.env.VITE_NOTIFICATION_WS_URL || "http://13.236.146.126:8000/notification/ws/notifications",
+    import.meta.env.VITE_NOTIFICATION_SERVICE_URL ||
+    "http://13.236.146.126:8000/notification",
 
   // Application Service endpoints (Job Applicant subsystem - separate deployment)
   APPLICATION_SERVICE_URL:
-    import.meta.env.VITE_APPLICATION_SERVICE_URL || "http://13.210.119.17:10789",
+    import.meta.env.VITE_APPLICATION_SERVICE_URL ||
+    "http://13.210.119.17:10789",
 
   // Applicant Service endpoints (Job Applicant subsystem - separate deployment)
   APPLICANT_SERVICE_URL:
@@ -44,7 +49,8 @@ export const ENV = {
   MOCK_AUTH: "false",
 
   // Google OAuth Configuration
-  GOOGLE_CLIENT_ID: "34789659364-001rbq54i0jb3ge69kqes55pgcoklek9.apps.googleusercontent.com",
+  GOOGLE_CLIENT_ID:
+    "34789659364-001rbq54i0jb3ge69kqes55pgcoklek9.apps.googleusercontent.com",
 
   // Feature flags
   ENABLE_GOOGLE_AUTH: "true",
