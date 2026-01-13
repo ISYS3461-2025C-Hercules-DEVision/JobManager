@@ -4,6 +4,7 @@ import com.job.manager.company.annotation.CurrentUser;
 import com.job.manager.company.dto.*;
 import com.job.manager.company.entity.Company;
 import com.job.manager.company.entity.PublicProfile;
+import com.job.manager.company.exception.BusinessException;
 import com.job.manager.company.service.CompanyService;
 import com.job.manager.company.service.SupabaseStorageService;
 import jakarta.validation.Valid;
@@ -23,6 +24,28 @@ public class CompanyController {
     @Autowired
     private SupabaseStorageService supabaseStorageService;
 
+    /**
+     * Get all companies - paginated
+     * @param take page size
+     * @param page page number (1-based)
+     * Example: /companies?take=20&page=1
+     */
+    @GetMapping("/companies")
+    public ResponseEntity<org.springframework.data.domain.Page<CompanyInternalDTO>> getAllCompanies(
+            @RequestParam(defaultValue = "20") int take,
+            @RequestParam(defaultValue = "1") int page) {
+        org.springframework.data.domain.Page<Company> companies = companyService.getAllCompanies(take, page);
+        org.springframework.data.domain.Page<CompanyInternalDTO> dtos = companies.map(company -> CompanyInternalDTO.builder()
+            .companyId(company.getCompanyId())
+            .companyName(company.getCompanyName())
+            .email(company.getEmail())
+            .isPremium(company.getIsPremium())
+            .isActive(company.getIsActive())
+            .isEmailVerified(company.getIsEmailVerified())
+            .build());
+        return ResponseEntity.ok(dtos);
+    }
+
     // Internal endpoint for service-to-service calls (e.g., subscription service
     // validation)
     @GetMapping("/companies/{companyId}")
@@ -30,7 +53,7 @@ public class CompanyController {
         try {
             Company company = companyService.getCompanyById(companyId);
 
-            CompanyInternalDTO dto = CompanyInternalDTO.builder()
+                CompanyInternalDTO dto = CompanyInternalDTO.builder()
                     .companyId(company.getCompanyId())
                     .companyName(company.getCompanyName())
                     .email(company.getEmail())
@@ -38,8 +61,7 @@ public class CompanyController {
                     .isActive(company.getIsActive())
                     .isEmailVerified(company.getIsEmailVerified())
                     .build();
-
-            return ResponseEntity.ok(dto);
+                return ResponseEntity.ok(dto);
         } catch (Exception e) {
             // Return 404 if company not found (for proper error handling in other services)
             return ResponseEntity.notFound().build();
@@ -244,6 +266,11 @@ public class CompanyController {
 
         Company company = companyService.getCompanyByEmail(user.getEmail());
 
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading logo");
+        }
+
         // Upload logo to Supabase Storage
         String logoUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");
 
@@ -291,11 +318,16 @@ public class CompanyController {
      * @return The public URL of the uploaded banner and updated profile
      */
     @PostMapping("/public-profile/banner")
-    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(
+    public ResponseEntity<ProfileImageUploadResponseDto> uploadBanner(    
             @CurrentUser AuthenticatedUser user,
             @RequestParam("file") MultipartFile file) {
 
         Company company = companyService.getCompanyByEmail(user.getEmail());
+
+        // Check if public profile exists first
+        if (!companyService.hasPublicProfile(company.getCompanyId())) {
+            throw new BusinessException("Please create a public profile before uploading banner");
+        }
 
         // Upload banner to Supabase Storage
         String bannerUrl = supabaseStorageService.uploadFile(file, company.getCompanyId() + "/profile", "IMAGE");
@@ -349,5 +381,34 @@ public class CompanyController {
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Activate company account
+     * @param user Authenticated user
+     * @return Success message
+     */
+    @PostMapping("/account/activate")
+    public ResponseEntity<MessageResponseDto> activateAccount(@CurrentUser AuthenticatedUser user) {
+        companyService.activateAccount(user.getEmail());
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Account activated successfully")
+                .build());
+    }
+
+    /**
+     * Deactivate company account
+     * After deactivation, the user will be logged out and cannot access the system
+     * @param user Authenticated user
+     * @return Error response indicating account is deactivated
+     */
+    @PostMapping("/account/deactivate")
+    public ResponseEntity<MessageResponseDto> deactivateAccount(@CurrentUser AuthenticatedUser user) {
+        companyService.deactivateAccount(user.getEmail());
+        // Return 403 Forbidden to indicate the account is now deactivated
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(MessageResponseDto.builder()
+                        .message("Account deactivated. You have been logged out.")
+                        .build());
     }
 }

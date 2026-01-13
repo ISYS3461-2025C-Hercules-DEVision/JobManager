@@ -27,7 +27,7 @@ public class JobController {
         return jobService.createJobPost(jobPost);
     }
 
-    @GetMapping("/jobs/my   ")
+    @GetMapping("/jobs/my")
     public List<JobPost> getMyJobs(@CurrentUser AuthenticatedUser user) {
         return jobService.getJobsForCompany(user.getUserId());
     }
@@ -45,7 +45,6 @@ public class JobController {
                 title, location, employmentType, keyWord, page, size
         );
     }
-
 
     @GetMapping("/jobs/{jobId}")
     public JobPost getJobById(@PathVariable String jobId

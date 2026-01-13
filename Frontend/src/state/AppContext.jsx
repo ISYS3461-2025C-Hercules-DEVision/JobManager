@@ -78,29 +78,37 @@ export const AppProvider = ({ children }) => {
   /**
    * Show success message
    */
-  const showSuccess = useCallback((message, duration = 3000) => {
-    return addNotification({ type: 'success', message, duration });
+  const showSuccess = useCallback((message, options = {}) => {
+    const duration = typeof options === 'number' ? options : (options.duration || 3000);
+    const title = typeof options === 'object' ? options.title : undefined;
+    return addNotification({ type: 'success', message, duration, title });
   }, [addNotification]);
 
   /**
    * Show error message
    */
-  const showError = useCallback((message, duration = 5000) => {
-    return addNotification({ type: 'error', message, duration });
+  const showError = useCallback((message, options = {}) => {
+    const duration = typeof options === 'number' ? options : (options.duration || 5000);
+    const title = typeof options === 'object' ? options.title : undefined;
+    return addNotification({ type: 'error', message, duration, title });
   }, [addNotification]);
 
   /**
    * Show info message
    */
-  const showInfo = useCallback((message, duration = 4000) => {
-    return addNotification({ type: 'info', message, duration });
+  const showInfo = useCallback((message, options = {}) => {
+    const duration = typeof options === 'number' ? options : (options.duration || 4000);
+    const title = typeof options === 'object' ? options.title : undefined;
+    return addNotification({ type: 'info', message, duration, title });
   }, [addNotification]);
 
   /**
    * Show warning message
    */
-  const showWarning = useCallback((message, duration = 4000) => {
-    return addNotification({ type: 'warning', message, duration });
+  const showWarning = useCallback((message, options = {}) => {
+    const duration = typeof options === 'number' ? options : (options.duration || 4000);
+    const title = typeof options === 'object' ? options.title : undefined;
+    return addNotification({ type: 'warning', message, duration, title });
   }, [addNotification]);
 
   /**

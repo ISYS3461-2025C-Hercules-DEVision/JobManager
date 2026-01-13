@@ -13,14 +13,52 @@ const toSkillsArray = (skills) => {
     .filter(Boolean);
 };
 
-const buildSalaryString = (salaryMin, salaryMax) => {
-  const min = salaryMin !== "" && salaryMin != null ? Number(salaryMin) : null;
-  const max = salaryMax !== "" && salaryMax != null ? Number(salaryMax) : null;
+/**
+ * Build payload matching backend JobPost entity structure
+ */
+const buildJobPayload = (formData) => {
+  const payload = {
+    title: formData.title,
+    department: formData.department || "",
+    description: formData.description,
+    employmentTypes: Array.isArray(formData.employmentTypes)
+      ? formData.employmentTypes
+      : [formData.employmentTypes || "Full-time"],
+    location: formData.location,
+    salaryType: formData.salaryType || "NEGOTIABLE",
+    salaryCurrency: formData.salaryCurrency || "USD",
+    skills: toSkillsArray(formData.skills),
+    published: formData.published !== undefined ? formData.published : true,
+    experienceLevel: formData.experienceLevel || "",
+    responsibilities: formData.responsibilities || "",
+    requirements: formData.requirements || "",
+    benefits: formData.benefits || "",
+  };
 
-  if (Number.isFinite(min) && Number.isFinite(max)) return `${min}-${max} USD`;
-  if (Number.isFinite(min)) return `From ${min} USD`;
-  if (Number.isFinite(max)) return `Up to ${max} USD`;
-  return "";
+  // Add salary values based on type
+  if (formData.salaryType !== "NEGOTIABLE") {
+    if (
+      formData.salaryType === "RANGE" ||
+      formData.salaryType === "FROM" ||
+      formData.salaryType === "ABOUT"
+    ) {
+      payload.salaryMin = formData.salaryMin
+        ? Number(formData.salaryMin)
+        : null;
+    }
+    if (formData.salaryType === "RANGE" || formData.salaryType === "UP_TO") {
+      payload.salaryMax = formData.salaryMax
+        ? Number(formData.salaryMax)
+        : null;
+    }
+  }
+
+  // Add expiry date if provided
+  if (formData.expiryDate) {
+    payload.expiryDate = formData.expiryDate;
+  }
+
+  return payload;
 };
 
 export const jobService = {
@@ -32,17 +70,7 @@ export const jobService = {
   },
 
   async createJob(formData) {
-    const payload = {
-      title: formData.title,
-      department: formData.department || "",
-      description: formData.description,
-      employmentType: formData.type,
-      location: formData.location,
-      salary: buildSalaryString(formData.salaryMin, formData.salaryMax),
-      skills: toSkillsArray(formData.skills),
-      published: true,
-    };
-
+    const payload = buildJobPayload(formData);
     const response = await httpClient.post(
       `${baseUrl}${API_ENDPOINTS.JOB.CREATE}`,
       payload
@@ -52,15 +80,8 @@ export const jobService = {
 
   async saveDraft(formData, jobId = null) {
     const payload = {
-      title: formData.title || "Untitled Draft",
-      department: formData.department || "",
-      description: formData.description || "",
-      employmentType: formData.type || "Full-time",
-      location: formData.location || "",
-      salary: buildSalaryString(formData.salaryMin, formData.salaryMax),
-      skills: toSkillsArray(formData.skills),
-      published: false, // Draft is unpublished
-      expiryDate: null,
+      ...buildJobPayload(formData),
+      published: false, // Force draft status
     };
 
     if (jobId) {
@@ -86,18 +107,7 @@ export const jobService = {
   },
 
   async updateJob(jobId, formData) {
-    const payload = {
-      title: formData.title,
-      department: formData.department || "",
-      description: formData.description,
-      employmentType: formData.type,
-      location: formData.location,
-      salary: buildSalaryString(formData.salaryMin, formData.salaryMax),
-      skills: toSkillsArray(formData.skills),
-      published: formData.published !== undefined ? formData.published : true,
-      expiryDate: formData.expiryDate || null,
-    };
-
+    const payload = buildJobPayload(formData);
     const response = await httpClient.put(`${baseUrl}/jobs/${jobId}`, payload);
     return response.data;
   },

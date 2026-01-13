@@ -134,6 +134,8 @@ public class SubscriptionService {
         // Publish Kafka event to notify company service
         SubscriptionEventDTO event = mapToEventDTO(saved);
         eventProducer.sendSubscriptionCancelledEvent(event);
+
+        subscriptionRepository.deleteById(subscriptionId);
         log.info(">>> [SUBSCRIPTION] Published cancellation event for company: {}", saved.getCompanyId());
 
         return mapToResponseDTO(saved);

@@ -21,4 +21,5 @@ public class CompanyInternalDTO {
     private Boolean isPremium;
     private Boolean isActive;
     private Boolean isEmailVerified;
+
 }

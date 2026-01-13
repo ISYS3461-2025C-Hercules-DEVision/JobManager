@@ -22,6 +22,16 @@ public class CompanyService {
     @Autowired
     private PublicProfileRepository publicProfileRepository;
 
+    /**
+     * Get paginated companies (for internal/external API consumption)
+     * @param take page size
+     * @param page page number (1-based)
+     */
+    public org.springframework.data.domain.Page<Company> getAllCompanies(int take, int page) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(Math.max(page-1,0), take);
+        return companyRepository.findAll(pageable);
+    }
+
     public CompanyProfileUpdateDto updateProfile(String email, CompanyProfileUpdateDto updatedRequest) {
         Company company = companyRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException("Company not found with email: " + email));
@@ -205,6 +215,36 @@ public class CompanyService {
                 .orElseThrow(() -> new BusinessException("Company not found: " + companyId));
 
         company.setIsPremium(isPremium);
+        company.setUpdatedAt(LocalDateTime.now());
+
+        companyRepository.save(company);
+    }
+
+    /**
+     * Activate company account
+     * Sets isActive to true
+     */
+    @Transactional
+    public void activateAccount(String email) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Company not found"));
+
+        company.setIsActive(true);
+        company.setUpdatedAt(LocalDateTime.now());
+
+        companyRepository.save(company);
+    }
+
+    /**
+     * Deactivate company account
+     * Sets isActive to false - user will be unable to access the system
+     */
+    @Transactional
+    public void deactivateAccount(String email) {
+        Company company = companyRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Company not found"));
+
+        company.setIsActive(false);
         company.setUpdatedAt(LocalDateTime.now());
 
         companyRepository.save(company);
